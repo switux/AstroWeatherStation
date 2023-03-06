@@ -190,16 +190,11 @@ void setup()
 
     rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
-    if ( !getLocalTime( &timeinfo )) {
+    configTzTime( tz_info, ntp_server );
 
-      delay( 2500 );  // Give time to NTP ...
-      configTzTime( tz_info, ntp_server );
-      while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) {
-
+    while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) {
         delay( 1000 );
         configTzTime( tz_info, ntp_server );
-      }
-
     }
 
     if ( debug_mode ) {
@@ -213,9 +208,6 @@ void setup()
       Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
     }
     
-    setenv( "TZ", tz_info, 1 );
-    tzset();
-
     initialise_sensors();
     retrieve_sensor_data( ntp_synced, rain_event );
     if ( rain_event ) {
