@@ -88,6 +88,7 @@ The station sends the data to a web server as a JSON string:
 Where
 
 - battery_level: in % of 4.2V
+- timestamp: Unix epoch time
 - rain_event: 1 if awakened by the sensor
 - temp: in °C
 - pres: in hPa (QFE)
