@@ -82,3 +82,6 @@ I found inspiration and solutions to problems in the following pages / posts:
     - https://jeelabs.org/2013/05/18/zero-power-measurement-part-2/index.html
   - To workaround the 3.3V limitation to trigger the P-FET of the above ( I used an IRF930 to drive the IRF9540 )
     - https://electronics.stackexchange.com/a/562942
+  - Solar panel tilt
+    - https://globalsolaratlas.info/
+    
