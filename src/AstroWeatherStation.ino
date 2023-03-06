@@ -29,7 +29,7 @@
 #include "time.h"
 #include <ESP_Mail_Client.h>
 
-#define REV "1.0.0-20230303"
+#define REV "1.0.1-20230306"
 #define DEBUG_MODE 1
 
 // You must customise weather_config.h
@@ -198,14 +198,31 @@ void setup()
 
     }
 
-    if ( rain_event )
-      send_rain_event_alarm();
+    if ( debug_mode ) {
 
+      if ( ntp_synced )
+        Serial.print( "NTP Synchronised. ");
+      else
+        Serial.print( "NOT NTP Synchronised. ");
+
+      Serial.print( "Time and date: ");
+      Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
+    }
+    
     setenv( "TZ", tz_info, 1 );
     tzset();
 
     initialise_sensors();
     retrieve_sensor_data( ntp_synced, rain_event );
+    if ( rain_event ) {
+       if ( values[ "rain" ] > 0 )  // Avoid false positives
+        send_rain_event_alarm();
+       else {
+        if ( debug_mode )
+          Serial.println( "Rain event false positive, back to bed." );
+        goto enter_sleep;           // The hell with bigots and their aversion to goto's
+       }
+    }
     
 
     if ( battery_level <= BAT_LEVEL_MIN ) {
@@ -232,6 +249,8 @@ void setup()
 
     }
   }
+
+enter_sleep:
 
   digitalWrite( GPIO_RELAY_3_3V, HIGH );
   digitalWrite( GPIO_RELAY_5V, HIGH );
@@ -404,8 +423,10 @@ void initialise_TSL()
     if ( debug_mode )
       Serial.println( "Found TSL2591" );
 
+    tsl.setGain( TSL2591_GAIN_LOW );
+    tsl.setTiming( TSL2591_INTEGRATIONTIME_100MS );
     sensors_found |= TSL_SENSOR;
-  
+
   }
 }
 
