@@ -194,7 +194,11 @@ void setup()
 
       delay( 2500 );  // Give time to NTP ...
       configTzTime( tz_info, ntp_server );
-      while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) delay( 1000 );
+      while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) {
+
+        delay( 1000 );
+        configTzTime( tz_info, ntp_server );
+      }
 
     }
 
