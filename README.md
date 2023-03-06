@@ -90,7 +90,7 @@ Where
 - battery_level: in % of 4.2V
 - rain_event: 1 if awakened by the sensor
 - temp: in °C
-- pres: in hPA (QFE)
+- pres: in hPa (QFE)
 - rh: relative humidity in %
 - lux: solar illuminance
 - ambient: IR sensor ambient temperature
@@ -102,10 +102,10 @@ Where
 
 ## Tips
 
-- I use 24AWG single core to create the tracks on the PCB (you can of course have your own custom PCB made).
+- I use 24AWG single core cable to create the tracks on the PCB (you can of course have your own custom PCB made).
 - I use female pin headers for the MCU and other boards. I fried a couple of mosfet's during prototyping (even though I have a 15W iron and I am pretty careful) and lost quite some time to troubleshoot the battery level part so I decided to use pin headers too :-)
 - I solder the KF2510 terminals to the wires, maybe it is me or my crimping tool but I kept having contact failures ...
-- I cut the external antenna cable (1m is waaay to much but I could not find a shorter one) and crimped a male SMA to got with the IPEX pigtail
+- I cut the external antenna cable (1m is waaay too long but I could not find a shorter one) and crimped a male SMA to go with the RP-SMA pigtail
 
 ## REFERENCES
 
