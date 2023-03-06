@@ -65,6 +65,41 @@ A Wifi network is available to send sensor data and send alarms. In my case this
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
 
+## Data format
+
+The station sends the data to a web server as a JSON string:
+
+{
+  "battery_level":92,
+  "timestamp":1675767261,
+  "rain_event":0,
+  "temp":16.84000015,
+  "pres":941.1413574,
+  "rh":27.296875,
+  "lux":68181,
+  "ambient":21.42998695,
+  "sky":-3.19000864,
+  "direction":45,
+  "speed":0,
+  "rain":0,
+  "sensors":63
+}
+
+Where
+
+- battery_level: in % of 4.2V
+- rain_event: 1 if awakened by the sensor
+- temp: in °C
+- pres: in hPA (QFE)
+- rh: relative humidity in %
+- lux: solar illuminance
+- ambient: IR sensor ambient temperature
+- sky: IR sensor sky temperature (substract ambient to get sky temperature, if below -20° --> sky is clear)
+- direction: wind direction 0=N, 45=NE, 90=E, 135=SE, 180=W, 225=SW, 270=W, 315 NW
+- speed: in m/s
+- rain: 0=None, 1=Rain drops, 2=Very light, 3=Medium light, 4=Medium, 5=Medium heavy, 6=Heavy, 7=Violent
+- sensors: available sensors (see source code)
+
 ## Tips
 
 - I use 24AWG single core to create the tracks on the PCB (you can of course have your own custom PCB made).
