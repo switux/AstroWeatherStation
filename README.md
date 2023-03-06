@@ -12,7 +12,7 @@ It is however usable in production, the things that will be improved in v1.0 are
 
   - Hardware
     - Single universal PCB
-    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
+    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
 
   - Software
     - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
@@ -47,23 +47,34 @@ It is however usable in production, the things that will be improved in v1.0 are
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
 
+## Pricing
+
+All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 210.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
+
 ## ASSUMPTIONS
 
 A Wifi network is available to send sensor data and send alarms. In my case this is provided by a 4G module attached to a Raspberry Pi 4 which pilots the instruments.
 
 ## SPECIFICATIONS
 
-  - Power consumption: N/A
-  - Autonomy: N/A
-  - Measures
+  - Power consumption: N/A (collecting data)
+  - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
+  - Measures (from sensor specs)
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
 
+## Tips
+
+- I use 24AWG single core to create the tracks on the PCB (you can of course have your own custom PCB made).
+- I use female pin headers for the MCU and other boards. I fried a couple of mosfet's during prototyping (even though I have a 15W iron and I am pretty careful) and lost quite some time to troubleshoot the battery level part so I decided to use pin headers too :-)
+- I solder the KF2510 terminals to the wires, maybe it is me or my crimping tool but I kept having contact failures ...
+- I cut the external antenna cable (1m is waaay to much but I could not find a shorter one) and crimped a male SMA to got with the IPEX pigtail
+
 ## REFERENCES
 
-I found inspiration in the following pages / posts:
+I found inspiration and solutions to problems in the following pages / posts:
 
   - No need to push the BOOT button on the ESP32 to upload new sketch
     - https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header
