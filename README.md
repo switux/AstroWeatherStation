@@ -1,4 +1,5 @@
 # AstroWeatherStation
+
 ESP32 based weather station with astronomical observatory features
 
 ## GOAL
@@ -7,18 +8,29 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 0.9 (prototype) of the project.
-It is however usable in production, the things that will be improved in v1.0 are:
+This is version 1.0 of the project.
+
+Improvements since v0.9:
 
   - Hardware
     - Single universal PCB
-    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
+    - RG-9 has now a 12V power input, aligned with the wind sensors, because of brownouts with the 5V output (unstabilitiy with the Mini560, too close from RG-9 voltage requirements)
+    - 5V relay is now a 12V relay and has been moved between the wind sensors' power input and the MT3608 output, because of the above RG9 issue
+    
+  - Software
+    - More robust RG-9 probing (although rain events are correctly reported)
+    - ADC level modifier to accomodate "sub-optimal" setups of the voltage divider
+    - Mail alarms sent in case the RG-9 has firmware issues reported during its initialisation
+    
+Possible future improvements:
 
+  - Hardware
+    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
+    
   - Software
     - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
-    - More robust RG-9 probing (although rain events are correctly reported)
     - Stay in debug mode until the next reboot
-  
+       
 ## FEATURES
 
   - Weather parameters:
