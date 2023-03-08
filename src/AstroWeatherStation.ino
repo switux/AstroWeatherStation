@@ -55,7 +55,7 @@
 #define GPIO_RG9_RAIN    GPIO_NUM_35   // J1 OUT PIN
 
 #define GPIO_RELAY_3_3V  05
-#define GPIO_RELAY_5V    18
+#define GPIO_RELAY_12V   18
 
 #define GPIO_DEBUG        GPIO_NUM_34
 
@@ -160,7 +160,7 @@ void setup()
     strcat( string, "#\n" );
     Serial.printf( string );
     memset( string, 0, 64 );
-    snprintf( string, 61, "# 5V RELAY  : %d", GPIO_RELAY_5V );
+    snprintf( string, 61, "# 12V RELAY  : %d", GPIO_RELAY_12V );
     for( i = strlen( string ); i < 61; string[i++] = ' ' );
     strcat( string, "#\n" );
     Serial.printf( string );
@@ -180,9 +180,9 @@ void setup()
   pinMode( GPIO_BAT_LVL_SW, OUTPUT );
 
   pinMode( GPIO_RELAY_3_3V, OUTPUT );
-  pinMode( GPIO_RELAY_5V, OUTPUT );
+  pinMode( GPIO_RELAY_12V, OUTPUT );
   digitalWrite( GPIO_RELAY_3_3V, LOW );
-  digitalWrite( GPIO_RELAY_5V, LOW );
+  digitalWrite( GPIO_RELAY_12V, LOW );
 
   battery_level = get_battery_level();
 
@@ -249,7 +249,7 @@ void setup()
 enter_sleep:
 
   digitalWrite( GPIO_RELAY_3_3V, HIGH );
-  digitalWrite( GPIO_RELAY_5V, HIGH );
+  digitalWrite( GPIO_RELAY_12V, HIGH );
 
   if ( debug_mode )
     Serial.println( "Entering sleep mode." );
