@@ -29,7 +29,7 @@
 #include "time.h"
 #include <ESP_Mail_Client.h>
 
-#define REV "1.0.0-20230303"
+#define REV "1.0.2-20230307"
 #define DEBUG_MODE 1
 
 // You must customise weather_config.h
@@ -53,9 +53,10 @@
 #define GPIO_RG9_TX      16            // J2 SI PIN
 #define GPIO_RG9_MCLR    23            // J2 MCLR PIN
 #define GPIO_RG9_RAIN    GPIO_NUM_35   // J1 OUT PIN
+#define RG9_PROBE_RETRIES 5
 
 #define GPIO_RELAY_3_3V  05
-#define GPIO_RELAY_5V    18
+#define GPIO_RELAY_12V    18
 
 #define GPIO_DEBUG        GPIO_NUM_34
 
@@ -64,6 +65,7 @@
 #define BAT_LEVEL_MIN         50
 #define LOW_BATTERY_COUNT_MIN 5
 #define LOW_BATTERY_COUNT_MAX 10
+#define ADC_VOLTAGE_MOD       (3.15 / 3.3)  // Max voltage given by divider if you cannot get a 366k resistor (I have a 300k)
 
 #define US_SLEEP    5 * 60 * 1000000 // 5 minutes
 
@@ -160,7 +162,7 @@ void setup()
     strcat( string, "#\n" );
     Serial.printf( string );
     memset( string, 0, 64 );
-    snprintf( string, 61, "# 5V RELAY  : %d", GPIO_RELAY_5V );
+    snprintf( string, 61, "# 12V RELAY : %d", GPIO_RELAY_12V );
     for( i = strlen( string ); i < 61; string[i++] = ' ' );
     strcat( string, "#\n" );
     Serial.printf( string );
@@ -180,9 +182,9 @@ void setup()
   pinMode( GPIO_BAT_LVL_SW, OUTPUT );
 
   pinMode( GPIO_RELAY_3_3V, OUTPUT );
-  pinMode( GPIO_RELAY_5V, OUTPUT );
+  pinMode( GPIO_RELAY_12V, OUTPUT );
   digitalWrite( GPIO_RELAY_3_3V, LOW );
-  digitalWrite( GPIO_RELAY_5V, LOW );
+  digitalWrite( GPIO_RELAY_12V, LOW );
 
   battery_level = get_battery_level();
 
@@ -190,22 +192,35 @@ void setup()
 
     rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
-    if ( !getLocalTime( &timeinfo )) {
+    configTzTime( tz_info, ntp_server );
 
-      delay( 2500 );  // Give time to NTP ...
-      configTzTime( tz_info, ntp_server );
-      while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) delay( 1000 );
-
+    while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retry > 0 ) ) {
+        delay( 1000 );
+        configTzTime( tz_info, ntp_server );
     }
 
-    if ( rain_event )
-      send_rain_event_alarm();
+    if ( debug_mode ) {
 
-    setenv( "TZ", tz_info, 1 );
-    tzset();
+      if ( ntp_synced )
+        Serial.print( "NTP Synchronised. ");
+      else
+        Serial.print( "NOT NTP Synchronised. ");
 
+      Serial.print( "Time and date: ");
+      Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
+    }
+    
     initialise_sensors();
     retrieve_sensor_data( ntp_synced, rain_event );
+    if ( rain_event ) {
+       if ( values[ "rain" ] > 0 )  // Avoid false positives
+        send_rain_event_alarm();
+       else {
+        if ( debug_mode )
+          Serial.println( "Rain event false positive, back to bed." );
+        goto enter_sleep;           // The hell with bigots and their aversion to goto's
+       }
+    }
     
 
     if ( battery_level <= BAT_LEVEL_MIN ) {
@@ -233,8 +248,10 @@ void setup()
     }
   }
 
+enter_sleep:
+
   digitalWrite( GPIO_RELAY_3_3V, HIGH );
-  digitalWrite( GPIO_RELAY_5V, HIGH );
+  digitalWrite( GPIO_RELAY_12V, HIGH );
 
   if ( debug_mode )
     Serial.println( "Entering sleep mode." );
@@ -295,7 +312,22 @@ void initialise_sensors()
   initialise_TSL();
   initialise_anemometer();
   initialise_wind_vane();
-  initialise_RG9();
+  switch( initialise_RG9() ) {
+    case 0:
+    case 127:
+      break;
+    case 'B':
+        send_mail( "[Weather Station] RG9 low voltage", "" );
+        break;
+    case 'O':
+        send_mail( "[Weather Station] RG9 problem", "Reset because of stack overflow, report problem to support." );
+        break;
+    case 'U':
+        send_mail( "[Weather Station] RG9 problem", "Reset because of stack underflow, report problem to support." );
+        break;
+    default:
+        break;
+  }
 }
 
 void initialise_anemometer()
@@ -339,57 +371,68 @@ void initialise_MLX()
   }
 }
 
-void initialise_RG9()
+char initialise_RG9()
 {
-
-  int     bps[] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 },
-                  j = 0;
+  int     bps[] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
   String  str;
 
   if ( reboot_count == 1 )    // Give time to the sensor to initialise before trying to probe it
     delay( 5000 );
     
   if ( debug_mode )
-    Serial.printf( "Scanning RG9 ... " );
+    Serial.printf( "Probing RG9 ... " );
 
-  for( int i=0; i < 2; i++ )
-  while ( j < 7 ) {
+  for( int i = 0; i < RG9_PROBE_RETRIES; i++ )
+    for( int j = 0; j < 7; j++ ) {
 
-    rg9.begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
-    rg9.println();
-    rg9.println();
-
-    if ( debug_mode )
-      Serial.printf( "[%d] ", bps[j] );
-
-    rg9.println( "B" );
-    str = RG9_read_string();
-
-    if ( str.startsWith( "Baud " )) {
+      rg9.begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
+      rg9.println();
+      rg9.println();
 
       if ( debug_mode ) {
-        String bitrate = str.substring( 5, str.length() - 1 );
-        Serial.println( "\nFound RG9 @ " + bitrate + " bps" );
+        Serial.printf( "[%dbps] ", bps[j] );
+        Serial.flush();
+      }
+      
+      rg9.println( "B" );
+      str = RG9_read_string();
+
+      if ( debug_mode )
+        Serial.println( str );
+
+      if ( str.startsWith( "Baud " )) {
+
+        if ( debug_mode ) {
+         String bitrate = str.substring( 5, str.length() - 1 );
+         Serial.println( "Found RG9 @ " + bitrate + "bps" );
+        }
+
+        sensors_found |= RG9_SENSOR;
+        return 0;
       }
 
-      sensors_found |= RG9_SENSOR;
-      return;
+      if ( str.startsWith( "Reset " )) {
+
+        char reset_cause = str.charAt( 6 );
+        if ( debug_mode )
+         Serial.printf( "Found G9 @ %dbps after reset cause %c\n", bps[j], reset_cause );
+
+        sensors_found |= RG9_SENSOR;
+        return reset_cause;
+      }
+
+      rg9.end();
     }
 
-    rg9.end();
-    j++;
-
-  }
-
   if ( debug_mode )
-    Serial.println( "Could not find RG9, hard resetting sensor ..." );
+    Serial.println( "Could not find RG9, resetting..." );
 
   pinMode( GPIO_RG9_MCLR, OUTPUT );
   digitalWrite( GPIO_RG9_MCLR, LOW );
   delay( 500 );
   digitalWrite( GPIO_RG9_MCLR, HIGH );
 
-  return;
+  return 127;
 }
 
 void initialise_TSL()
@@ -404,8 +447,10 @@ void initialise_TSL()
     if ( debug_mode )
       Serial.println( "Found TSL2591" );
 
+    tsl.setGain( TSL2591_GAIN_LOW );
+    tsl.setTiming( TSL2591_INTEGRATIONTIME_100MS );
     sensors_found |= TSL_SENSOR;
-  
+
   }
 }
 
@@ -585,7 +630,7 @@ float get_battery_level()
   digitalWrite( GPIO_BAT_LVL_SW, HIGH );
   delay( 1500 );
   int adc_value = analogRead( GPIO_BAT_LEVEL );
-  float battery_level = map( adc_value, 0.0f, 4095.0f, 0, 100 );
+  float battery_level = map( adc_value / ADC_VOLTAGE_MOD, 0.0f, 4095.0f, 0, 100 );
 
   if ( debug_mode )
     Serial.printf( "%03.2f%% (ADC value=%d)\n", battery_level, adc_value );
