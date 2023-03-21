@@ -65,7 +65,7 @@
 
 - 3x 0.25W 10k resistor
 - 1x 0.25W 82k resistor
-- 1x 0.25W 330k resistor
+- 1x 0.25W 300k resistor
 - 1x 0.25W 1M resistor
 - 1x 10uF electrolytic capacitor
 - 1x IRF530
