@@ -74,6 +74,6 @@
 ## Small parts -- mechanics
 
 - 8x PG7 cable gland
-- 4x M2.6 8mm screws
+- 8x M2.6 8mm screws
 - 1x IP55 Push button red
 - 1x IP55 Push button black, latching
