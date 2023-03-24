@@ -16,10 +16,12 @@ Improvements since v0.9:
     - Single universal PCB
     - RG-9 has now a 12V power input, aligned with the wind sensors, because of brownouts with the 5V output (unstabilitiy with the Mini560, too close from RG-9 voltage requirements)
     - 5V relay is now a 12V relay and has been moved between the wind sensors' power input and the MT3608 output, because of the above RG9 issue
+    - Using a latching push button for debug mode
+    - Better voltage divider resistor values to be closer to the 3.3V max voltage while still using mostly "mainstream" resistor values
     
   - Software
     - More robust RG-9 probing (although rain events are correctly reported)
-    - ADC level modifier to accomodate "sub-optimal" setups of the voltage divider
+    - Battery level estimation improvements, shrunk voltage range from 0V-4.2V to 3V-4.2V to take battery's EODV into account
     - Mail alarms sent in case the RG-9 has firmware issues reported during its initialisation
     
 Possible future improvements:
