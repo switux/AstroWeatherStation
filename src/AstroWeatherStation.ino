@@ -73,7 +73,7 @@
 #define VCC                   3300    // in mV
 
 // Voltage divider resistor
-#define V_DIV_R1              100000   // in ohms
+#define V_DIV_R1              82000   // in ohms
 #define V_DIV_R2              300000  // in ohms
 
 #define ADC_MAX               4096    // 12 bits resolution
