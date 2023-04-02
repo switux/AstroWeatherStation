@@ -36,10 +36,12 @@ It is however usable in production, the things that will be improved in v1.0 are
     - Cloud coverage
     - Solar irradiance
   
-  - Mail alarms for:
+  - Alarms (to be handled on the server side) for:
   
     - Sensor unavailability
     - Rain event
+    - Low battery
+    - Rain sensor HW problem
   
   - Operations:
 
@@ -64,6 +66,15 @@ A Wifi network is available to send sensor data and send alarms. In my case this
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
+
+## Alarms format
+
+The station sends alarm to an HTTPS endpoint as a JSON string:
+
+{
+  "subject": "reason for the alarm",
+  "message": "what happened"
+}
 
 ## Data format
 
