@@ -27,6 +27,7 @@
 ## Connectors
 
 - 14x HXB 2.54mm male + female connectors 2pins
+- 8x female connector 1pin (for the Mini560 and MT3608)
 - 5x KF2510 2pins
 - 4x KF2510 3pins
 - 1x KF2510 4pins
