@@ -74,7 +74,7 @@
 #define BAT_V_MIN				3000	// in mV
 #define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
 #define VCC						3300	// in mV
-#define V_DIV_R1				100000	// voltage divider R1 in ohms
+#define V_DIV_R1				82000	// voltage divider R1 in ohms
 #define V_DIV_R2				300000	// voltage divider R2 in ohms
 #define ADC_MAX					4096	// 12 bits resolution
 #define V_MAX_IN				(BAT_V_MAX * V_DIV_R2)/(V_DIV_R1 + V_DIV_R2)	// in mV
@@ -108,7 +108,7 @@ void setup()
 			debug_mode;
 	char	string[64],
 			wakeup_string[50];
-	struct 	tm timeinfo;
+	struct	tm timeinfo;
 
 	const char	*ntp_server = "pool.ntp.org";
 	const char	*tz_info	= TZNAME;
@@ -164,15 +164,15 @@ void setup()
 
 		if ( debug_mode ) {
 
-			Serial.print( F( "Reboot counter=" ));
+			Serial.print( "Reboot counter=" );
 			Serial.println( reboot_count );
 
 			if ( ntp_synced )
-        		Serial.print( F( "NTP Synchronised. " ));
+        		Serial.print( "NTP Synchronised. " );
 			else
-				Serial.print( F( "NOT NTP Synchronised. " ));
+				Serial.print( "NOT NTP Synchronised. " );
 
-			Serial.print( F( "Time and date: " ));
+			Serial.print( "Time and date: " );
 			Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
 		}
 
@@ -187,7 +187,7 @@ void setup()
 			else {
 
 				if ( debug_mode )
-					Serial.println( F( "Rain event false positive, back to bed." ));
+					Serial.println( "Rain event false positive, back to bed." );
 
 				goto enter_sleep;	// The hell with bigots and their aversion to goto's
 			}
@@ -225,7 +225,7 @@ enter_sleep:
 	digitalWrite( GPIO_RELAY_12V, HIGH );
 
 	if ( debug_mode )
-		Serial.println( F( "Entering sleep mode." ));
+		Serial.println( "Entering sleep mode." );
 
 	esp_sleep_enable_timer_wakeup( US_SLEEP );
 	esp_sleep_pd_config( ESP_PD_DOMAIN_MAX, ESP_PD_OPTION_OFF );
@@ -495,17 +495,17 @@ void displayBanner( char *wakeup_string )
 	char	string[64];
 	byte	i;
 	
-	Serial.println( F("\n##############################################################") );
-	Serial.println( F("# AstroWeatherStation                                        #") );
-	Serial.println( F("#  (c) Lesage Franck - lesage@datamancers.net                #") );
+	Serial.println( "\n##############################################################" );
+	Serial.println( "# AstroWeatherStation                                        #" );
+	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                #" );
 	snprintf( string, 64, "# Build %-52s #\n", REV );
 	Serial.printf( string );
-	Serial.println( F("#------------------------------------------------------------#") );
+	Serial.println( "#------------------------------------------------------------#" );
 	snprintf( string, 64, "# %-58s #\n", wakeup_string );
 	Serial.printf( string );
-	Serial.println( F("#------------------------------------------------------------#") );
-	Serial.println( F("# GPIO PIN CONFIGURATION                                     #") );
-	Serial.println( F("#------------------------------------------------------------#") );
+	Serial.println( "#------------------------------------------------------------#" );
+	Serial.println( "# GPIO PIN CONFIGURATION                                     #" );
+	Serial.println( "#------------------------------------------------------------#" );
 	memset( string, 0, 64 );
 	snprintf( string, 61, "# Wind vane : RX=%d TX=%d CTRL=%d", GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX, GPIO_WIND_VANE_CTRL );
 	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
@@ -541,7 +541,7 @@ void displayBanner( char *wakeup_string )
 	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	Serial.println( F("##############################################################") );
+	Serial.println( "##############################################################" );
 }
 
 void post_content( const char *endpoint, const char *jsonString, byte debug_mode )
@@ -555,19 +555,19 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 	char *final_endpoint;
 
 	if ( debug_mode )
-		Serial.print( F( "Connecting to server..." ));
+		Serial.print( "Connecting to server..." );
 
 	client.setCACert( root_ca );
 
 	if (!client.connect( server, 443 )) {
 
 		if ( debug_mode )
-			Serial.println( F( "NOK." ));
+			Serial.println( "NOK." );
 
 	} else {
 
 		if ( debug_mode )
-			Serial.println( F( "OK." ));
+			Serial.println( "OK." );
 
 		final_endpoint = (char *)malloc( strlen( url ) + strlen( endpoint ) + 2 );
 		strcpy( final_endpoint, url );
@@ -580,7 +580,7 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 		if ( debug_mode ) {
 
 			Serial.println();
-			Serial.print( F( "HTTP response: " ));
+			Serial.print( "HTTP response: " );
 			Serial.println( status );
 
 		}
@@ -592,21 +592,24 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 
 void report_unavailable_sensors( byte available_sensors, byte debug_mode )
 {
-	const char sensor_name[6][12] = {"MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RG9 "};
-	char unavailable_sensors[96] = "Unavailable sensors: ";
-
-	for ( byte i = 0; i < 6; i++ )
-		if ( ( available_sensors & (int)pow( 2, i )) != (int)pow( 2, i ) )
+	const char	sensor_name[6][12] = {"MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RG9 "};
+	char		unavailable_sensors[96] = "Unavailable sensors: ";
+	byte 		j = available_sensors;
+	
+	for( byte i = 0; i < 6; i++ ) {
+		if ( !( available_sensors & 1 ))
 			strncat( unavailable_sensors, sensor_name[i], 12 );
+		available_sensors >>= 1;
+	}
 
-		if ( debug_mode ) {
+	if ( debug_mode ) {
 
-			Serial.print( unavailable_sensors );
-			if ( available_sensors == ALL_SENSORS )
-				Serial.println( F( "none" ));
-		}
+		Serial.print( unavailable_sensors );
+		if ( j == ALL_SENSORS )
+			Serial.println( "none" );
+	}
 
-	if ( available_sensors != ALL_SENSORS )
+	if ( j != ALL_SENSORS )
 		send_alarm( "Unavailable sensors report", unavailable_sensors, debug_mode );
 }
 
@@ -641,7 +644,7 @@ void send_data( const JsonDocument& values, byte debug_mode )
 	serializeJson( values, json );
 
 	if ( debug_mode ) {
-		Serial.print( F( "Sending JSON: " ));
+		Serial.print( "Sending JSON: " );
 		serializeJson( values, Serial );
 	}
 
@@ -693,7 +696,7 @@ void wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wake
 float get_battery_level( byte debug_mode )
 {
 	if ( debug_mode )
-		Serial.print( F( "Battery level: " ));
+		Serial.print( "Battery level: " );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
 	delay( 1500 );
@@ -858,7 +861,7 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 
 		if ( debug_mode ) {
 
-			Serial.print( F( "Wind vane answer : " ));
+			Serial.print( "Wind vane answer : " );
 			for ( j = 0; j < 6; j++ )
 				Serial.printf( "%02x ", answer[j] );
 
@@ -874,7 +877,7 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 		} else {
 
 			if ( debug_mode )
-				Serial.println( F( "(Error)." ));
+				Serial.println( "(Error)." );
 			delay( 500 );
 
 		}
