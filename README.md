@@ -71,6 +71,7 @@ A Wifi network is available to send sensor data and send alarms. In my case this
 
   - Power consumption: N/A
   - Autonomy: N/A
+  - Batteries max. charges / life span: **500x or 2-3 years**
   - Measures
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
