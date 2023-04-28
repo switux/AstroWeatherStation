@@ -64,7 +64,7 @@ A Wifi network is available to send sensor data and send alarms. In my case this
   - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
   - Batteries max. charges / life span: **500x or 2-3 years**
   - Measures (from sensor specs)
-    - Illuminance range: 0-88k Lux ( up to ~730 W/m² )P. Michael, D. Johnston, W. Moreno
+    - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
