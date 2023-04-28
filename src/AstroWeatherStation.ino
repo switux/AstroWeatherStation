@@ -1,23 +1,24 @@
 /*
-   AstroWeatherStation.ino
+	AstroWeatherStation.ino
 
-    (c) 2023 F.Lesage
+	(c) 2023 F.Lesage
 
-    1.0 - Initial version.
+	1.0 - Initial version.
 	1.1 - Refactored to remove unnecessary global variables
-	
-    This program is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation, either version 3 of the License, or (at your option)
-    any later version.
+	1.2 - Added experimental SQM feature
 
-    This program is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-    more details.
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
 
-     You should have received a copy of the GNU General Public License along
-     with this program. If not, see <https://www.gnu.org/licenses/>.
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <ESP32Time.h>
@@ -29,7 +30,7 @@
 #include <SoftwareSerial.h>
 #include "time.h"
 
-#define REV "1.1.0-20230401"
+#define REV "1.2.0-20230427"
 #define DEBUG_MODE 1
 
 // You must customise weather_config.h
@@ -74,14 +75,20 @@
 #define BAT_V_MIN				3000	// in mV
 #define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
 #define VCC						3300	// in mV
-#define V_DIV_R1				82000	// voltage divider R1 in ohms
+#define V_DIV_R1				100000	// voltage divider R1 in ohms
 #define V_DIV_R2				300000	// voltage divider R2 in ohms
 #define ADC_MAX					4096	// 12 bits resolution
-#define V_MAX_IN				(BAT_V_MAX * V_DIV_R2)/(V_DIV_R1 + V_DIV_R2)	// in mV
-#define V_MIN_IN				(BAT_V_MIN * V_DIV_R2)/(V_DIV_R1 + V_DIV_R2)	// in mV
-#define ADC_V_MAX				(V_MAX_IN * ADC_MAX / VCC)
-#define ADC_V_MIN				(V_MIN_IN * ADC_MAX / VCC)
+#define V_MAX_IN				( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
+#define V_MIN_IN				( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
+#define ADC_V_MAX				( V_MAX_IN*ADC_MAX / VCC )
+#define ADC_V_MIN				( V_MIN_IN*ADC_MAX / VCC )
 
+// SQM
+#define	DOWN	-1
+#define	UP		1
+#define	MSAS_CALIBRATION_OFFSET	0.8F	// Taken from a comparison with a calibrated SQM-L(E/U)
+
+// Misc
 #define GPIO_DEBUG		GPIO_NUM_34
 #define US_SLEEP		5 * 60 * 1000000	// 5 minutes
 
@@ -91,7 +98,7 @@
 #define WIND_VANE_SENSOR	0x08
 #define ANEMOMETER_SENSOR	0x10
 #define RG9_SENSOR			0x20
-#define ALL_SENSORS			(MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RG9_SENSOR)
+#define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RG9_SENSOR )
 
 RTC_DATA_ATTR byte reboot_count;
 RTC_DATA_ATTR byte prev_available_sensors;
@@ -99,8 +106,8 @@ RTC_DATA_ATTR byte low_battery_event_count;
 
 void setup()
 {
-	float   battery_level = 0.0;
-	byte    ntp_retries = 5,
+	float	battery_level = 0.0;
+	byte	ntp_retries = 5,
 			ntp_synced = 0,
 			rain_intensity,
 			rain_event,
@@ -108,7 +115,8 @@ void setup()
 			debug_mode;
 	char	string[64],
 			wakeup_string[50];
-	struct	tm timeinfo;
+
+	struct tm timeinfo;
 
 	const char	*ntp_server = "pool.ntp.org";
 	const char	*tz_info	= TZNAME;
@@ -136,7 +144,7 @@ void setup()
 	delay( 100 );
 
 	pinMode( GPIO_DEBUG, INPUT );
-	debug_mode = (byte)(1 - gpio_get_level( GPIO_DEBUG )) | DEBUG_MODE;
+	debug_mode = (byte)( 1-gpio_get_level( GPIO_DEBUG ) ) | DEBUG_MODE;
 
 	if ( debug_mode )
 		displayBanner( wakeup_string );
@@ -166,12 +174,7 @@ void setup()
 
 			Serial.print( "Reboot counter=" );
 			Serial.println( reboot_count );
-
-			if ( ntp_synced )
-        		Serial.print( "NTP Synchronised. " );
-			else
-				Serial.print( "NOT NTP Synchronised. " );
-
+			Serial.printf( "%sNTP Synchronised. ", ntp_synced?"":"NOT " );
 			Serial.print( "Time and date: " );
 			Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
 		}
@@ -191,7 +194,6 @@ void setup()
 
 				goto enter_sleep;	// The hell with bigots and their aversion to goto's
 			}
-
 		}
 
 		if ( battery_level <= BAT_LEVEL_MIN ) {
@@ -215,7 +217,6 @@ void setup()
 
 			prev_available_sensors = available_sensors;
 			report_unavailable_sensors( available_sensors, debug_mode );
-
 		}
 	}
 
@@ -241,17 +242,19 @@ void loop()
 }
 
 /*
- * --------------------------------
- *  
- *  Data handling
- * 
- * --------------------------------
+   --------------------------------
+
+    Data handling
+
+   --------------------------------
 */
 void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte is_ntp_synced, byte rain_event, byte *rain_intensity, byte debug_mode, byte *available_sensors )
 {
 	float	temp,
 			pres,
 			rh,
+			msas = -1,
+			nelm,
 			ambient_temp = 0,
 			sky_temp = 0;
 	time_t	now;
@@ -279,15 +282,19 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 	*rain_intensity = read_RG9( rg9, debug_mode );
 	values[ "rain" ] = *rain_intensity;
 
+	read_SQM( tsl, *available_sensors,  debug_mode, ambient_temp, &msas, &nelm );
+	values[ "msas" ] = msas;
+	values[ "nelm" ] = nelm;
+ 
 	values[ "sensors" ] = *available_sensors;
 }
 
 /*
- * --------------------------------
- *  
- *  Sensor intialisation
- * 
- * --------------------------------
+   --------------------------------
+
+    Sensor intialisation
+
+   --------------------------------
 */
 void initialise_sensors( Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte *available_sensors, byte reboot_count, byte debug_mode )
 {
@@ -296,6 +303,7 @@ void initialise_sensors( Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_
 	initialise_TSL( tsl, available_sensors, debug_mode );
 	initialise_anemometer( anemometer );
 	initialise_wind_vane( wind_vane );
+
 	switch ( initialise_RG9( rg9, available_sensors, reboot_count, debug_mode ) ) {
 		case RG9_OK:
 		case RG9_FAIL:
@@ -334,7 +342,6 @@ void initialise_BME( Adafruit_BME280 *bme, byte *available_sensors, byte debug_m
 			Serial.println( "Found BME280." );
 
 		*available_sensors |= BME_SENSOR;
-
 	}
 }
 
@@ -353,58 +360,59 @@ void initialise_MLX( Adafruit_MLX90614 *mlx, byte *available_sensors, byte debug
 			Serial.println( "Found MLX90614" );
 
 		*available_sensors |= MLX_SENSOR;
-
 	}
 }
 
 char initialise_RG9( HardwareSerial *rg9, byte *available_sensors, byte reboot_count, byte debug_mode )
 {
 	const int	bps[ RG9_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
-	String		str;
-
+	char		str[ 128 ];
+	byte		l;
+	
 	if ( reboot_count == 1 )    // Give time to the sensor to initialise before trying to probe it
 		delay( 5000 );
 
 	if ( debug_mode )
 		Serial.printf( "Probing RG9 ... " );
 
-	for ( int i = 0; i < RG9_PROBE_RETRIES; i++ )
-		for ( int j = 0; j < RG9_SERIAL_SPEEDS; j++ ) {
+	for ( byte i = 0; i < RG9_PROBE_RETRIES; i++ )
+		for ( byte j = 0; j < RG9_SERIAL_SPEEDS; j++ ) {
 
 			rg9->begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
 			rg9->println();
-			rg9->println();
+      		rg9->println();
 
 			if ( debug_mode ) {
-				Serial.printf( " trying %dbps: reading [", bps[j] );
+				Serial.printf( " @ %dbps: got [", bps[j] );
 				Serial.flush();
 			}
 
 			rg9->println( "B" );
-			str = RG9_read_string( rg9 );
-			str.trim();
+			l = RG9_read_string( rg9, str, 128 );
 
 			if ( debug_mode )
-				Serial.print( str + "] " );
+				Serial.printf( "%s] ", str );
 
-			if ( str.startsWith( "Baud " )) {
+			if ( !strncmp( str, "Baud ", 5 )) {
 
 				if ( debug_mode ) {
-					String bitrate = str.substring( 5, str.length() );
-					Serial.println( "\nFound RG9 @ " + bitrate + "bps" );
+					char bitrate[8];
+					strncpy( bitrate, str+5, l-5 );
+					Serial.printf( "\nFound RG9 @ %s bps\n", bitrate );
 				}
 
 				*available_sensors |= RG9_SENSOR;
 				return RG9_OK;
 			}
 
-			if ( str.startsWith( "Reset " )) {
+			if ( !strncmp( str, "Reset " , 6 )) {
 
-				char reset_cause = str.charAt( 6 );
+				char reset_cause = str[6];
 				if ( debug_mode )
-					Serial.printf( "\nFound G9 @ %dbps after it was reset because of '%s'\n", bps[j], RG9_reset_cause( reset_cause ));
+					Serial.printf( "\nFound G9 @ %dbps after it was reset because of '%s'\nBoot message:\n", bps[j], RG9_reset_cause( reset_cause ));
 
-				while ( !(str = RG9_read_string( rg9 )).compareTo("")  ) Serial.print( str );
+				while (( l = RG9_read_string( rg9, str, 128 )))
+					Serial.println( str );
 
 				*available_sensors |= RG9_SENSOR;
 				return reset_cause;
@@ -439,7 +447,6 @@ void initialise_TSL( Adafruit_TSL2591 *tsl, byte *available_sensors, byte debug_
 		tsl->setGain( TSL2591_GAIN_LOW );
 		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		*available_sensors |= TSL_SENSOR;
-
 	}
 }
 
@@ -451,12 +458,61 @@ void initialise_wind_vane( SoftwareSerial *wind_vane )
 }
 
 /*
- * --------------------------------
- *  
- *  Utility functions
- * 
- * --------------------------------
+   --------------------------------
+
+    Utility functions
+
+   --------------------------------
 */
+
+//
+// Formulas inferred from TSL2591 datasheet fig.15, page 9. Data points graphically extracted (yuck!).
+// Thanks to Marco Gulino <marco.gulino@gmail.com> for pointing this graph to me!
+// I favoured a power function over an affine because it better followed the points on the graph
+// It may however be overkill since the points come from a PDF graph: the source error is certainly not negligible :-)
+//
+float ch0_temperature_factor( float temp )
+{
+	return 0.9759F + 0.00192947F*pow( temp, 0.783129F );
+}
+
+float ch1_temperature_factor( float temp )
+{
+	return 1.05118F - 0.0023342F*pow( temp, 0.958056F );
+}
+
+void change_gain( Adafruit_TSL2591 *tsl, byte upDown,  tsl2591Gain_t *gain )
+{
+	tsl2591Gain_t	g = static_cast<tsl2591Gain_t>( *gain + 16*upDown );
+
+	if ( g < TSL2591_GAIN_LOW )
+		g = TSL2591_GAIN_LOW;
+	else if ( g > TSL2591_GAIN_MAX )
+		g = TSL2591_GAIN_MAX;
+
+	if ( g != *gain ) {
+
+		tsl->setGain( g );
+		*gain = g;
+	}	
+}
+
+void change_integration_time( Adafruit_TSL2591 *tsl, byte upDown, tsl2591IntegrationTime_t *integ )
+{
+	tsl2591IntegrationTime_t	t = static_cast<tsl2591IntegrationTime_t>( *integ + 2*upDown );
+
+	if ( t < TSL2591_INTEGRATIONTIME_100MS )
+		t = TSL2591_INTEGRATIONTIME_100MS;
+	else if ( t > TSL2591_INTEGRATIONTIME_600MS )
+		t = TSL2591_INTEGRATIONTIME_600MS;
+
+	if ( t != *integ ) {
+
+		tsl->setTiming( t );
+		*integ = t;
+	}	
+}
+
 byte connect_to_wifi( byte debug_mode )
 {
 	const char	*ssid				= SSID;
@@ -471,9 +527,8 @@ byte connect_to_wifi( byte debug_mode )
 	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {
 
 		if ( debug_mode )
-      		Serial.print( "." );
+			Serial.print( "." );
 		delay( 1000 );
-
 	}
 
 	if ( WiFi.status () == WL_CONNECTED ) {
@@ -481,7 +536,6 @@ byte connect_to_wifi( byte debug_mode )
 		if ( debug_mode )
 			Serial.printf( " OK. Using IP [%s]\n", WiFi.localIP().toString().c_str() );
 		return 1;
-
 	}
 
 	if ( debug_mode )
@@ -494,7 +548,8 @@ void displayBanner( char *wakeup_string )
 {
 	char	string[64];
 	byte	i;
-	
+
+	delay(2000);
 	Serial.println( "\n##############################################################" );
 	Serial.println( "# AstroWeatherStation                                        #" );
 	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                #" );
@@ -511,7 +566,7 @@ void displayBanner( char *wakeup_string )
 	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
+  	memset( string, 0, 64 );
 	snprintf( string, 61, "# Anemometer: RX=%d TX=%d CTRL=%d", GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX, GPIO_ANEMOMETER_CTRL );
 	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
 	strcat( string, "#\n" );
@@ -546,7 +601,7 @@ void displayBanner( char *wakeup_string )
 
 void post_content( const char *endpoint, const char *jsonString, byte debug_mode )
 {
-	const char *server = SERVER;
+  	const char *server = SERVER;
 	const char *url = URL;
 	const char *root_ca = ROOT_CA;
 	WiFiClientSecure client;
@@ -578,11 +633,9 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 		status = http.POST( jsonString );
 
 		if ( debug_mode ) {
-
 			Serial.println();
 			Serial.print( "HTTP response: " );
 			Serial.println( status );
-
 		}
 
 		client.stop();
@@ -595,15 +648,14 @@ void report_unavailable_sensors( byte available_sensors, byte debug_mode )
 	const char	sensor_name[6][12] = {"MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RG9 "};
 	char		unavailable_sensors[96] = "Unavailable sensors: ";
 	byte 		j = available_sensors;
-	
-	for( byte i = 0; i < 6; i++ ) {
+
+	for ( byte i = 0; i < 6; i++ ) {
 		if ( !( available_sensors & 1 ))
 			strncat( unavailable_sensors, sensor_name[i], 12 );
 		available_sensors >>= 1;
 	}
 
 	if ( debug_mode ) {
-
 		Serial.print( unavailable_sensors );
 		if ( j == ALL_SENSORS )
 			Serial.println( "none" );
@@ -613,15 +665,19 @@ void report_unavailable_sensors( byte available_sensors, byte debug_mode )
 		send_alarm( "Unavailable sensors report", unavailable_sensors, debug_mode );
 }
 
-String RG9_read_string( HardwareSerial *rg9 )
+byte RG9_read_string( HardwareSerial *rg9, char *str, byte len )
 {
-	String str = "";
-
+	byte i;
+	
 	delay( 500 );
-	if ( rg9->available() > 0 )
-		str = rg9->readString();
 
-	return str;
+	if ( rg9->available() > 0 ) {
+
+		i = rg9->readBytes( str, len );
+		str[ i-2 ] = 0;
+		return i-1;
+	}
+	return 0;
 }
 
 const char *RG9_reset_cause( char code )
@@ -646,6 +702,7 @@ void send_data( const JsonDocument& values, byte debug_mode )
 	if ( debug_mode ) {
 		Serial.print( "Sending JSON: " );
 		serializeJson( values, Serial );
+		Serial.println();
 	}
 
 	post_content( "newData.php", json, debug_mode );
@@ -664,8 +721,8 @@ void send_alarm( const char *subject, const char *message, byte debug_mode )
 
 void send_rain_event_alarm( byte rain_instensity, byte debug_mode )
 {
-	const char  intensity_str[7][13] = { "Rain drops", "Very light", "Medium light", "Medium", "Medium heavy", "Heavy", "Violent" };  // As described in RG-9 protocol
-	char 		msg[32];
+	const char	intensity_str[7][13] = { "Rain drops", "Very light", "Medium light", "Medium", "Medium heavy", "Heavy", "Violent" };  // As described in RG-9 protocol
+	char		msg[32];
 
 	snprintf( msg, 32, "RAIN! Level = %s", intensity_str[ rain_instensity ] );
 	send_alarm( "Rain event", msg, debug_mode );
@@ -687,27 +744,38 @@ void wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wake
 }
 
 /*
- * --------------------------------
- *  
- *  Sensor reading
- * 
- * --------------------------------
+   --------------------------------
+
+    Sensor reading
+
+   --------------------------------
 */
 float get_battery_level( byte debug_mode )
 {
+	int		adc_value = 0;
+	float	battery_level,
+			adc_v_in,
+			bat_v;
+	
 	if ( debug_mode )
 		Serial.print( "Battery level: " );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
-	delay( 1500 );
-	int adc_value = analogRead( GPIO_BAT_ADC );
-	float battery_level = map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 );
+	delay( 500 );
+	for( byte i = 0; i < 5; i++ ) {
+
+		adc_value += analogRead( GPIO_BAT_ADC );
+		delay( 100 );
+	}
+	adc_value = static_cast<int>( adc_value / 5 );
+	
+	battery_level = map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 );
 
 	if ( debug_mode ) {
 
-		float adc_v_in = adc_value * VCC / ADC_V_MAX;
-		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
-		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", battery_level, adc_value, adc_v_in / 1000, bat_v / 1000 );
+		adc_v_in = static_cast<float>(adc_value) * VCC / ADC_V_MAX;
+		bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
+		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
 
 	}
 
@@ -717,11 +785,11 @@ float get_battery_level( byte debug_mode )
 
 float read_anemometer( SoftwareSerial *anemometer, byte *available_sensors, byte debug_mode )
 {
-	const byte  anemometer_request[] = { 0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0a };
+	const byte	anemometer_request[] = { 0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0a };
 	byte		answer[7],
 				i = 0,
 				j;
-	float wind_speed = -1;
+	float		wind_speed = -1.F;
 
 	answer[1] = 0;
 
@@ -744,7 +812,7 @@ float read_anemometer( SoftwareSerial *anemometer, byte *available_sensors, byte
 
 		if ( answer[1] == 0x03 ) {
 
-			wind_speed = answer[4] / 10.0;
+			wind_speed = static_cast<float>(answer[4]) / 10.F;
 
 			if ( debug_mode )
 				Serial.printf( "\nWind speed: %02.2f m/s\n", wind_speed );
@@ -754,13 +822,12 @@ float read_anemometer( SoftwareSerial *anemometer, byte *available_sensors, byte
 			if ( debug_mode )
 				Serial.println( "(Error)." );
 			delay( 500 );
-
 		}
 
 		if ( ++i == ANEMOMETER_MAX_TRIES ) {
 
 			*available_sensors &= ~ANEMOMETER_SENSOR;
-			wind_speed = -1;
+			wind_speed = -1.F;
 			return wind_speed;
 		}
 	}
@@ -774,7 +841,7 @@ void read_BME( Adafruit_BME280 *bme, float *temp, float *pres, float *rh, byte a
 	if ( ( available_sensors & BME_SENSOR ) == BME_SENSOR ) {
 
 		*temp = bme->readTemperature();
-		*pres = bme->readPressure() / 100.0;
+		*pres = bme->readPressure() / 100.F;
 		*rh = bme->readHumidity();
 
 		if ( debug_mode ) {
@@ -785,9 +852,9 @@ void read_BME( Adafruit_BME280 *bme, float *temp, float *pres, float *rh, byte a
 		return;
 	}
 
-	*temp = -99.0;
-	*pres = 0.0;
-	*rh = -1.0;
+	*temp = -99.F;
+	*pres = 0.F;
+	*rh = -1.F;
 }
 
 void read_MLX( Adafruit_MLX90614 *mlx, float *amb, float *obj, byte available_sensors, byte debug_mode  )
@@ -806,43 +873,152 @@ void read_MLX( Adafruit_MLX90614 *mlx, float *amb, float *obj, byte available_se
 		}
 		return;
 	}
-	*amb = -99.0;
-	*obj = -99.0;
+	*amb = -99.F;
+	*obj = -99.F;
 }
 
 byte read_RG9( HardwareSerial *rg9, byte debug_mode )
 {
+	char	msg[128];
+	
 	rg9->println( "R" );
-	String str = RG9_read_string( rg9 );
+	memset( msg, 0, 128 );
+	RG9_read_string( rg9, msg, 128 );
 
 	if ( debug_mode )
-		Serial.println( "RG9 STATUS = " + str );
+		Serial.printf( "RG9 STATUS = [%s]\n", msg );
 
-	return (byte)str.substring( 2, 3 ).toInt();
+	return static_cast<byte>( msg[2] );
+}
+
+void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float temp, float *msas, float *nelm )
+{
+	tsl->setGain( TSL2591_GAIN_LOW );
+	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
+		
+	while ( !SQM_get_msas_nelm( tsl, debug_mode, temp, msas, nelm ));
+}
+
+byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, float *msas, float *nelm )
+{
+	uint32_t	lum;
+	uint16_t	ir,
+				full,
+				visible;
+	byte		iterations = 1;
+
+	tsl2591Gain_t				gain;
+	tsl2591IntegrationTime_t 	integration;
+
+	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 },
+					integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
+
+	gain = tsl->getGain();
+	integration = tsl->getTiming();
+	lum = tsl->getFullLuminosity();
+	ir = lum >> 16;
+	full = lum & 0xFFFF;
+	ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( temp ) );
+	full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( temp ) );
+	visible = full - ir;
+
+	// On some occasions this can happen, leading to high values of "visible" although it is dark (as the variable is unsigned), giving erroneous msas
+	if ( full < ir )
+		return 0;
+
+	if ( debug_mode )
+		Serial.printf( "SQM: gain=0x%02x (%dx) integ=0x%02x (%dms)/ temp=%f / ir=%d full=%d vis=%d\n", gain, gain_factor[gain>>4], integration, integration_time[integration], temp, ir, full, visible );
+
+	// Auto gain and integration time, increase time before gain to avoid increasing noise if we can help it, decrease gain first for the same reason
+	if ( visible < 128 ) {
+
+		if ( integration != TSL2591_INTEGRATIONTIME_600MS ) {
+
+				if ( debug_mode )
+					Serial.println( "SQM: Increasing integration time." );
+
+				change_integration_time( tsl, UP, &integration );
+        		return 0;
+		}
+
+		if ( gain == TSL2591_GAIN_MAX ) {
+
+			if ( integration != TSL2591_INTEGRATIONTIME_600MS ) {
+
+				if ( debug_mode )
+					Serial.println( "SQM: Increasing integration time." );
+
+				change_integration_time( tsl, UP, &integration );
+        		return 0;
+
+			} else {
+
+				iterations = SQM_read_with_extended_integration_time( tsl, debug_mode, temp, &ir, &full, &visible );
+				if ( full < ir )
+					return 0;
+			}
+
+		} else {
+
+				if ( debug_mode )
+					Serial.println( "Increasing gain." );
+
+				change_gain( tsl, UP, &gain );
+        		return 0;
+		}
+
+	} else if (( full == 0xFFFF ) || ( ir == 0xFFFF )) {
+
+		if ( gain != TSL2591_GAIN_LOW ) {
+
+			if ( debug_mode )
+				Serial.printf( "Decreasing gain." );
+
+			change_gain( tsl, DOWN, &gain );
+			return 0;
+
+		} else {
+
+			if ( debug_mode )
+				Serial.println( "Decreasing integration time." );
+
+			change_integration_time( tsl, DOWN, &integration );
+			return 0;
+		}
+	}
+
+	float final_visible = static_cast<float>(visible) / ( static_cast<float>( gain_factor[ gain >> 4 ] ) * static_cast<float>( integration_time[ integration ] ) / 100.F * iterations );
+	*msas = 12.6F - 1.086F * log( final_visible ) + MSAS_CALIBRATION_OFFSET;
+	*nelm = 7.95F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
+	if ( debug_mode )
+		Serial.printf("GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%f/%d] MPSAS=[%f] NELM=[%f]\n", gain, gain_factor[gain>>4], integration, integration_time[integration], iterations, final_visible, visible, *msas, *nelm );
+
+	return 1;
 }
 
 int read_TSL( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode )
 {
-	int lux = -1;
+	int			lux = -1;
+	uint32_t	lum;
+	uint16_t	ir,
+				full;
 
 	if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR ) {
 
-		uint32_t lum = tsl->getFullLuminosity();
-		uint16_t ir, full;
+		lum = tsl->getFullLuminosity();
 		ir = lum >> 16;
 		full = lum & 0xFFFF;
 		lux = tsl->calculateLux( full, ir );
 
 		if ( debug_mode )
-			Serial.printf( "Lux = %06d\n", lux );
-
+			Serial.printf( "IR=%d FULL=%d VIS=%d Lux = %06d\n", ir, full, full - ir, lux );
 	}
 	return lux;
 }
 
 int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte debug_mode )
 {
-	const byte  wind_vane_request[] = { 0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x38 };
+	const byte	wind_vane_request[] = { 0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x38 };
 	byte		answer[7],
 				i = 0,
 				j;
@@ -864,7 +1040,6 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 			Serial.print( "Wind vane answer : " );
 			for ( j = 0; j < 6; j++ )
 				Serial.printf( "%02x ", answer[j] );
-
 		}
 
 		if ( answer[1] == 0x03 ) {
@@ -879,7 +1054,6 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 			if ( debug_mode )
 				Serial.println( "(Error)." );
 			delay( 500 );
-
 		}
 
 		if ( ++i == WIND_VANE_MAX_TRIES ) {
@@ -887,9 +1061,34 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 			*available_sensors &= ~WIND_VANE_SENSOR;
 			wind_direction = -1;
 			return wind_direction;
-      
 		}
 	}
+
 	*available_sensors |= WIND_VANE_SENSOR;
 	return wind_direction;
+}
+
+byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
+{
+	uint32_t	lum;
+	uint16_t	ir,
+				full;
+	byte		iterations = 1;
+
+	while (( *cumulated_visible < 128 ) && ( iterations <= 32 )) {
+
+		iterations++;
+		lum = tsl->getFullLuminosity();
+		ir = lum >> 16;
+		full = lum & 0xFFFF;
+		ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( temp ));
+		full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( temp ));
+		*cumulated_full += full;
+		*cumulated_ir += ir;
+		*cumulated_visible = *cumulated_full - *cumulated_ir;
+
+		delay( 50 );
+	}
+
+	return iterations;
 }
