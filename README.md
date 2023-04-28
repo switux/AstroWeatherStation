@@ -148,4 +148,5 @@ I found inspiration and solutions to problems in the following pages / posts:
     - https://electronics.stackexchange.com/a/562942
   - Solar panel tilt
     - https://globalsolaratlas.info/
-    
+  - TSL2591 response to temperature by Marco Gulino
+    - https://github.com/gshau/SQM_TSL2591/commit/9a9ae893cad6f4f078f75384403336409ca85380  
