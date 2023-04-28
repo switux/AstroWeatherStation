@@ -150,3 +150,5 @@ I found inspiration and solutions to problems in the following pages / posts:
     - https://globalsolaratlas.info/
   - TSL2591 response to temperature by Marco Gulino
     - https://github.com/gshau/SQM_TSL2591/commit/9a9ae893cad6f4f078f75384403336409ca85380  
+  - Conversion of lux to W/m<sup>2</sup>
+    - P. Michael, D. Johnston, W. Moreno, 2020. https://pdfs.semanticscholar.org/5d6d/ad2e803382910c8a8b0f2dd0d71e4290051a.pdf, section 5. Conclusions. The bottomline is 120 lx = 1 W/m<sup>2</sup> is the engineering rule of thumb.
