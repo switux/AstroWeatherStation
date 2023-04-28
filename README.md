@@ -1,4 +1,5 @@
 # AstroWeatherStation
+
 ESP32 based weather station with astronomical observatory features
 
 ## GOAL
@@ -63,7 +64,7 @@ A Wifi network is available to send sensor data and send alarms. In my case this
   - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
   - Batteries max. charges / life span: **500x or 2-3 years**
   - Measures (from sensor specs)
-    - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
+    - Illuminance range: 0-88k Lux ( up to ~730 W/m² )P. Michael, D. Johnston, W. Moreno
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
@@ -132,4 +133,6 @@ I found inspiration and solutions to problems in the following pages / posts:
     - https://electronics.stackexchange.com/a/562942
   - Solar panel tilt
     - https://globalsolaratlas.info/
+  - Conversion of lux to W/m<sup>2</sup>
+    - P. Michael, D. Johnston, W. Moreno, 2020. https://pdfs.semanticscholar.org/5d6d/ad2e803382910c8a8b0f2dd0d71e4290051a.pdf, section 5. Conclusions. The bottomline is 120 lx = 1 W/m<sup>2</sup> is the engineering rule of thumb.
     
