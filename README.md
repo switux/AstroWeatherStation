@@ -1,4 +1,5 @@
 # AstroWeatherStation
+
 ESP32 based weather station with astronomical observatory features
 
 ## GOAL
@@ -7,8 +8,8 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 0.9 (prototype) of the project.
-It is however usable in production, the things that will be improved in v1.0 are:
+This is version 1.2 (Release candidate) of the project.
+It is however usable in production, the things that will be improved in v1.3 are:
 
   - Hardware
     - Single universal PCB
@@ -18,7 +19,9 @@ It is however usable in production, the things that will be improved in v1.0 are
     - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
     - More robust RG-9 probing (although rain events are correctly reported)
     - Stay in debug mode until the next reboot
-  
+
+You can see the results: https://www.datamancers.net/weather
+
 ## FEATURES
 
   - Weather parameters:
@@ -35,6 +38,7 @@ It is however usable in production, the things that will be improved in v1.0 are
   
     - Cloud coverage
     - Solar irradiance
+    - Sky Quality Meter (still experimental, see below)
   
   - Alarms (to be handled on the server side) for:
   
@@ -51,7 +55,7 @@ It is however usable in production, the things that will be improved in v1.0 are
 
 ## Pricing
 
-All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 210.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
+All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 215.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
 
 ## ASSUMPTIONS
 
@@ -67,6 +71,19 @@ A Wifi network is available to send sensor data and send alarms. In my case this
     - Pressure: 300 to 1100 hPa
     - Wind speed: 0 to 30 m/s
 
+## About the SQM feature
+
+This is still under development, the remaining points to be closed are:
+
+    - Choice of a lens to be put in front of the TSL2591 to get a 20° FoV (comparable to the SQM-Lx)
+    - Impact study of the lens on the solar irradiance readings if only one TSL1591 is to be used
+    - Calibration against my SQM-LE
+    - Reliability of the MLX90614 ambient temperature reading (a second probe can be used, a Si7021 for instance) for TSL2591 temperature correction.
+    
+## Open points
+
+  - Battery level readings often overrun 100%, the problem is not the ADC but the batteries themselves or the charger as I checked with a voltmeter, they often deliver up to 4.8/4.9V. I will try with a TP5100 or TP4056
+  
 ## Alarms format
 
 The station sends alarm to an HTTPS endpoint as a JSON string:
