@@ -86,7 +86,7 @@
 // SQM
 #define	DOWN	-1
 #define	UP		1
-#define	MSAS_CALIBRATION_OFFSET	0.8F	// Taken from a comparison with a calibrated SQM-L(E/U)
+#define	MSAS_CALIBRATION_OFFSET	-0.55F	// Taken from a comparison with a calibrated SQM-L(E/U)
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34
@@ -132,7 +132,7 @@ void setup()
 
 	HardwareSerial		rg9( RG9_UART );
 
-	StaticJsonDocument<256> values;
+	StaticJsonDocument<384> values;
 
 	esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 	wakeup_reason_to_string( wakeup_reason, wakeup_string );
@@ -257,6 +257,8 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 			nelm,
 			ambient_temp = 0,
 			sky_temp = 0;
+	uint16_t	ch0, ch1;
+	int g,t;
 	time_t	now;
 
 	if ( is_ntp_synced )
@@ -282,9 +284,13 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 	*rain_intensity = read_RG9( rg9, debug_mode );
 	values[ "rain" ] = *rain_intensity;
 
-	read_SQM( tsl, *available_sensors,  debug_mode, ambient_temp, &msas, &nelm );
+	read_SQM( tsl, *available_sensors,  debug_mode, ambient_temp, &msas, &nelm, &ch0, &ch1, &g, &t );
 	values[ "msas" ] = msas;
 	values[ "nelm" ] = nelm;
+	values[ "gain" ] = g;
+	values[ "int" ] = t;
+	values[ "ch0" ] = ch0;
+	values[ "ch1" ] = ch1;
  
 	values[ "sensors" ] = *available_sensors;
 }
@@ -888,18 +894,18 @@ byte read_RG9( HardwareSerial *rg9, byte debug_mode )
 	if ( debug_mode )
 		Serial.printf( "RG9 STATUS = [%s]\n", msg );
 
-	return static_cast<byte>( msg[2] );
+	return static_cast<byte>( msg[2] - '0' );
 }
 
-void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float temp, float *msas, float *nelm )
+void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, int *g, int *t )
 {
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		
-	while ( !SQM_get_msas_nelm( tsl, debug_mode, temp, msas, nelm ));
+	while ( !SQM_get_msas_nelm( tsl, debug_mode, temp, msas, nelm, ch0, ch1, g, t ));
 }
 
-byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, float *msas, float *nelm )
+byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, int *g, int *t )
 {
 	uint32_t	lum;
 	uint16_t	ir,
@@ -987,11 +993,25 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 		}
 	}
 
-	float final_visible = static_cast<float>(visible) / ( static_cast<float>( gain_factor[ gain >> 4 ] ) * static_cast<float>( integration_time[ integration ] ) / 100.F * iterations );
-	*msas = 12.6F - 1.086F * log( final_visible ) + MSAS_CALIBRATION_OFFSET;
-	*nelm = 7.95F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
+	// Comes from Adafruit TSL2591 driver
+	float cpl = static_cast<float>( gain_factor[ gain >> 4 ] ) * static_cast<float>( integration_time[ integration ] ) / 408.F;
+	float lux = ( static_cast<float>(visible) * ( 1.F-( static_cast<float>(ir)/static_cast<float>(full))) ) / cpl;
+
+	// About the MSAS formula, quoting http://unihedron.com/projects/darksky/magconv.php:
+	// This formula was derived from conversations on the Yahoo-groups darksky-list
+	// Topic: [DSLF]  Conversion from mg/arcsec^2 to cd/m^2
+	// Date range: Fri, 1 Jul 2005 17:36:41 +0900 to Fri, 15 Jul 2005 08:17:52 -0400
+	
+	// I added a calibration offset to match readings from my SQM-LE
+	*msas = ( log10( lux / 108000.F ) / -0.4F ) + MSAS_CALIBRATION_OFFSET;
+	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
+	
+	*t = integration_time[ integration ];
+	*g = gain_factor[ gain >> 4 ];
+	*ch0 = full;
+	*ch1 = ir;
 	if ( debug_mode )
-		Serial.printf("GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%f/%d] MPSAS=[%f] NELM=[%f]\n", gain, gain_factor[gain>>4], integration, integration_time[integration], iterations, final_visible, visible, *msas, *nelm );
+		Serial.printf("GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%d] IR=[%d] MPSAS=[%f] NELM=[%f]\n", gain, gain_factor[gain>>4], integration, integration_time[integration], iterations, visible, ir, *msas, *nelm );
 
 	return 1;
 }
@@ -1011,7 +1031,7 @@ int read_TSL( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode )
 		lux = tsl->calculateLux( full, ir );
 
 		if ( debug_mode )
-			Serial.printf( "IR=%d FULL=%d VIS=%d Lux = %06d\n", ir, full, full - ir, lux );
+			Serial.printf( "IR=%d FULL=%d VIS=%d Lux = %05d\n", ir, full, full - ir, lux );
 	}
 	return lux;
 }
