@@ -1004,6 +1004,8 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 	
 	// I added a calibration offset to match readings from my SQM-LE
 	*msas = ( log10( lux / 108000.F ) / -0.4F ) + MSAS_CALIBRATION_OFFSET;
+	if ( *msas < 0 )
+		*msas = 0;
 	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
 	
 	*t = integration_time[ integration ];
