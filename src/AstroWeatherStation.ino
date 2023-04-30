@@ -30,7 +30,7 @@
 #include <SoftwareSerial.h>
 #include "time.h"
 
-#define REV "1.2.0-20230427"
+#define REV "1.2.0-20230430"
 #define DEBUG_MODE 1
 
 // You must customise weather_config.h
@@ -75,7 +75,7 @@
 #define BAT_V_MIN				3000	// in mV
 #define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
 #define VCC						3300	// in mV
-#define V_DIV_R1				100000	// voltage divider R1 in ohms
+#define V_DIV_R1				82000	// voltage divider R1 in ohms
 #define V_DIV_R2				300000	// voltage divider R2 in ohms
 #define ADC_MAX					4096	// 12 bits resolution
 #define V_MAX_IN				( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
@@ -144,7 +144,7 @@ void setup()
 	delay( 100 );
 
 	pinMode( GPIO_DEBUG, INPUT );
-	debug_mode = (byte)( 1-gpio_get_level( GPIO_DEBUG ) ) | DEBUG_MODE;
+	debug_mode = static_cast<byte>( 1-gpio_get_level( GPIO_DEBUG ) ) | DEBUG_MODE;
 
 	if ( debug_mode )
 		displayBanner( wakeup_string );
@@ -250,16 +250,20 @@ void loop()
 */
 void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte is_ntp_synced, byte rain_event, byte *rain_intensity, byte debug_mode, byte *available_sensors )
 {
-	float	temp,
-			pres,
-			rh,
-			msas = -1,
-			nelm,
-			ambient_temp = 0,
-			sky_temp = 0;
-	uint16_t	ch0, ch1;
-	int g,t;
-	time_t	now;
+	float		temp,
+				pres,
+				rh,
+				msas = -1,
+				nelm,
+				ambient_temp = 0,
+				sky_temp = 0;
+
+	uint16_t	ch0,
+				ch1,
+				gain,
+				int_time;
+
+	time_t		now;
 
 	if ( is_ntp_synced )
 		time( &now );
@@ -275,20 +279,20 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 	values[ "lux" ] = read_TSL( tsl, *available_sensors, debug_mode );
 
 	read_MLX( mlx, &ambient_temp, &sky_temp, *available_sensors, debug_mode );
-	values[ "ambient" ] = ambient_temp;
-	values[ "sky" ] = sky_temp;
+	values[ "ambient_temp" ] = ambient_temp;
+	values[ "sky_temp" ] = sky_temp;
 
-	values[ "direction" ] = read_wind_vane( wind_vane, available_sensors, debug_mode );
-	values[ "speed" ] = read_anemometer( anemometer, available_sensors, debug_mode );
+	values[ "wind_direction" ] = read_wind_vane( wind_vane, available_sensors, debug_mode );
+	values[ "wind_speed" ] = read_anemometer( anemometer, available_sensors, debug_mode );
 
 	*rain_intensity = read_RG9( rg9, debug_mode );
-	values[ "rain" ] = *rain_intensity;
+	values[ "rain_intensity" ] = *rain_intensity;
 
-	read_SQM( tsl, *available_sensors,  debug_mode, ambient_temp, &msas, &nelm, &ch0, &ch1, &g, &t );
+	read_SQM( tsl, *available_sensors, debug_mode, ambient_temp, &msas, &nelm, &ch0, &ch1, &gain, &int_time );
 	values[ "msas" ] = msas;
 	values[ "nelm" ] = nelm;
-	values[ "gain" ] = g;
-	values[ "int" ] = t;
+	values[ "gain" ] = gain;
+	values[ "int_time" ] = int_time;
 	values[ "ch0" ] = ch0;
 	values[ "ch1" ] = ch1;
  
@@ -487,35 +491,35 @@ float ch1_temperature_factor( float temp )
 	return 1.05118F - 0.0023342F*pow( temp, 0.958056F );
 }
 
-void change_gain( Adafruit_TSL2591 *tsl, byte upDown,  tsl2591Gain_t *gain )
+void change_gain( Adafruit_TSL2591 *tsl, byte upDown,  tsl2591Gain_t *gain_idx )
 {
-	tsl2591Gain_t	g = static_cast<tsl2591Gain_t>( *gain + 16*upDown );
+	tsl2591Gain_t	g = static_cast<tsl2591Gain_t>( *gain_idx + 16*upDown );
 
 	if ( g < TSL2591_GAIN_LOW )
 		g = TSL2591_GAIN_LOW;
 	else if ( g > TSL2591_GAIN_MAX )
 		g = TSL2591_GAIN_MAX;
 
-	if ( g != *gain ) {
+	if ( g != *gain_idx ) {
 
 		tsl->setGain( g );
-		*gain = g;
+		*gain_idx = g;
 	}	
 }
 
-void change_integration_time( Adafruit_TSL2591 *tsl, byte upDown, tsl2591IntegrationTime_t *integ )
+void change_integration_time( Adafruit_TSL2591 *tsl, byte upDown, tsl2591IntegrationTime_t *int_time_idx )
 {
-	tsl2591IntegrationTime_t	t = static_cast<tsl2591IntegrationTime_t>( *integ + 2*upDown );
+	tsl2591IntegrationTime_t	t = static_cast<tsl2591IntegrationTime_t>( *int_time_idx + 2*upDown );
 
 	if ( t < TSL2591_INTEGRATIONTIME_100MS )
 		t = TSL2591_INTEGRATIONTIME_100MS;
 	else if ( t > TSL2591_INTEGRATIONTIME_600MS )
 		t = TSL2591_INTEGRATIONTIME_600MS;
 
-	if ( t != *integ ) {
+	if ( t != *int_time_idx ) {
 
 		tsl->setTiming( t );
-		*integ = t;
+		*int_time_idx = t;
 	}	
 }
 
@@ -680,7 +684,7 @@ byte RG9_read_string( HardwareSerial *rg9, char *str, byte len )
 	if ( rg9->available() > 0 ) {
 
 		i = rg9->readBytes( str, len );
-		str[ i-2 ] = 0;
+		str[ i-2 ] = 0;	// trim trailing \n
 		return i-1;
 	}
 	return 0;
@@ -725,12 +729,12 @@ void send_alarm( const char *subject, const char *message, byte debug_mode )
 	post_content( "alarm.php", jsonString, debug_mode );
 }
 
-void send_rain_event_alarm( byte rain_instensity, byte debug_mode )
+void send_rain_event_alarm( byte rain_intensity, byte debug_mode )
 {
 	const char	intensity_str[7][13] = { "Rain drops", "Very light", "Medium light", "Medium", "Medium heavy", "Heavy", "Violent" };  // As described in RG-9 protocol
 	char		msg[32];
 
-	snprintf( msg, 32, "RAIN! Level = %s", intensity_str[ rain_instensity ] );
+	snprintf( msg, 32, "RAIN! Level = %s", intensity_str[ rain_intensity ] );
 	send_alarm( "Rain event", msg, debug_mode );
 }
 
@@ -863,24 +867,24 @@ void read_BME( Adafruit_BME280 *bme, float *temp, float *pres, float *rh, byte a
 	*rh = -1.F;
 }
 
-void read_MLX( Adafruit_MLX90614 *mlx, float *amb, float *obj, byte available_sensors, byte debug_mode  )
+void read_MLX( Adafruit_MLX90614 *mlx, float *ambient_temp, float *sky_temp, byte available_sensors, byte debug_mode  )
 {
 	if ( ( available_sensors & MLX_SENSOR ) == MLX_SENSOR ) {
 
-		*amb = mlx->readAmbientTempC();
-		*obj = mlx->readObjectTempC();
+		*ambient_temp = mlx->readAmbientTempC();
+		*sky_temp = mlx->readObjectTempC();
 
 		if ( debug_mode ) {
 			Serial.print( "AMB = " );
-			Serial.print( *amb );
+			Serial.print( *ambient_temp );
 			Serial.print( "°C SKY = " );
-			Serial.print( *obj );
+			Serial.print( *sky_temp );
 			Serial.println( "°C" );
 		}
 		return;
 	}
-	*amb = -99.F;
-	*obj = -99.F;
+	*ambient_temp = -99.F;
+	*sky_temp = -99.F;
 }
 
 byte read_RG9( HardwareSerial *rg9, byte debug_mode )
@@ -897,15 +901,15 @@ byte read_RG9( HardwareSerial *rg9, byte debug_mode )
 	return static_cast<byte>( msg[2] - '0' );
 }
 
-void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, int *g, int *t )
+void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
 {
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		
-	while ( !SQM_get_msas_nelm( tsl, debug_mode, temp, msas, nelm, ch0, ch1, g, t ));
+	while ( !SQM_get_msas_nelm( tsl, debug_mode, ambient_temp, msas, nelm, ch0, ch1, gain, int_time ));
 }
 
-byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, int *g, int *t )
+byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
 {
 	uint32_t	lum;
 	uint16_t	ir,
@@ -913,19 +917,19 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 				visible;
 	byte		iterations = 1;
 
-	tsl2591Gain_t				gain;
-	tsl2591IntegrationTime_t 	integration;
+	tsl2591Gain_t				gain_idx;
+	tsl2591IntegrationTime_t 	int_time_idx;
 
 	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 },
 					integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
 
-	gain = tsl->getGain();
-	integration = tsl->getTiming();
+	gain_idx = tsl->getGain();
+	int_time_idx = tsl->getTiming();
 	lum = tsl->getFullLuminosity();
 	ir = lum >> 16;
 	full = lum & 0xFFFF;
-	ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( temp ) );
-	full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( temp ) );
+	ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( ambient_temp ) );
+	full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( ambient_temp ) );
 	visible = full - ir;
 
 	// On some occasions this can happen, leading to high values of "visible" although it is dark (as the variable is unsigned), giving erroneous msas
@@ -933,33 +937,33 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 		return 0;
 
 	if ( debug_mode )
-		Serial.printf( "SQM: gain=0x%02x (%dx) integ=0x%02x (%dms)/ temp=%f / ir=%d full=%d vis=%d\n", gain, gain_factor[gain>>4], integration, integration_time[integration], temp, ir, full, visible );
+		Serial.printf( "SQM: gain=0x%02x (%dx) integ=0x%02x (%dms)/ temp=%f / ir=%d full=%d vis=%d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir, full, visible );
 
 	// Auto gain and integration time, increase time before gain to avoid increasing noise if we can help it, decrease gain first for the same reason
 	if ( visible < 128 ) {
 
-		if ( integration != TSL2591_INTEGRATIONTIME_600MS ) {
+		if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
 
 				if ( debug_mode )
 					Serial.println( "SQM: Increasing integration time." );
 
-				change_integration_time( tsl, UP, &integration );
+				change_integration_time( tsl, UP, &int_time_idx );
         		return 0;
 		}
 
-		if ( gain == TSL2591_GAIN_MAX ) {
+		if ( gain_idx == TSL2591_GAIN_MAX ) {
 
-			if ( integration != TSL2591_INTEGRATIONTIME_600MS ) {
+			if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
 
 				if ( debug_mode )
 					Serial.println( "SQM: Increasing integration time." );
 
-				change_integration_time( tsl, UP, &integration );
+				change_integration_time( tsl, UP, &int_time_idx );
         		return 0;
 
 			} else {
 
-				iterations = SQM_read_with_extended_integration_time( tsl, debug_mode, temp, &ir, &full, &visible );
+				iterations = SQM_read_with_extended_integration_time( tsl, debug_mode, ambient_temp, &ir, &full, &visible );
 				if ( full < ir )
 					return 0;
 			}
@@ -969,18 +973,18 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 				if ( debug_mode )
 					Serial.println( "Increasing gain." );
 
-				change_gain( tsl, UP, &gain );
+				change_gain( tsl, UP, &gain_idx );
         		return 0;
 		}
 
 	} else if (( full == 0xFFFF ) || ( ir == 0xFFFF )) {
 
-		if ( gain != TSL2591_GAIN_LOW ) {
+		if ( gain_idx != TSL2591_GAIN_LOW ) {
 
 			if ( debug_mode )
 				Serial.printf( "Decreasing gain." );
 
-			change_gain( tsl, DOWN, &gain );
+			change_gain( tsl, DOWN, &gain_idx );
 			return 0;
 
 		} else {
@@ -988,13 +992,13 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 			if ( debug_mode )
 				Serial.println( "Decreasing integration time." );
 
-			change_integration_time( tsl, DOWN, &integration );
+			change_integration_time( tsl, DOWN, &int_time_idx );
 			return 0;
 		}
 	}
 
 	// Comes from Adafruit TSL2591 driver
-	float cpl = static_cast<float>( gain_factor[ gain >> 4 ] ) * static_cast<float>( integration_time[ integration ] ) / 408.F;
+	float cpl = static_cast<float>( gain_factor[ gain_idx >> 4 ] ) * static_cast<float>( integration_time[ int_time_idx ] ) / 408.F;
 	float lux = ( static_cast<float>(visible) * ( 1.F-( static_cast<float>(ir)/static_cast<float>(full))) ) / cpl;
 
 	// About the MSAS formula, quoting http://unihedron.com/projects/darksky/magconv.php:
@@ -1008,12 +1012,12 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, floa
 		*msas = 0;
 	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
 	
-	*t = integration_time[ integration ];
-	*g = gain_factor[ gain >> 4 ];
+	*int_time = integration_time[ int_time_idx ];
+	*gain = gain_factor[ gain_idx >> 4 ];
 	*ch0 = full;
 	*ch1 = ir;
 	if ( debug_mode )
-		Serial.printf("GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%d] IR=[%d] MPSAS=[%f] NELM=[%f]\n", gain, gain_factor[gain>>4], integration, integration_time[integration], iterations, visible, ir, *msas, *nelm );
+		Serial.printf("GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%d] IR=[%d] MPSAS=[%f] NELM=[%f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible, ir, *msas, *nelm );
 
 	return 1;
 }
@@ -1090,7 +1094,7 @@ int read_wind_vane( SoftwareSerial *wind_vane, byte *available_sensors, byte deb
 	return wind_direction;
 }
 
-byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_mode, float temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
+byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_mode, float ambient_temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
 {
 	uint32_t	lum;
 	uint16_t	ir,
@@ -1103,8 +1107,8 @@ byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_
 		lum = tsl->getFullLuminosity();
 		ir = lum >> 16;
 		full = lum & 0xFFFF;
-		ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( temp ));
-		full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( temp ));
+		ir = static_cast<uint16_t>( static_cast<float>(ir) * ch1_temperature_factor( ambient_temp ));
+		full = static_cast<uint16_t>( static_cast<float>(full) * ch0_temperature_factor( ambient_temp ));
 		*cumulated_full += full;
 		*cumulated_ir += ir;
 		*cumulated_visible = *cumulated_full - *cumulated_ir;
