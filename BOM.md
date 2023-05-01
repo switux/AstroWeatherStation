@@ -21,31 +21,29 @@
 
 ## PCB
 
-- 2x 6x8cm universal PCB double side
-- 1x 3x7cm universal PCB double side (or single)
+- 1x 8x12cm universal PCB double side
 
 ## Connectors
 
-- 14x HXB 2.54mm male + female connectors 2pins
+- 2x XH 2.54mm female connectors 2pins
 - 8x female connector 1pin (for the Mini560 and MT3608)
-- 5x KF2510 2pins
-- 4x KF2510 3pins
+- 6x KF2510 2pins
 - 1x KF2510 4pins
 - 1x KF2510 5pins
 - 2x Single row female header 19pins
 - 1x Single row female header 11pins
 - 4x Single row female header 4pins
 - 2x Single row female header 3pins
-- 2x PCB terminal connector 2pins
+- 3x PCB terminal 2.54mm connector 2pins
 
 ## Cables
 
 - 1x IP67 micro USB cable male to female, 30cm
 - 1.5m 22AWG UL2464 4 cores
-- 1m 24AWG single core
+- 1.5m 24AWG single core
 - 1m 22AWG UL2464 7 cores
 - 0.5m 20AWG UL2464 2 cores
-- 1.5m 22AWG
+- 0.5m 22AWG
 
 ## Sensors
 
@@ -67,8 +65,8 @@
 ## Small parts -- electronics
 
 - 3x 0.25W 10k resistor
-- 1x 0.25W 100k resistor
-- 1x 0.25W 330k resistor
+- 1x 0.25W 82k resistor
+- 1x 0.25W 300k resistor
 - 1x 0.25W 1M resistor
 - 1x 10uF electrolytic capacitor
 - 1x IRF530
@@ -77,6 +75,6 @@
 ## Small parts -- mechanics
 
 - 8x PG7 cable gland
-- 16x M2.6 8mm screws
+- 8x M2.6 8mm screws
 - 1x IP55 Push button red
-- 1x IP55 Push button black
+- 1x IP55 Push button black, latching

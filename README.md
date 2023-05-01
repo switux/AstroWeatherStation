@@ -14,7 +14,6 @@ Improvements since v0.9:
 
   - Hardware
     - Single universal PCB
-<<<<<<< HEAD
     - RG-9 has now a 12V power input, aligned with the wind sensors, because of brownouts with the 5V output (unstabilitiy with the Mini560, too close from RG-9 voltage requirements)
     - 5V relay is now a 12V relay and has been moved between the wind sensors' power input and the MT3608 output, because of the above RG9 issue
     - Using a latching push button for debug mode
@@ -26,9 +25,6 @@ Improvements since v0.9:
     - Alarms sent in case the RG-9 has firmware issues reported during its initialisation
     
 Possible future improvements:
-=======
-    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
->>>>>>> main
 
   - Hardware
     - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
@@ -54,11 +50,7 @@ Possible future improvements:
     - Cloud coverage
     - Solar irradiance
   
-<<<<<<< HEAD
   - Alarms for:
-=======
-  - Alarms (to be handled on the server side) for:
->>>>>>> main
   
     - Sensor unavailability
     - Rain event
@@ -71,20 +63,16 @@ Possible future improvements:
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
 
-## Pricing
-
-All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 210.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
-
 ## ASSUMPTIONS
 
 A Wifi network is available to send sensor data and send alarms. In my case this is provided by a 4G module attached to a Raspberry Pi 4 which pilots the instruments.
 
 ## SPECIFICATIONS
 
-  - Power consumption: N/A (collecting data)
-  - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
+  - Power consumption: N/A
+  - Autonomy: N/A
   - Batteries max. charges / life span: **500x or 2-3 years**
-  - Measures (from sensor specs)
+  - Measures
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
@@ -144,7 +132,7 @@ Where
 
 ## REFERENCES
 
-I found inspiration and solutions to problems in the following pages / posts:
+I found inspiration in the following pages / posts:
 
   - No need to push the BOOT button on the ESP32 to upload new sketch
     - https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header
@@ -152,8 +140,3 @@ I found inspiration and solutions to problems in the following pages / posts:
     - https://jeelabs.org/2013/05/18/zero-power-measurement-part-2/index.html
   - To workaround the 3.3V limitation to trigger the P-FET of the above ( I used an IRF930 to drive the IRF9540 )
     - https://electronics.stackexchange.com/a/562942
-  - Solar panel tilt
-    - https://globalsolaratlas.info/
-  - Conversion of lux to W/m<sup>2</sup>
-    - P. Michael, D. Johnston, W. Moreno, 2020. https://pdfs.semanticscholar.org/5d6d/ad2e803382910c8a8b0f2dd0d71e4290051a.pdf, section 5. Conclusions. The bottomline is 120 lx = 1 W/m<sup>2</sup> is the engineering rule of thumb.
-    
