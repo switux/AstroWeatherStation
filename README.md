@@ -8,18 +8,35 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 0.9 (prototype) of the project.
-It is however usable in production, the things that will be improved in v1.0 are:
+This is version 1.0 of the project.
+
+Improvements since v0.9:
 
   - Hardware
     - Single universal PCB
+<<<<<<< HEAD
+    - RG-9 has now a 12V power input, aligned with the wind sensors, because of brownouts with the 5V output (unstabilitiy with the Mini560, too close from RG-9 voltage requirements)
+    - 5V relay is now a 12V relay and has been moved between the wind sensors' power input and the MT3608 output, because of the above RG9 issue
+    - Using a latching push button for debug mode
+    - Better voltage divider resistor values to be closer to the 3.3V max voltage while still using mostly "mainstream" resistor values
+    
+  - Software
+    - More robust RG-9 probing (although rain events are correctly reported)
+    - Battery level estimation improvements, shrunk voltage range from 0V-4.2V to 3V-4.2V to take battery's EODV into account
+    - Alarms sent in case the RG-9 has firmware issues reported during its initialisation
+    
+Possible future improvements:
+=======
     - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
+>>>>>>> main
 
+  - Hardware
+    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
+    
   - Software
     - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
-    - More robust RG-9 probing (although rain events are correctly reported)
     - Stay in debug mode until the next reboot
-  
+       
 ## FEATURES
 
   - Weather parameters:
@@ -37,7 +54,11 @@ It is however usable in production, the things that will be improved in v1.0 are
     - Cloud coverage
     - Solar irradiance
   
+<<<<<<< HEAD
+  - Alarms for:
+=======
   - Alarms (to be handled on the server side) for:
+>>>>>>> main
   
     - Sensor unavailability
     - Rain event
