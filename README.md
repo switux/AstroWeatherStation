@@ -12,12 +12,10 @@ This is version 1.2 (Release candidate) of the project.
 It is however usable in production, the things that will be improved in v1.3 are:
 
   - Hardware
-    - Single universal PCB
     - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
 
   - Software
     - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
-    - More robust RG-9 probing (although rain events are correctly reported)
     - Stay in debug mode until the next reboot
 
 You can see the results: https://www.datamancers.net/weather
