@@ -96,22 +96,28 @@ The station sends alarm to an HTTPS endpoint as a JSON string:
 The station sends the data to a web server as a JSON string:
 
 {
-  "battery_level":92,
-  "timestamp":1675767261,
+  "battery_level":86,
+  "timestamp":1683138824,
   "rain_event":0,
-  "temp":16.84000015,
-  "pres":941.1413574,
-  "rh":27.296875,
-  "lux":68181,
-  "ambient":21.42998695,
-  "sky":-3.19000864,
-  "direction":45,
+  "temp":17.35000038,
+  "pres":953.9145508,
+  "rh":51.70800781,
+  "lux":241,
+  "ambient":15.27001381,
+  "sky":-1.290014625,
+  "direction":180,
   "speed":0,
   "rain":0,
+  "msas":6.147251606,
+  "nelm":-7.504527569,
+  "gain":1,
+  "int":300,
+  "ch0":355,
+  "ch1":112,
   "sensors":63
 }
 
-Where
+where
 
 - battery_level: in % of 4.2V
 - timestamp: Unix epoch time
@@ -125,6 +131,12 @@ Where
 - direction: wind direction 0=N, 45=NE, 90=E, 135=SE, 180=W, 225=SW, 270=W, 315 NW
 - speed: in m/s
 - rain: 0=None, 1=Rain drops, 2=Very light, 3=Medium light, 4=Medium, 5=Medium heavy, 6=Heavy, 7=Violent
+- msas: magnitude par square arcsecond
+- nelm: naked eye limit magnitude
+- int: sqm integration time in ms
+- gain: sqm gain
+- ch0: full spectrum TSL2591 reading
+- ch1: ir spectrum TSL2591 reading
 - sensors: available sensors (see source code)
 
 ## Tips
