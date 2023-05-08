@@ -8,16 +8,14 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.2 (Release candidate) of the project.
-It is however usable in production, the things that will be improved in v1.3 are:
+This is version 1.3 (Release candidate) of the project.
+
+It is however usable in production, the things that will be improved in v1.4 are:
 
   - Hardware
-    - Single universal PCB
     - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
 
   - Software
-    - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
-    - More robust RG-9 probing (although rain events are correctly reported)
     - Stay in debug mode until the next reboot
 
 You can see the results: https://www.datamancers.net/weather
@@ -52,6 +50,7 @@ You can see the results: https://www.datamancers.net/weather
     - External reboot button
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
+    - Configuration mode and runtime configuration updates
 
 ## Pricing
 
@@ -84,6 +83,8 @@ This is still under development, the remaining points to be closed are:
 
   - Battery level readings often overrun 100%, the problem is not the ADC but the batteries themselves or the charger as I checked with a voltmeter, they often deliver up to 4.8/4.9V. I will try with a TP5100 or TP4056
   
+## Runtime configuration interface
+
 ## Alarms format
 
 The station sends alarm to an HTTPS endpoint as a JSON string:

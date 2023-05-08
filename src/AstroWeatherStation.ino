@@ -6,6 +6,7 @@
 	1.0 - Initial version.
 	1.1 - Refactored to remove unnecessary global variables
 	1.2 - Added experimental SQM feature
+	1.3 - Added OTA Update / Rudimentary configuration webserver / Persistent configuration
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -29,98 +30,45 @@
 #include "Adafruit_TSL2591.h"
 #include <SoftwareSerial.h>
 #include "time.h"
+#include "ESP32OTAPull.h"
+#include "FS.h"
+#include "SPIFFS.h"
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include "AstroWeatherStation.h"
 
-#define REV "1.2.0-20230430"
+#define REV "1.3.0"
+#define BUILD_DATE "20230507"
+#define BUILD "01"
+
 #define DEBUG_MODE 1
-
-// You must customise weather_config.h
-#include "weather_config.h"
-
-// Wind sensors
-#define GPIO_WIND_VANE_RX		GPIO_NUM_27	// RO Pin
-#define GPIO_WIND_VANE_TX		GPIO_NUM_26	// DI Pin
-#define GPIO_WIND_VANE_CTRL		GPIO_NUM_14	// RE+DE Pins
-
-#define GPIO_ANEMOMETER_RX		GPIO_NUM_32	// RO Pin
-#define GPIO_ANEMOMETER_TX		GPIO_NUM_33	// DI Pin
-#define GPIO_ANEMOMETER_CTRL	GPIO_NUM_25	// RE+DE Pins
-
-#define SEND	HIGH
-#define RECV	LOW
-
-#define WIND_VANE_MAX_TRIES		3		// Tests show that if there is no valid answer after 3 attempts, the sensor is not available
-#define ANEMOMETER_MAX_TRIES	3		// Tests show that if there is no valid answer after 3 attempts, the sensor is not available
-
-// Rain sensor
-#define GPIO_RG9_RX			GPIO_NUM_17	// J2 SO PIN
-#define GPIO_RG9_TX			GPIO_NUM_16	// J2 SI PIN
-#define GPIO_RG9_MCLR		GPIO_NUM_23	// J2 MCLR PIN
-#define GPIO_RG9_RAIN		GPIO_NUM_35	// J1 OUT PIN
-#define RG9_SERIAL_SPEEDS	7
-#define RG9_PROBE_RETRIES	5
-#define RG9_OK				0
-#define RG9_FAIL			127
-#define RG9_UART			2
-
-// Relays
-#define GPIO_RELAY_3_3V		GPIO_NUM_5
-#define GPIO_RELAY_12V		GPIO_NUM_18
-
-// Battery level
-#define GPIO_BAT_ADC			GPIO_NUM_13
-#define GPIO_BAT_ADC_EN			GPIO_NUM_12
-#define LOW_BATTERY_COUNT_MIN	5
-#define LOW_BATTERY_COUNT_MAX	10
-#define BAT_V_MAX				4200	// in mV
-#define BAT_V_MIN				3000	// in mV
-#define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
-#define VCC						3300	// in mV
-#define V_DIV_R1				82000	// voltage divider R1 in ohms
-#define V_DIV_R2				300000	// voltage divider R2 in ohms
-#define ADC_MAX					4096	// 12 bits resolution
-#define V_MAX_IN				( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define V_MIN_IN				( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define ADC_V_MAX				( V_MAX_IN*ADC_MAX / VCC )
-#define ADC_V_MIN				( V_MIN_IN*ADC_MAX / VCC )
-
-// SQM
-#define	DOWN	-1
-#define	UP		1
-#define	MSAS_CALIBRATION_OFFSET	-0.55F	// Taken from a comparison with a calibrated SQM-L(E/U)
-
-// Misc
-#define GPIO_DEBUG		GPIO_NUM_34
-#define US_SLEEP		5 * 60 * 1000000	// 5 minutes
-
-#define MLX_SENSOR			0x01
-#define TSL_SENSOR			0x02
-#define BME_SENSOR			0x04
-#define WIND_VANE_SENSOR	0x08
-#define ANEMOMETER_SENSOR	0x10
-#define RG9_SENSOR			0x20
-#define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RG9_SENSOR )
 
 RTC_DATA_ATTR byte reboot_count;
 RTC_DATA_ATTR byte prev_available_sensors;
 RTC_DATA_ATTR byte low_battery_event_count;
+
+WebServer web_server( 80 );
 
 void setup()
 {
 	float	battery_level = 0.0;
 	byte	ntp_retries = 5,
 			ntp_synced = 0,
-			rain_intensity,
+			rain_intensity = 0,
 			rain_event,
 			available_sensors = 0,
-			debug_mode;
+			debug_mode,
+			config_mode;
 	char	string[64],
 			wakeup_string[50];
-
+				
 	struct tm timeinfo;
 
 	const char	*ntp_server = "pool.ntp.org";
-	const char	*tz_info	= TZNAME;
 
+	ESP32OTAPull ota;
+	
 	ESP32Time rtc( 0 );
 
 	Adafruit_BME280		bme;
@@ -142,12 +90,44 @@ void setup()
 
 	Serial.begin( 115200 );
 	delay( 100 );
-
+	
 	pinMode( GPIO_DEBUG, INPUT );
 	debug_mode = static_cast<byte>( 1-gpio_get_level( GPIO_DEBUG ) ) | DEBUG_MODE;
 
+	pinMode( GPIO_CONFIG_MODE, INPUT );
+	config_mode = static_cast<byte>( 1-gpio_get_level( GPIO_CONFIG_MODE ) );
+	
+	StaticJsonDocument<160> json_config;
+	JsonObject config;
+
 	if ( debug_mode )
-		displayBanner( wakeup_string );
+		Serial.printf( "Starting...\n" );
+		
+	if (!read_config( json_config, debug_mode ))
+		Serial.printf("Error: configuration does not fit into memory.\n" );
+	else
+		config = json_config.as<JsonObject>();
+
+	if ( debug_mode )
+		displayBanner( config, wakeup_string );
+
+	if ( config_mode ) {
+
+		Serial.printf( "Entering config mode...\n ");
+		if ( start_hotspot() ) {
+
+			Serial.printf( "Started AP on SSID [%s] and configuration server @ IP=192.168.168.1/24\n", CONFIG_SSID );
+			web_server.on( "/setconfig", HTTP_POST, set_configuration );
+			web_server.on( "/resetparam", HTTP_POST, reset_config_parameter );
+			web_server.on( "/reboot", HTTP_GET, reboot );
+			web_server.onNotFound( web_server_not_found );
+			web_server.begin();
+			while ( 1 )
+				web_server.handleClient();
+			ESP.restart();
+		}
+		Serial.printf( "Failed to start AP, cannot enter config mode.\n ");
+	}
 
 	pinMode( GPIO_BAT_ADC_EN, OUTPUT );
 
@@ -159,15 +139,15 @@ void setup()
 	battery_level = get_battery_level( debug_mode );
 	values[ "battery_level" ] = battery_level;
 
-	if ( connect_to_wifi( debug_mode ) ) {
+	if ( connect_to_wifi( config, debug_mode ) ) {
 
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
-		configTzTime( tz_info, ntp_server );
+		configTzTime( get_config_parameter( config, "tzname" ), ntp_server );
 
 		while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
 
 			delay( 1000 );
-			configTzTime( tz_info, ntp_server );
+			configTzTime( get_config_parameter( config, "tzname" ), ntp_server );
 		}
 
 		if ( debug_mode ) {
@@ -179,13 +159,29 @@ void setup()
 			Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
 		}
 
-		initialise_sensors( &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
-		retrieve_sensor_data( values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
+		if ( battery_level > BAT_LEVEL_MIN ) {
 
+			ota.OverrideBoard( "ESP32_WROOM32U" );
+			ota.OverrideDevice( "AWS_1.x" );
+
+			snprintf( string, 64, "%s-%-3s", BUILD_DATE, BUILD );
+			ota.SetConfig( string );
+			ota.SetCallback( OTA_callback );
+			if ( debug_mode )
+				Serial.printf( "Checking for OTA update...\n" );
+			int ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV );
+
+			if ( debug_mode )
+				Serial.printf("OTA Upgrade result: %s\n", OTA_message( ret_code ));
+		}
+	
+/*		initialise_sensors( config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
+		retrieve_sensor_data( values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
+*/
 		if ( rain_event ) {
 
 			if ( rain_intensity > 0 )	// Avoid false positives
-				send_rain_event_alarm( rain_intensity, debug_mode );
+				send_rain_event_alarm( config, rain_intensity, debug_mode );
 
 			else {
 
@@ -203,7 +199,7 @@ void setup()
 
 			// Deal with ADC output accuracy and no need to stress about it, a few warnings are enough
 			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
-				send_alarm( "Low battery", string, debug_mode );
+				send_alarm( config, "Low battery", string, debug_mode );
 
 			if ( debug_mode )
 				Serial.printf( "%sLow battery event count = %d\n", string, low_battery_event_count );
@@ -211,12 +207,12 @@ void setup()
 		} else
 			low_battery_event_count = 0;
 
-		send_data( values, debug_mode );
+		send_data( config, values, debug_mode );
 
 		if ( prev_available_sensors != available_sensors ) {
 
 			prev_available_sensors = available_sensors;
-			report_unavailable_sensors( available_sensors, debug_mode );
+			report_unavailable_sensors( config, available_sensors, debug_mode );
 		}
 	}
 
@@ -236,7 +232,6 @@ enter_sleep:
 
 void loop()
 {
-	send_alarm( "Bug", "Entered the loop function.", 0 );
 	Serial.println( "BUG! Entered the loop function." );
 	delay( 5000 );
 }
@@ -248,13 +243,14 @@ void loop()
 
    --------------------------------
 */
-void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte is_ntp_synced, byte rain_event, byte *rain_intensity, byte debug_mode, byte *available_sensors )
+void retrieve_sensor_data( JsonObject &config, JsonDocument& values, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte is_ntp_synced, byte rain_event, byte *rain_intensity, byte debug_mode, byte *available_sensors )
 {
 	float		temp,
 				pres,
 				rh,
 				msas = -1,
 				nelm,
+				msas_calibration_offset,
 				ambient_temp = 0,
 				sky_temp = 0;
 
@@ -288,7 +284,8 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 	*rain_intensity = read_RG9( rg9, debug_mode );
 	values[ "rain_intensity" ] = *rain_intensity;
 
-	read_SQM( tsl, *available_sensors, debug_mode, ambient_temp, &msas, &nelm, &ch0, &ch1, &gain, &int_time );
+	msas_calibration_offset = strtof( get_config_parameter( config, "msas_calibration_offset" ), NULL );
+	read_SQM( tsl, *available_sensors, debug_mode, msas_calibration_offset, ambient_temp, &msas, &nelm, &ch0, &ch1, &gain, &int_time );
 	values[ "msas" ] = msas;
 	values[ "nelm" ] = nelm;
 	values[ "gain" ] = gain;
@@ -306,7 +303,7 @@ void retrieve_sensor_data( JsonDocument& values, Adafruit_BME280 *bme, Adafruit_
 
    --------------------------------
 */
-void initialise_sensors( Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte *available_sensors, byte reboot_count, byte debug_mode )
+void initialise_sensors( JsonObject &config, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, SoftwareSerial *anemometer, SoftwareSerial *wind_vane, HardwareSerial *rg9, byte *available_sensors, byte reboot_count, byte debug_mode )
 {
 	initialise_BME( bme, available_sensors, debug_mode );
 	initialise_MLX( mlx, available_sensors, debug_mode );
@@ -319,13 +316,13 @@ void initialise_sensors( Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_
 		case RG9_FAIL:
 			break;
 		case 'B':
-			send_alarm( "RG9 low voltage", "", debug_mode );
+			send_alarm( config, "RG9 low voltage", "", debug_mode );
 			break;
 		case 'O':
-			send_alarm( "RG9 problem", "Reset because of stack overflow, report problem to support.", debug_mode );
+			send_alarm( config, "RG9 problem", "Reset because of stack overflow, report problem to support.", debug_mode );
 			break;
 		case 'U':
-			send_alarm( "RG9 problem", "Reset because of stack underflow, report problem to support.", debug_mode );
+			send_alarm( config, "RG9 problem", "Reset because of stack underflow, report problem to support.", debug_mode );
 			break;
 		default:
 			break;
@@ -382,10 +379,12 @@ char initialise_RG9( HardwareSerial *rg9, byte *available_sensors, byte reboot_c
 	if ( reboot_count == 1 )    // Give time to the sensor to initialise before trying to probe it
 		delay( 5000 );
 
-	if ( debug_mode )
-		Serial.printf( "Probing RG9 ... " );
 
-	for ( byte i = 0; i < RG9_PROBE_RETRIES; i++ )
+	for ( byte i = 0; i < RG9_PROBE_RETRIES; i++ ) {
+
+		if ( debug_mode )
+			Serial.printf( "Probing RG9, attempt #%d: ...", i );
+			
 		for ( byte j = 0; j < RG9_SERIAL_SPEEDS; j++ ) {
 
 			rg9->begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
@@ -430,9 +429,12 @@ char initialise_RG9( HardwareSerial *rg9, byte *available_sensors, byte reboot_c
 
 			rg9->end();
 		}
+		if ( debug_mode )
+			printf( "\n" );
+	}
 
 	if ( debug_mode )
-		Serial.println( "Could not find RG9, resetting..." );
+		Serial.println( "Could not find RG9, resetting sensor..." );
 
 	pinMode( GPIO_RG9_MCLR, OUTPUT );
 	digitalWrite( GPIO_RG9_MCLR, LOW );
@@ -523,16 +525,16 @@ void change_integration_time( Adafruit_TSL2591 *tsl, byte upDown, tsl2591Integra
 	}	
 }
 
-byte connect_to_wifi( byte debug_mode )
+byte connect_to_wifi( JsonObject &config, byte debug_mode )
 {
-	const char	*ssid				= SSID;
-	const char	*password			= PASSWORD;
 	byte		remaining_attempts	= 10;
-
+	const char	*ssid = get_config_parameter( config, "ssid" ),
+				*password = get_config_parameter( config, "password" );
+	
 	if ( debug_mode )
 		Serial.printf( "Attempting to connect to SSID [%s] ", ssid );
 
-	WiFi.begin( ssid, password );
+	WiFi.begin( ssid , password );
 
 	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {
 
@@ -554,75 +556,122 @@ byte connect_to_wifi( byte debug_mode )
 	return 0;
 }
 
-void displayBanner( char *wakeup_string )
+void displayBanner( JsonObject &config, char *wakeup_string )
 {
-	char	string[64];
+	char	string[96];
 	byte	i;
 
 	delay(2000);
-	Serial.println( "\n##############################################################" );
-	Serial.println( "# AstroWeatherStation                                        #" );
-	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                #" );
-	snprintf( string, 64, "# Build %-52s #\n", REV );
-	Serial.printf( string );
-	Serial.println( "#------------------------------------------------------------#" );
-	snprintf( string, 64, "# %-58s #\n", wakeup_string );
-	Serial.printf( string );
-	Serial.println( "#------------------------------------------------------------#" );
-	Serial.println( "# GPIO PIN CONFIGURATION                                     #" );
-	Serial.println( "#------------------------------------------------------------#" );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# Wind vane : RX=%d TX=%d CTRL=%d", GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX, GPIO_WIND_VANE_CTRL );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	Serial.println( "\n##############################################################################################" );
+	Serial.println( "# AstroWeatherStation                                                                        #" );
+	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                                                #" );
+	snprintf( string, 96, "# REV %8s-%8s-%-3s", REV, BUILD_DATE, BUILD );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-  	memset( string, 0, 64 );
-	snprintf( string, 61, "# Anemometer: RX=%d TX=%d CTRL=%d", GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX, GPIO_ANEMOMETER_CTRL );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	snprintf( string, 96, "# %-90s #\n", wakeup_string );
+	Serial.printf( string );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.println( "# GPIO PIN CONFIGURATION                                                                     #" );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	memset( string, 0, 96 );
+	snprintf( string, 92, "# Wind vane : RX=%d TX=%d CTRL=%d", GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX, GPIO_WIND_VANE_CTRL );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# RG9       : RX=%d TX=%d MCLR=%d RAIN=%d", GPIO_RG9_RX, GPIO_RG9_TX, GPIO_RG9_MCLR, GPIO_RG9_RAIN );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+  	memset( string, 0, 96 );
+	snprintf( string, 93, "# Anemometer: RX=%d TX=%d CTRL=%d", GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX, GPIO_ANEMOMETER_CTRL );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# 3.3V RELAY: %d", GPIO_RELAY_3_3V );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	memset( string, 0, 96 );
+	snprintf( string, 93, "# RG9       : RX=%d TX=%d MCLR=%d RAIN=%d", GPIO_RG9_RX, GPIO_RG9_TX, GPIO_RG9_MCLR, GPIO_RG9_RAIN );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# 12V RELAY : %d", GPIO_RELAY_12V );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	memset( string, 0, 96 );
+	snprintf( string, 93, "# 3.3V RELAY: %d", GPIO_RELAY_3_3V );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# DEBUG     : %d", GPIO_DEBUG );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	memset( string, 0, 96 );
+	snprintf( string, 93, "# 12V RELAY : %d", GPIO_RELAY_12V );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	memset( string, 0, 64 );
-	snprintf( string, 61, "# BAT LVL   : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
-	for ( i = strlen( string ); i < 61; string[i++] = ' ' );
+	memset( string, 0, 96 );
+	snprintf( string, 93, "# DEBUG     : %d", GPIO_DEBUG );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
-	Serial.println( "##############################################################" );
+	memset( string, 0, 96 );
+	snprintf( string, 93, "# BAT LVL   : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
+	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
+	strcat( string, "#\n" );
+	Serial.printf( string );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.println( "# RUNTIME CONFIGURATION (*:firmware default)                                                 #" );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	print_config( config );
+	Serial.println( "##############################################################################################" );
 }
 
-void post_content( const char *endpoint, const char *jsonString, byte debug_mode )
+void OTA_callback( int offset, int totallength )
 {
-  	const char *server = SERVER;
-	const char *url = URL;
-	const char *root_ca = ROOT_CA;
+	static float percentage = 0.F;
+	float p = static_cast<float>( 100.F * offset / totallength );
+
+	if ( p - percentage > 10.F ) {
+		Serial.printf("Updating %d of %d (%02d%%)...\n", offset, totallength, 100 * offset / totallength);
+		percentage = p;
+	}
+}
+
+const char *OTA_message( int code )
+{
+	switch ( code ) {
+		case ESP32OTAPull::UPDATE_AVAILABLE:
+			return "An update is available but wasn't installed";
+		case ESP32OTAPull::NO_UPDATE_PROFILE_FOUND:
+			return "No profile matches";
+		case ESP32OTAPull::NO_UPDATE_AVAILABLE:
+			return "Profile matched, but update not applicable";
+		case ESP32OTAPull::UPDATE_OK:
+			return "An update was done, but no reboot";
+		case ESP32OTAPull::HTTP_FAILED:
+			return "HTTP GET failure";
+		case ESP32OTAPull::WRITE_ERROR:
+			return "Write error";
+		case ESP32OTAPull::JSON_PROBLEM:
+			return "Invalid JSON";
+		case ESP32OTAPull::OTA_UPDATE_FAIL:
+			return "Update fail (no OTA partition?)";
+		default:
+			if (code > 0)
+				return "Unexpected HTTP response code";
+			break;
+	}
+	return "Unknown error";
+}
+
+void post_content( const JsonObject &config, const char *endpoint, const char *jsonString, byte debug_mode )
+{
+  	const char	*server = get_config_parameter( config, "server" ),
+  				*url_path = get_config_parameter( config, "url_path" );
+	char 		*url;
 	WiFiClientSecure client;
 	HTTPClient http;
-	byte status;
+	byte status = 0;
 	char *final_endpoint;
 
-	if ( debug_mode )
-		Serial.print( "Connecting to server..." );
+	url = (char *)malloc( 7 + strlen( server ) + 1 + strlen( url_path ) + 3 );
+	sprintf( url, "https://%s/%s/", server, url_path );
 
-	client.setCACert( root_ca );
+	if ( debug_mode )
+		Serial.printf( "Connecting to server [%s:443] ...", server );
+
+	client.setCACert( get_config_parameter( config, "root_ca" ));
 
 	if (!client.connect( server, 443 )) {
 
@@ -640,7 +689,7 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 		http.begin( client, final_endpoint );
 		http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
 		http.addHeader( "Content-Type", "application/json" );
-		status = http.POST( jsonString );
+	//	status = http.POST( jsonString );
 
 		if ( debug_mode ) {
 			Serial.println();
@@ -653,7 +702,7 @@ void post_content( const char *endpoint, const char *jsonString, byte debug_mode
 	}
 }
 
-void report_unavailable_sensors( byte available_sensors, byte debug_mode )
+void report_unavailable_sensors( JsonObject &config, byte available_sensors, byte debug_mode )
 {
 	const char	sensor_name[6][12] = {"MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RG9 "};
 	char		unavailable_sensors[96] = "Unavailable sensors: ";
@@ -672,7 +721,15 @@ void report_unavailable_sensors( byte available_sensors, byte debug_mode )
 	}
 
 	if ( j != ALL_SENSORS )
-		send_alarm( "Unavailable sensors report", unavailable_sensors, debug_mode );
+		send_alarm( config, "Unavailable sensors report", unavailable_sensors, debug_mode );
+}
+
+void reboot()
+{
+	Serial.printf( "Rebooting...\n" );
+	web_server.send( 200, "text/plain", "OK\n" );
+	delay( 500 );
+	ESP.restart();	
 }
 
 byte RG9_read_string( HardwareSerial *rg9, char *str, byte len )
@@ -704,21 +761,21 @@ const char *RG9_reset_cause( char code )
 	}
 }
 
-void send_data( const JsonDocument& values, byte debug_mode )
+void send_data( const JsonObject& config, const JsonDocument& values, byte debug_mode )
 {
 	char json[400];
 	serializeJson( values, json );
-
+	
 	if ( debug_mode ) {
 		Serial.print( "Sending JSON: " );
 		serializeJson( values, Serial );
 		Serial.println();
 	}
 
-	post_content( "newData.php", json, debug_mode );
+	post_content( config, "newData.php", json, debug_mode );
 }
 
-void send_alarm( const char *subject, const char *message, byte debug_mode )
+void send_alarm( const JsonObject &config, const char *subject, const char *message, byte debug_mode )
 {
 	DynamicJsonDocument content( 512 );
 	char jsonString[ 600 ];
@@ -726,17 +783,18 @@ void send_alarm( const char *subject, const char *message, byte debug_mode )
 	content["message"] = message;
 
 	serializeJson( content, jsonString );
-	post_content( "alarm.php", jsonString, debug_mode );
+	post_content( config, "alarm.php", jsonString, debug_mode );
 }
 
-void send_rain_event_alarm( byte rain_intensity, byte debug_mode )
+void send_rain_event_alarm( JsonObject &config, byte rain_intensity, byte debug_mode )
 {
 	const char	intensity_str[7][13] = { "Rain drops", "Very light", "Medium light", "Medium", "Medium heavy", "Heavy", "Violent" };  // As described in RG-9 protocol
 	char		msg[32];
 
 	snprintf( msg, 32, "RAIN! Level = %s", intensity_str[ rain_intensity ] );
-	send_alarm( "Rain event", msg, debug_mode );
+	send_alarm( config, "Rain event", msg, debug_mode );
 }
+
 
 void wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wakeup_string )
 {
@@ -901,15 +959,18 @@ byte read_RG9( HardwareSerial *rg9, byte debug_mode )
 	return static_cast<byte>( msg[2] - '0' );
 }
 
-void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
+void read_SQM( Adafruit_TSL2591 *tsl, byte available_sensors, byte debug_mode, float msas_calibration_offset, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
 {
-	tsl->setGain( TSL2591_GAIN_LOW );
-	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
+	if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR ) {
+
+		tsl->setGain( TSL2591_GAIN_LOW );
+		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		
-	while ( !SQM_get_msas_nelm( tsl, debug_mode, ambient_temp, msas, nelm, ch0, ch1, gain, int_time ));
+		while ( !SQM_get_msas_nelm( tsl, debug_mode, msas_calibration_offset, ambient_temp, msas, nelm, ch0, ch1, gain, int_time ));
+	}
 }
 
-byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
+byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float msas_calibration_offset, float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
 {
 	uint32_t	lum;
 	uint16_t	ir,
@@ -1007,7 +1068,7 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float ambient_te
 	// Date range: Fri, 1 Jul 2005 17:36:41 +0900 to Fri, 15 Jul 2005 08:17:52 -0400
 	
 	// I added a calibration offset to match readings from my SQM-LE
-	*msas = ( log10( lux / 108000.F ) / -0.4F ) + MSAS_CALIBRATION_OFFSET;
+	*msas = ( log10( lux / 108000.F ) / -0.4F ) + msas_calibration_offset;
 	if ( *msas < 0 )
 		*msas = 0;
 	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
@@ -1117,4 +1178,205 @@ byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_
 	}
 
 	return iterations;
+}
+
+/*
+   --------------------------------------
+
+    Runtime configuration management
+    
+   --------------------------------------
+*/
+
+char *build_config_json_string( )
+{
+	// \"key\":\"value\" means 4x\" + : -> 9 chars
+	const size_t keys_size = 9+strlen( "ssid" ) + 9+strlen( "password" ) + 9+strlen( "server" ) + 9+strlen( "url_path" ) + 9+strlen( "tzname" ) + 9+strlen( "root_ca" ) + 9+strlen( "msas_calibration_offset" );
+	// MSAS_CALIBRATION_OFFSET is [+/-] %02.f long -> 6 chars
+	const size_t values_size = strlen( CONFIG_SSID ) + strlen( CONFIG_SSID_PASSWORD ) + strlen( SERVER ) + strlen( URL_PATH ) + strlen( TZNAME ) + strlen( ROOT_CA ) + 6;
+	// key/values + two brackets + commas + final 0
+	char *jsonString = (char *)malloc( 2 + sizeof( configuration_items ) + keys_size + values_size );
+
+	memset( jsonString, 0, 2 + sizeof( configuration_items ) + keys_size + values_size );
+	snprintf( jsonString, 2 + sizeof( configuration_items ) + keys_size + values_size, "{\"ssid\":\"%s\",\"password\":\"%s\",\"server\":\"%s\",\"url_path\":\"%s\",\"tzname\":\"%s\",\"root_ca\":\"%s\",\"msas_calibration_offset\":\"%02.2f\"}",
+		CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, MSAS_CALIBRATION_OFFSET );
+
+	return jsonString;
+}
+
+const char *get_config_parameter( const JsonObject &config, const char *item )
+{
+	if ( config.containsKey( item ))
+		return (const char *)config[ item ];
+		
+	for( byte i = 0; i <  (int)( sizeof( configuration_items ) / sizeof( configuration_items[ 0 ] )); i++ )
+		if ( !strcmp( configuration_items[ i ], item ))
+			return default_configuration[i];
+
+	return "";
+}
+
+void print_config( const JsonObject &config )
+{
+	char		string[96];
+	const char	*parameter;
+	int			offset,
+				len,
+				room,
+				s;
+	byte		pad,
+				i,
+				j;
+		
+	for( i = 0; i < (int)( sizeof( configuration_items ) / sizeof( configuration_items[ 0 ] )); i++ ) {
+
+		memset( string, 0, 96 );
+		snprintf( string, 93, "# %-24s", configuration_items[ i ] );
+		offset = 0;
+
+		if ( config.containsKey( configuration_items[ i ] )) {
+
+			strcat( string, "  : " );
+			parameter = (const char *)config[ configuration_items[ i ] ];
+
+		} else {
+			
+			strcat( string, "* : " );
+			parameter = default_configuration[ i ];
+		}
+		
+		len = strlen( parameter );
+		while ( offset < len ) {
+
+			s = strlen( string );
+			room = 96 - s - 5;
+			strncat( string, parameter+offset, room );
+			offset += strlen( string ) - s;
+			for ( pad = strlen( string ); pad < 92; string[ pad++ ] = ' ' );
+			for ( j = 0; j < strlen( string ); j++ )
+				if ( string[j] == '\n' ) string[j] = ' ';
+			strcat( string, " #\n" );
+			Serial.printf( string );
+			memset( string, 0, 96 );
+			sprintf( string, "# " );
+		}
+	}
+}
+
+bool read_config( JsonDocument &json_config, byte debug_mode )
+{
+	char	*jsonString;
+	int		offset = 0,
+			s = 0;
+	DeserializationError code;
+
+	if ( debug_mode )
+		Serial.printf( "Reading config file: " );
+
+	if ( !SPIFFS.begin( true )) {
+
+		if ( debug_mode )
+			Serial.printf( "could not access flash filesystem, creating config from firmware defaults.\n" );
+		jsonString = build_config_json_string();
+
+	} else {
+	
+		File file = SPIFFS.open( "/aws.conf", FILE_READ );
+		if ( !file || !( s = file.size() )) {
+
+			jsonString = build_config_json_string();
+
+			if ( debug_mode )
+				Serial.printf( "could not read config file or file is empty, creating config from firmware defaults.\n" );
+
+		} else {
+
+			jsonString = (char *)malloc( s );
+			memset( jsonString, 0, s );
+		
+			while( file.available() ) {
+				offset += file.readBytes( jsonString+offset, 64 );
+			}
+			file.close();
+			if ( debug_mode )
+				Serial.printf( "OK.\n");
+		}
+	}
+	code = deserializeJson( json_config, jsonString );
+	return ( code == DeserializationError::Ok );
+}
+
+void reset_config_parameter()
+{
+	StaticJsonDocument<160>	json_config;
+	JsonObject				my_config;
+
+	char	parameter[32],
+			json_string[2000];
+	
+	snprintf( parameter, 32, web_server.arg( "plain" ).c_str() );
+
+	if ( read_config( json_config, 1 )) {
+
+		my_config = json_config.as<JsonObject>();
+		serializeJson( json_config, json_string );
+		if ( my_config.containsKey( parameter )) {
+
+			my_config.remove( parameter );
+			serializeJson( json_config, json_string, 2000 );
+			save_configuration( json_string );
+			web_server.send( 200, "text/plain", "OK\n" );
+			delay( 1000 );
+			return;
+		}
+		web_server.send( 400, "text/plain", "Parameter not found." );
+		return;
+	}
+	web_server.send( 500, "text/plain", "Cannot build config." );
+}
+
+const char *save_configuration( const char *jsonString )
+{
+	if ( !SPIFFS.begin( true )) {
+		
+		Serial.printf( "Error: could not access flash filesystem.\n" );
+		return "Error: could not access flash filesystem.";
+	}
+	File file = SPIFFS.open( "/aws.conf", FILE_WRITE );
+	file.println( jsonString );
+	file.close();
+	return "";
+}
+
+void set_configuration()
+{
+	StaticJsonDocument<160> json_config;
+	String jsonString = web_server.arg( "plain" );
+	DeserializationError code;
+	
+	if ( ( code = deserializeJson( json_config, jsonString )) == DeserializationError::Ok ) {
+
+		save_configuration( jsonString.c_str() );
+		web_server.send( 200, "text/plain", "OK\n" );
+		return;
+	}
+	web_server.send( 400, "text/plain", code.c_str() );
+}
+
+bool start_hotspot()
+{
+	bool x;
+	if (( x = WiFi.softAP( CONFIG_SSID, CONFIG_SSID_PASSWORD ))) {
+
+		const IPAddress my_IP( 192, 168, 168, 1 );
+		const IPAddress gateway( 192, 168, 168, 1 );
+		const IPAddress subnet( 255, 255, 255, 0 );
+		WiFi.softAPConfig( my_IP, gateway, subnet );
+	}
+	return x;
+}
+
+void web_server_not_found()
+{
+	web_server.send( 404, "text/plain", "Not found\n" );
 }
