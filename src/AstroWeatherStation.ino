@@ -124,7 +124,6 @@ void setup()
 			web_server.begin();
 			while ( 1 )
 				web_server.handleClient();
-			ESP.restart();
 		}
 		Serial.printf( "Failed to start AP, cannot enter config mode.\n ");
 	}
@@ -175,9 +174,9 @@ void setup()
 				Serial.printf("OTA Upgrade result: %s\n", OTA_message( ret_code ));
 		}
 	
-/*		initialise_sensors( config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
+		initialise_sensors( config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
 		retrieve_sensor_data( values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
-*/
+
 		if ( rain_event ) {
 
 			if ( rain_intensity > 0 )	// Avoid false positives
@@ -689,7 +688,7 @@ void post_content( const JsonObject &config, const char *endpoint, const char *j
 		http.begin( client, final_endpoint );
 		http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
 		http.addHeader( "Content-Type", "application/json" );
-	//	status = http.POST( jsonString );
+		status = http.POST( jsonString );
 
 		if ( debug_mode ) {
 			Serial.println();
