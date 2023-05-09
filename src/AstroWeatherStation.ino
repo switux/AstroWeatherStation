@@ -171,11 +171,11 @@ void setup()
 			int ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV );
 
 			if ( debug_mode )
-				Serial.printf("OTA Upgrade result: %s\n", OTA_message( ret_code ));
+				Serial.printf("OTA Update result: %s\n", OTA_message( ret_code ));
 		}
 	
 		initialise_sensors( config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
-		retrieve_sensor_data( values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
+		retrieve_sensor_data( config, values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
 
 		if ( rain_event ) {
 

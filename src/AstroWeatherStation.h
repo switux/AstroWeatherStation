@@ -15,7 +15,7 @@
 
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
-	
+
 */
 
 // Wind sensors
@@ -72,7 +72,7 @@
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34
-#define US_SLEEP		1 * 10 * 1000000	// 5 minutes
+#define US_SLEEP		5 * 60 * 1000000	// 5 minutes
 
 #define MLX_SENSOR			0x01
 #define TSL_SENSOR			0x02
