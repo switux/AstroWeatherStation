@@ -129,4 +129,4 @@
 
 
 const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset" };
-const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, "-0.55" };
+const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, "-00.55" };

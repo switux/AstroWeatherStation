@@ -38,8 +38,8 @@
 #include <WebServer.h>
 #include "AstroWeatherStation.h"
 
-#define REV "1.3.0"
-#define BUILD_DATE "20230507"
+#define REV "1.3.1"
+#define BUILD_DATE "20230517"
 #define BUILD "01"
 
 #define DEBUG_MODE 1
@@ -61,7 +61,8 @@ void setup()
 			debug_mode,
 			config_mode;
 	char	string[64],
-			wakeup_string[50];
+			wakeup_string[50],
+			*tzname;
 				
 	struct tm timeinfo;
 
@@ -141,12 +142,14 @@ void setup()
 	if ( connect_to_wifi( config, debug_mode ) ) {
 
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
-		configTzTime( get_config_parameter( config, "tzname" ), ntp_server );
+
+		tzname = (char *)get_config_parameter( config, "tzname" );
+		configTzTime( tzname, ntp_server );
 
 		while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
 
 			delay( 1000 );
-			configTzTime( get_config_parameter( config, "tzname" ), ntp_server );
+			configTzTime( tzname, ntp_server );
 		}
 
 		if ( debug_mode ) {
@@ -1189,15 +1192,23 @@ byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *tsl, byte debug_
 
 char *build_config_json_string( )
 {
-	// \"key\":\"value\" means 4x\" + : -> 9 chars
-	const size_t keys_size = 9+strlen( "ssid" ) + 9+strlen( "password" ) + 9+strlen( "server" ) + 9+strlen( "url_path" ) + 9+strlen( "tzname" ) + 9+strlen( "root_ca" ) + 9+strlen( "msas_calibration_offset" );
-	// MSAS_CALIBRATION_OFFSET is [+/-] %02.f long -> 6 chars
-	const size_t values_size = strlen( CONFIG_SSID ) + strlen( CONFIG_SSID_PASSWORD ) + strlen( SERVER ) + strlen( URL_PATH ) + strlen( TZNAME ) + strlen( ROOT_CA ) + 6;
-	// key/values + two brackets + commas + final 0
-	char *jsonString = (char *)malloc( 2 + sizeof( configuration_items ) + keys_size + values_size );
+	size_t 	keys_size = 0,
+			values_size = 0;
+	char 	*jsonString;
+	byte	n_items = (byte)( sizeof( configuration_items ) / sizeof( configuration_items[ 0 ] )),
+			i;
+	
+	for( i = 0; i < n_items; i++ ) {
 
-	memset( jsonString, 0, 2 + sizeof( configuration_items ) + keys_size + values_size );
-	snprintf( jsonString, 2 + sizeof( configuration_items ) + keys_size + values_size, "{\"ssid\":\"%s\",\"password\":\"%s\",\"server\":\"%s\",\"url_path\":\"%s\",\"tzname\":\"%s\",\"root_ca\":\"%s\",\"msas_calibration_offset\":\"%02.2f\"}",
+		keys_size += 9 + strlen( configuration_items[ i ] );	// \"key\":\"value\" means 4x\" + : -> 9 chars
+		values_size += strlen( default_configuration[ i ] );
+	}
+	
+	// key/values + two brackets + commas + final 0
+	jsonString = (char *)malloc( 2 + n_items + keys_size + values_size );
+
+	memset( jsonString, 0, 2 + n_items + keys_size + values_size );
+	snprintf( jsonString, 2 + n_items + keys_size + values_size, "{\"ssid\":\"%s\",\"password\":\"%s\",\"server\":\"%s\",\"url_path\":\"%s\",\"tzname\":\"%s\",\"root_ca\":\"%s\",\"msas_calibration_offset\":\"%02.2f\"}",
 		CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, MSAS_CALIBRATION_OFFSET );
 
 	return jsonString;
