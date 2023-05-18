@@ -83,11 +83,12 @@
 #define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RG9_SENSOR )
 
 // Runtime configuration
-#define	GPIO_CONFIG_MODE		GPIO_NUM_34							// FIXME: assign a new pin before it is released
+#define	GPIO_CONFIG_MODE		GPIO_NUM_4
 #define FORMAT_SPIFFS_IF_FAILED true
 #define	CONFIG_SSID				"AstroWeatherStation"
 #define	CONFIG_SSID_PASSWORD	"AWS2023!"
 
+// Default configuration settings
 #define	SERVER		"www.datamancers.net"
 #define	URL_PATH	"weather"
 
@@ -127,6 +128,6 @@
 "emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=\n" \
 "-----END CERTIFICATE-----\n"
 
-
+// DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset" };
 const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, "-0.55" };

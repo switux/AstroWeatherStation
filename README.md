@@ -8,17 +8,21 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.3 (Release candidate) of the project.
+This is version 2.0 (unstable) of the project. **Do not update a 1.x hardware design with a 2.0 firmware as the relays are not activated the same way (high vs. low GPIO level).**
 
-It is however usable in production, the things that will be improved in v1.4 are:
+New features in this version:
 
   - Hardware
-    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up), not really needed but for the challenge.
+    - Bigger 9x15cm perfboard to accomodate the mosfet switches.
+    - Replacement of relays by mosfets
+    - Button to enter configuration mode
+
+The things that will be improved in v2.1 are:
 
   - Software
-    - Stay in debug mode until the next reboot
+  - Hardware
 
-You can see the results: https://www.datamancers.net/weather
+	Nothing scheduled yet.
 
 ## FEATURES
 
@@ -50,7 +54,7 @@ You can see the results: https://www.datamancers.net/weather
     - External reboot button
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
-    - Configuration mode and runtime configuration updates
+    - Configuration mode and runtime configuration updates activable via button
 
 ## Pricing
 

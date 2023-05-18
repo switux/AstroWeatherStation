@@ -7,6 +7,7 @@
 	1.1 - Refactored to remove unnecessary global variables
 	1.2 - Added experimental SQM feature
 	1.3 - Added OTA Update / Rudimentary configuration webserver / Persistent configuration
+	2.0 - Added button to enter configuration mode
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -36,9 +37,9 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
-#include "AstroWeatherStation.h"
+#include "AstroWeatherStation_1.4.h"
 
-#define REV "1.3.0"
+#define REV "2.0.0"
 #define BUILD_DATE "20230507"
 #define BUILD "01"
 
@@ -132,8 +133,8 @@ void setup()
 
 	pinMode( GPIO_RELAY_3_3V, OUTPUT );
 	pinMode( GPIO_RELAY_12V, OUTPUT );
-	digitalWrite( GPIO_RELAY_3_3V, LOW );
-	digitalWrite( GPIO_RELAY_12V, LOW );
+	digitalWrite( GPIO_RELAY_3_3V, HIGH );
+	digitalWrite( GPIO_RELAY_12V, HIGH );
 
 	battery_level = get_battery_level( debug_mode );
 	values[ "battery_level" ] = battery_level;
@@ -217,8 +218,8 @@ void setup()
 
 enter_sleep:
 
-	digitalWrite( GPIO_RELAY_3_3V, HIGH );
-	digitalWrite( GPIO_RELAY_12V, HIGH );
+	digitalWrite( GPIO_RELAY_3_3V, LOW );
+	digitalWrite( GPIO_RELAY_12V, LOW );
 
 	if ( debug_mode )
 		Serial.println( "Entering sleep mode." );
