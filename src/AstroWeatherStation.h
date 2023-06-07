@@ -129,5 +129,78 @@
 "-----END CERTIFICATE-----\n"
 
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
+
 const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset" };
 const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, "-0.55" };
+
+struct anemometer_t {
+
+	SoftwareSerial	*device;
+	char			*version;
+	byte			request_cmd[8];
+	uint16_t		speed;
+};
+
+struct wind_vane_t {
+
+	SoftwareSerial	*device;
+	char			*version;
+	byte			request_cmd[8];
+	uint16_t		speed;
+	
+};
+
+
+void loop();
+void setup();
+
+char *build_config_json_string();
+float ch0_temperature_factor( float );
+float ch1_temperature_factor( float );
+void change_gain( Adafruit_TSL2591 *, byte, tsl2591Gain_t * );
+void change_integration_time( Adafruit_TSL2591 *, byte, tsl2591IntegrationTime_t * );
+void check_ota_updates( char *, byte );
+byte connect_to_wifi( JsonObject &, byte );
+void displayBanner( JsonObject &, Preferences &, char * );
+void enter_config_mode( void );
+float get_battery_level( byte );
+const char *get_config_parameter( const JsonObject &, const char * );
+bool get_hw_config( Preferences &, char *, anemometer_t *, wind_vane_t * );
+bool read_runtime_config( JsonObject &, byte );
+void retrieve_sensor_data( JsonObject &, JsonDocument&, Adafruit_BME280*, Adafruit_MLX90614*, Adafruit_TSL2591*, anemometer_t*, wind_vane_t*, HardwareSerial*, byte, byte, byte *, byte, byte * );
+void send_alarm( const JsonObject &, const char *, const char *, byte );
+void initialise_anemometer( anemometer_t * );
+void initialise_BME( Adafruit_BME280 *, byte *, byte );
+void initialise_MLX( Adafruit_MLX90614 *, byte *, byte );
+void initialise_RG9( HardwareSerial *, JsonObject &, byte *, byte, byte );
+void initialise_sensors( JsonObject &, Adafruit_BME280*, Adafruit_MLX90614*, Adafruit_TSL2591*, anemometer_t*, wind_vane_t*, HardwareSerial*, byte *, byte, byte );
+void initialise_TSL( Adafruit_TSL2591 *, byte *, byte );
+void initialise_wind_vane( wind_vane_t * );
+void OTA_callback( int, int );
+const char *OTA_message( int );
+void post_content( const JsonObject &, const char *, const char *, byte );
+void print_config( const JsonObject & );
+float read_anemometer( anemometer_t *, byte *, byte );
+void read_BME( Adafruit_BME280 *, float *, float *, float *, byte, byte );
+void read_MLX( Adafruit_MLX90614 *, float *, float *, byte, byte );
+byte read_RG9( HardwareSerial *, byte );
+bool read_runtime_config( JsonObject &, byte );
+void read_SQM( Adafruit_TSL2591 *, byte, byte, float, float, float *, float *, uint16_t *, uint16_t *, uint16_t *, uint16_t * );
+byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *, byte, float, uint16_t *, uint16_t *, uint16_t * );
+int read_TSL( Adafruit_TSL2591 *, byte, byte );
+int read_wind_vane( wind_vane_t *, byte *, byte );
+void reboot( void );
+void report_unavailable_sensors( JsonObject &, byte, byte );
+void reset_config_parameter( void );
+void retrieve_sensor_data( JsonObject &, JsonDocument& , Adafruit_BME280 *, Adafruit_MLX90614 *, Adafruit_TSL2591 *, anemometer_t *, wind_vane_t *, HardwareSerial *, byte, byte, byte *, byte, byte * );
+byte RG9_read_string( HardwareSerial *, char *, byte );
+const char *RG9_reset_cause( char );
+const char *save_configuration( const char * );
+void send_alarm( const JsonObject &, const char *, const char *, byte );
+void send_data( const JsonObject&, const JsonDocument&, byte );
+void send_rain_event_alarm( JsonObject &, byte, byte );
+void set_configuration( void );
+byte SQM_get_msas_nelm( Adafruit_TSL2591 *, byte, float, float, float *, float *, uint16_t *, uint16_t *, uint16_t *, uint16_t * );
+bool start_hotspot( void );
+void wakeup_reason_to_string( esp_sleep_wakeup_cause_t , char * );
+void web_server_not_found( void );
