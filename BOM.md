@@ -11,7 +11,6 @@
 
 - 1x ESP32 WROOM 32U (DevKit C), 38 pins
 - 2x MAX485
-- 1x 2 Channels Relay 3V
 
 ## Wifi
 
@@ -27,7 +26,7 @@
 
 - 2x XH 2.54mm female connectors 2pins
 - 8x female connector 1pin (for the Mini560 and MT3608)
-- 6x KF2510 2pins
+- 7x KF2510 2pins
 - 1x KF2510 4pins
 - 1x KF2510 5pins
 - 2x Single row female header 19pins
@@ -57,20 +56,19 @@
 ## Power
 
 - 1x Mini560 step down 3.3V
-- 1x MT3608
-- 1x DD04CVSA 5V
+- 1x DD04CVSA 12V
 - 2x LiPo battery 103450
 - 1x Solar panel 6V 3W
 
 ## Small parts -- electronics
 
-- 3x 0.25W 10k resistor
+- 4x 0.25W 10k resistor
 - 1x 0.25W 82k resistor
 - 1x 0.25W 300k resistor
-- 1x 0.25W 1M resistor
+- 3x 0.25W 1M resistor
 - 1x 10uF electrolytic capacitor
-- 1x IRF530
-- 1x IRF9540
+- 3x IRF530
+- 3x IRF9540
 
 ## Small parts -- mechanics
 
@@ -78,3 +76,5 @@
 - 8x M2.6 8mm screws
 - 1x IP55 Push button red
 - 1x IP55 Push button black, latching
+- 1x DIP Micro push button
+- 1deg FoV LED clear lens with holder (diam. 13mm)
