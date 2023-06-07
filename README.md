@@ -13,17 +13,22 @@ This is version 2.0 (unstable) of the project. **Do not update a 1.x hardware de
 New features in this version:
 
   - Hardware
-    - Bigger 9x15cm perfboard to accomodate the mosfet switches.
     - Replacement of relays by mosfets
     - Button to enter configuration mode
 
-The things that will be improved in v2.1 are:
+Improvements:
+
+  - To save batteries, in case of a potential rain event, other sensors are no longer powered up and interrogated.
+  - Support of different wind sensors models requiring different command messages and communication speeds.
+  - OTA updates are no longer performed in case of a potential rain event (we have better things to do).
+  - Using ESP chip id and revision to better identify boards for OTA updates.
+  
+The things that might be improved in v2.1 are:
 
   - Software
   - Hardware
-
-	Nothing scheduled yet.
-
+    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on).
+   
 ## FEATURES
 
   - Weather parameters:
