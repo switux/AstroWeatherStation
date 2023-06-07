@@ -22,12 +22,13 @@ Improvements:
   - Support of different wind sensors models requiring different command messages and communication speeds.
   - OTA updates are no longer performed in case of a potential rain event (we have better things to do).
   - Using ESP chip id and revision to better identify boards for OTA updates.
+  - DD04CVSA 12V instead of 5V, removal of MT3608.
   
 The things that might be improved in v2.1 are:
 
   - Software
   - Hardware
-    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on).
+    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on). Will need voltage divider to get 5V Vcc for the level shifter.
    
 ## FEATURES
 
