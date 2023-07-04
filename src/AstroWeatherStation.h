@@ -44,9 +44,9 @@
 #define RG9_FAIL			127
 #define RG9_UART			2
 
-// Relays
-#define GPIO_RELAY_3_3V		GPIO_NUM_5
-#define GPIO_RELAY_12V		GPIO_NUM_18
+// MOSTFET SWITCHES
+#define GPIO_ENABLE_3_3V	GPIO_NUM_5
+#define GPIO_ENABLE_12V		GPIO_NUM_18
 
 // Battery level
 #define GPIO_BAT_ADC			GPIO_NUM_13
@@ -72,7 +72,8 @@
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34
-#define US_SLEEP		5 * 60 * 1000000	// 5 minutes
+#define US_SLEEP		5 * 60 * 1000000				// 5 minutes
+#define US_HIBERNATE	30 * 24 * 60 * 60 * 1000000ULL	// 30 days
 
 #define MLX_SENSOR			0x01
 #define TSL_SENSOR			0x02
@@ -93,6 +94,7 @@
 #define	URL_PATH	"weather"
 
 #define	TZNAME	"CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00"
+#define	MSAS_CORRECTION "-0.55"
 
 // Datamancers.net ROOT CA
 #define ROOT_CA \
@@ -131,7 +133,7 @@
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 
 const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset" };
-const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, "-0.55" };
+const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, MSAS_CORRECTION };
 
 struct anemometer_t {
 
@@ -147,26 +149,27 @@ struct wind_vane_t {
 	char			*version;
 	byte			request_cmd[8];
 	uint16_t		speed;
-	
 };
 
 
-void loop();
-void setup();
 
-char *build_config_json_string();
+
+char *build_config_json_string( void );
 float ch0_temperature_factor( float );
 float ch1_temperature_factor( float );
 void change_gain( Adafruit_TSL2591 *, byte, tsl2591Gain_t * );
 void change_integration_time( Adafruit_TSL2591 *, byte, tsl2591IntegrationTime_t * );
 void check_ota_updates( char *, byte );
 byte connect_to_wifi( JsonObject &, byte );
+void deep_sleep();
 void displayBanner( JsonObject &, Preferences &, char * );
 void enter_config_mode( void );
 float get_battery_level( byte );
 const char *get_config_parameter( const JsonObject &, const char * );
 bool get_hw_config( Preferences &, char *, anemometer_t *, wind_vane_t * );
-bool read_runtime_config( JsonObject &, byte );
+void hibernate();
+void loop( void );
+bool read_runtime_config( JsonObject *, byte );
 void retrieve_sensor_data( JsonObject &, JsonDocument&, Adafruit_BME280*, Adafruit_MLX90614*, Adafruit_TSL2591*, anemometer_t*, wind_vane_t*, HardwareSerial*, byte, byte, byte *, byte, byte * );
 void send_alarm( const JsonObject &, const char *, const char *, byte );
 void initialise_anemometer( anemometer_t * );
@@ -184,9 +187,8 @@ float read_anemometer( anemometer_t *, byte *, byte );
 void read_BME( Adafruit_BME280 *, float *, float *, float *, byte, byte );
 void read_MLX( Adafruit_MLX90614 *, float *, float *, byte, byte );
 byte read_RG9( HardwareSerial *, byte );
-bool read_runtime_config( JsonObject &, byte );
+const JsonObject& read_runtime_config( bool *, byte );
 void read_SQM( Adafruit_TSL2591 *, byte, byte, float, float, float *, float *, uint16_t *, uint16_t *, uint16_t *, uint16_t * );
-byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *, byte, float, uint16_t *, uint16_t *, uint16_t * );
 int read_TSL( Adafruit_TSL2591 *, byte, byte );
 int read_wind_vane( wind_vane_t *, byte *, byte );
 void reboot( void );
@@ -200,7 +202,9 @@ void send_alarm( const JsonObject &, const char *, const char *, byte );
 void send_data( const JsonObject&, const JsonDocument&, byte );
 void send_rain_event_alarm( JsonObject &, byte, byte );
 void set_configuration( void );
+void setup( void );
 byte SQM_get_msas_nelm( Adafruit_TSL2591 *, byte, float, float, float *, float *, uint16_t *, uint16_t *, uint16_t *, uint16_t * );
+byte SQM_read_with_extended_integration_time( Adafruit_TSL2591 *, byte, float, uint16_t *, uint16_t *, uint16_t * );
 bool start_hotspot( void );
 void wakeup_reason_to_string( esp_sleep_wakeup_cause_t , char * );
 void web_server_not_found( void );

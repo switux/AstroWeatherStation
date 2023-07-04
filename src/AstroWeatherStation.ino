@@ -3,11 +3,11 @@
 
 	(c) 2023 F.Lesage
 
-	1.0 - Initial version.
-	1.1 - Refactored to remove unnecessary global variables
-	1.2 - Added experimental SQM feature
-	1.3 - Added OTA Update / Rudimentary configuration webserver / Persistent configuration
-	2.0 - Added button to enter configuration mode
+	1.0.x - Initial version.
+	1.1.x - Refactored to remove unnecessary global variables
+	1.2.x - Added experimental SQM feature
+	1.3.x - Added OTA Update / Rudimentary configuration webserver / Persistent configuration
+	2.0.x - Added button to enter configuration mode
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -40,8 +40,8 @@
 #include <Preferences.h>
 #include "AstroWeatherStation.h"
 
-#define REV "2.0.1"
-#define BUILD_DATE "20230607"
+#define REV "2.0.2"
+#define BUILD_DATE "20230703"
 #define BUILD "01"
 
 #define DEBUG_MODE 1
@@ -71,8 +71,6 @@ void setup()
 	const char	*ntp_server = "pool.ntp.org",
 				*tzname;
 
-	Preferences hw_config;
-
 	ESP32Time rtc( 0 );
 
 	Adafruit_BME280		bme;
@@ -85,6 +83,8 @@ void setup()
 	HardwareSerial		rg9( RG9_UART );
 
 	StaticJsonDocument<384> values;
+
+	Preferences hw_config;
 	JsonObject runtime_config;
 
 	esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -94,34 +94,34 @@ void setup()
 		reboot_count++;
 
 	Serial.begin( 115200 );
-	delay( 100 );
+	delay( 100 );	// TODO: not sure we really need it, except maybe after a firmware update via USB, to give some time to the serial monitor
+
+	pinMode( GPIO_DEBUG, INPUT );
+	debug_mode = static_cast<byte>( 1 - gpio_get_level( GPIO_DEBUG )) | DEBUG_MODE;
 
 	if ( debug_mode )
-		Serial.printf( "Starting...\n" );
-		
-	if ( !read_runtime_config( runtime_config, debug_mode )) {
+		Serial.printf( "AstroWeatherStation is booting...\n" );
 
-		Serial.printf( "Panic: configuration does not fit into memory. Stopping here.\n" );
-		while ( 1 ) delay( 10000 );
+	if ( !read_runtime_config( &runtime_config, debug_mode ) ) {
+
+		Serial.printf( "Panic: something weird happened, configuration does not fit into allocated space. Stopping here.\n" );
+		hibernate();	// use as less energy as we can, wake up once per month.
 	}
 
 	if ( !get_hw_config( hw_config, hw_version, &anemometer, &wind_vane )) {
 
-		Serial.printf( "Error: cannot get HW configuration, using defaults. Be ready to get unreliable data!" );
-		send_alarm( runtime_config, "HWConfig not found", "Error: cannot get HW configuration, using defaults. Be ready to get no or unreliable data!", debug_mode );
+		Serial.printf( "Error: cannot get HW configuration, using defaults. Be ready to get unreliable wind sensor data!" );
+		send_alarm( runtime_config, "HWConfig not found", "Error: cannot get HW configuration, using defaults. Be ready to get no or unreliable wind sensor data!", debug_mode );
 	}
 	
-	pinMode( GPIO_DEBUG, INPUT );
-	debug_mode = static_cast<byte>( 1 - gpio_get_level( GPIO_DEBUG )) | DEBUG_MODE;
-
 	pinMode( GPIO_CONFIG_MODE, INPUT );
 	config_mode = static_cast<byte>( 1 - gpio_get_level( GPIO_CONFIG_MODE ));
 		
+	if ( config_mode )
+		enter_config_mode();	// Will never get back from here if the hostspot works, either die or reboot.
+
 	if ( debug_mode )
 		displayBanner( runtime_config, hw_config, wakeup_string );
-
-	if ( config_mode )
-		enter_config_mode();
 
 	pinMode( GPIO_BAT_ADC_EN, OUTPUT );
 
@@ -167,20 +167,23 @@ void setup()
 		if ( battery_level > BAT_LEVEL_MIN )
 			check_ota_updates( hw_version, debug_mode );
 
-		pinMode( GPIO_RELAY_3_3V, OUTPUT );
-		pinMode( GPIO_RELAY_12V, OUTPUT );
-		digitalWrite( GPIO_RELAY_3_3V, HIGH );
-		digitalWrite( GPIO_RELAY_12V, HIGH );
+		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
+		pinMode( GPIO_ENABLE_12V, OUTPUT );
+		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
+		digitalWrite( GPIO_ENABLE_12V, HIGH );
 
 		initialise_sensors( runtime_config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
 		retrieve_sensor_data( runtime_config, values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
+
+		digitalWrite( GPIO_ENABLE_3_3V, LOW );
+		digitalWrite( GPIO_ENABLE_12V, LOW );
 
 		if ( battery_level <= BAT_LEVEL_MIN ) {
 
 			memset( string, 0, 64 );
 			snprintf( string, 25, "Battery level = %03.2f%%\n", battery_level );
 
-			// Deal with ADC output accuracy and no need to stress about it, a few warnings are enough
+			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
 			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
 				send_alarm( runtime_config, "Low battery", string, debug_mode );
 
@@ -201,22 +204,36 @@ void setup()
 
 enter_sleep:
 
-	digitalWrite( GPIO_RELAY_3_3V, LOW );
-	digitalWrite( GPIO_RELAY_12V, LOW );
-
 	if ( debug_mode )
 		Serial.println( "Entering sleep mode." );
 
+	deep_sleep();
+}
+
+void deep_sleep()
+{
 	esp_sleep_enable_timer_wakeup( US_SLEEP );
 	esp_sleep_enable_ext0_wakeup( GPIO_RG9_RAIN, LOW );
 	gpio_deep_sleep_hold_en();
 	esp_deep_sleep_start();
 }
 
+void hibernate()
+{
+	//
+	// https://electronics.stackexchange.com/questions/530151/esp32-wroom32-consuming-77-%C2%B5a-much-too-high-in-deep-sleep
+	// Reduce power consumption to ~7uA
+	//
+	gpio_reset_pin( GPIO_NUM_2 );
+	gpio_reset_pin( GPIO_NUM_12 );
+	esp_sleep_enable_timer_wakeup( US_HIBERNATE );
+	esp_deep_sleep_start();
+}
+
 void loop()
 {
 	Serial.println( "BUG! Entered the loop function." );
-	delay( 5000 );
+	hibernate();
 }
 
 /*
@@ -356,9 +373,10 @@ void initialise_RG9( HardwareSerial *rg9, JsonObject &runtime_config, byte *avai
 
 			rg9->begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
 			rg9->println();
-      		rg9->println();
+			rg9->println();
 
 			if ( debug_mode ) {
+
 				Serial.printf( " @ %dbps: got [", bps[j] );
 				Serial.flush();
 			}
@@ -372,6 +390,7 @@ void initialise_RG9( HardwareSerial *rg9, JsonObject &runtime_config, byte *avai
 			if ( !strncmp( str, "Baud ", 5 )) {
 
 				if ( debug_mode ) {
+
 					char bitrate[8];
 					strncpy( bitrate, str+5, l-5 );
 					Serial.printf( "\nFound RG9 @ %s bps\n", bitrate );
@@ -467,7 +486,7 @@ void initialise_wind_vane( wind_vane_t *wind_vane )
 */
 
 //
-// Formulas inferred from TSL2591 datasheet fig.15, page 9. Data points graphically extracted (yuck!).
+// Formulas inferred from the TSL2591 datasheet fig.15, page 9. Data points graphically extracted (yuck!).
 // Thanks to Marco Gulino <marco.gulino@gmail.com> for pointing this graph to me!
 // I favoured a power function over an affine because it better followed the points on the graph
 // It may however be overkill since the points come from a PDF graph: the source error is certainly not negligible :-)
@@ -629,12 +648,12 @@ void displayBanner( JsonObject &config, Preferences &hw_config, char *wakeup_str
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# 3.3V RELAY: %d", GPIO_RELAY_3_3V );
+	snprintf( string, 93, "# 3.3V SWITCH: %d", GPIO_ENABLE_3_3V );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# 12V RELAY : %d", GPIO_RELAY_12V );
+	snprintf( string, 93, "# 12V SWITCH : %d", GPIO_ENABLE_12V );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
@@ -685,13 +704,12 @@ void uint64_t_to_byte_array( uint64_t cmd, byte *cmd_array )
 	byte i = 0;
 
     for ( i = 0; i < 8; i++ )
-    	cmd_array[ i ] = (byte)( ( cmd >> (56-(8*i))) & 0xff );
+		cmd_array[ i ] = (byte)( ( cmd >> (56-(8*i))) & 0xff );
 }
 
 bool get_hw_config( Preferences &hw_config, char *hw_version, anemometer_t *anemometer, wind_vane_t *wind_vane )
 {
-	uint64_t	cmd;
-	byte 		i;
+	byte	i;
 	
 	if ( !hw_config.begin( "AWS", true )) {
 
@@ -704,6 +722,8 @@ bool get_hw_config( Preferences &hw_config, char *hw_version, anemometer_t *anem
 
 		return false;
 	}
+
+	if ( hw_version ) {};
 	
 	hw_version = (char *)( hw_config.getString( "HWVersion", "0" ).c_str());
 	wind_vane->version = (char *)( hw_config.getString( "WindvaneVersion", "0" ).c_str());
@@ -755,9 +775,9 @@ const char *OTA_message( int code )
 
 void post_content( const JsonObject &config, const char *endpoint, const char *jsonString, byte debug_mode )
 {
-  	const char	*server = get_config_parameter( config, "server" ),
-  				*url_path = get_config_parameter( config, "url_path" );
-	char 		*url;
+	const char	*server = get_config_parameter( config, "server" ),
+				*url_path = get_config_parameter( config, "url_path" );
+	char		*url;
 	WiFiClientSecure client;
 	HTTPClient http;
 	byte status = 0;
@@ -804,7 +824,7 @@ void report_unavailable_sensors( JsonObject &config, byte available_sensors, byt
 {
 	const char	sensor_name[6][12] = {"MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RG9 "};
 	char		unavailable_sensors[96] = "Unavailable sensors: ";
-	byte 		j = available_sensors;
+	byte		j = available_sensors;
 
 	for ( byte i = 0; i < 6; i++ ) {
 		if ( !( available_sensors & 1 ))
@@ -865,6 +885,7 @@ void send_data( const JsonObject& config, const JsonDocument& values, byte debug
 	serializeJson( values, json );
 	
 	if ( debug_mode ) {
+
 		Serial.print( "Sending JSON: " );
 		serializeJson( values, Serial );
 		Serial.println();
@@ -897,6 +918,7 @@ void send_rain_event_alarm( JsonObject &config, byte rain_intensity, byte debug_
 void wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wakeup_string )
 {
 	switch ( wakeup_reason ) {
+
 		case ESP_SLEEP_WAKEUP_EXT0 :
 			snprintf( wakeup_string, 49, "Awakened by RTC IO: Rain event!" );
 			break;
@@ -942,7 +964,6 @@ float get_battery_level( byte debug_mode )
 		adc_v_in = static_cast<float>(adc_value) * VCC / ADC_V_MAX;
 		bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
-
 	}
 
 	digitalWrite( GPIO_BAT_ADC_EN, LOW );
@@ -1010,6 +1031,7 @@ void read_BME( Adafruit_BME280 *bme, float *temp, float *pres, float *rh, byte a
 		*rh = bme->readHumidity();
 
 		if ( debug_mode ) {
+
 			Serial.printf( "Temperature = %2.2f °C\n", *temp  );
 			Serial.printf( "Pressure = %4.2f hPa\n", *pres );
 			Serial.printf( "RH = %3.2f %%\n", *rh );
@@ -1030,6 +1052,7 @@ void read_MLX( Adafruit_MLX90614 *mlx, float *ambient_temp, float *sky_temp, byt
 		*sky_temp = mlx->readObjectTempC();
 
 		if ( debug_mode ) {
+
 			Serial.print( "AMB = " );
 			Serial.print( *ambient_temp );
 			Serial.print( "°C SKY = " );
@@ -1076,7 +1099,7 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float msas_calib
 	byte		iterations = 1;
 
 	tsl2591Gain_t				gain_idx;
-	tsl2591IntegrationTime_t 	int_time_idx;
+	tsl2591IntegrationTime_t	int_time_idx;
 
 	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 },
 					integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
@@ -1106,7 +1129,7 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float msas_calib
 					Serial.println( "SQM: Increasing integration time." );
 
 				change_integration_time( tsl, UP, &int_time_idx );
-        		return 0;
+				return 0;
 		}
 
 		if ( gain_idx == TSL2591_GAIN_MAX ) {
@@ -1117,7 +1140,7 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float msas_calib
 					Serial.println( "SQM: Increasing integration time." );
 
 				change_integration_time( tsl, UP, &int_time_idx );
-        		return 0;
+				return 0;
 
 			} else {
 
@@ -1132,7 +1155,7 @@ byte SQM_get_msas_nelm( Adafruit_TSL2591 *tsl, byte debug_mode, float msas_calib
 					Serial.println( "Increasing gain." );
 
 				change_gain( tsl, UP, &gain_idx );
-        		return 0;
+				return 0;
 		}
 
 	} else if (( full == 0xFFFF ) || ( ir == 0xFFFF )) {
@@ -1340,7 +1363,7 @@ void print_config( const JsonObject &config )
 			strcat( string, "* : " );
 			parameter = default_configuration[ i ];
 		}
-		
+
 		len = strlen( parameter );
 		while ( offset < len ) {
 
@@ -1359,12 +1382,12 @@ void print_config( const JsonObject &config )
 	}
 }
 
-bool read_runtime_config( JsonObject &runtime_config, byte debug_mode )
+bool read_runtime_config( JsonObject *runtime_config, byte debug_mode )
 {
-	char					*jsonString;
-	StaticJsonDocument<160> json_config;
-	int						offset = 0,
-							s = 0;
+	static StaticJsonDocument<160>	json_config;	// runtime_config will be a reference to this, keep it in memory
+	char							*jsonString;
+	int								offset = 0,
+									s = 0;
 	if ( debug_mode )
 		Serial.printf( "Reading config file: " );
 
@@ -1400,27 +1423,30 @@ bool read_runtime_config( JsonObject &runtime_config, byte debug_mode )
 	
 	if ( DeserializationError::Ok == deserializeJson( json_config, jsonString )) {
 
-		runtime_config = json_config.as<JsonObject>();
+		*runtime_config = json_config.as<JsonObject>();
 		return true;
+
 	}
 	return false;
 }
 
 void reset_config_parameter( void )
 {
-	JsonObject	runtime_config;
+	JsonObject	*runtime_config;
 	char		parameter[32],
 				json_string[2000];
+	bool		ok;
 	
 	snprintf( parameter, 32, web_server.arg( "plain" ).c_str() );
 
-	if ( read_runtime_config( runtime_config, 1 )) {
+	ok = read_runtime_config( runtime_config, 1 );
+	if ( ok ) {
 
-		serializeJson( runtime_config, json_string );
-		if ( runtime_config.containsKey( parameter )) {
+		serializeJson( *runtime_config, json_string );
+		if ( runtime_config->containsKey( parameter )) {
 
-			runtime_config.remove( parameter );
-			serializeJson( runtime_config, json_string, 2000 );
+			runtime_config->remove( parameter );
+			serializeJson( *runtime_config, json_string, 2000 );
 			save_configuration( json_string );
 			web_server.send( 200, "text/plain", "OK\n" );
 			delay( 1000 );
@@ -1440,7 +1466,7 @@ const char *save_configuration( const char *jsonString )
 		return "Error: could not access flash filesystem.";
 	}
 	File file = SPIFFS.open( "/aws.conf", FILE_WRITE );
-	file.println( jsonString );
+	file.printf( "%s", jsonString );
 	file.close();
 	return "";
 }
