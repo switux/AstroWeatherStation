@@ -8,13 +8,17 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 2.0 (unstable) of the project. **Do not update a 1.x hardware design with a 2.0 firmware as the relays are not activated the same way (high vs. low GPIO level).**
+This is version 2.0-RC of the project. **Do not update a 1.x hardware design with a 2.0 firmware.**
+
+Stability tests are underway.
 
 New features in this version:
 
   - Hardware
-    - Replacement of relays by mosfets
-    - Button to enter configuration mode
+    - Replacement of relays by mosfets.
+    - Button to enter configuration mode.
+    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on).
+    - Use of LM7805 to deliver 5V to the level shifter.
 
 Improvements:
 
@@ -27,8 +31,9 @@ Improvements:
 The things that might be improved in v2.1 are:
 
   - Software
+    - TBD
   - Hardware
-    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on). Will need voltage divider to get 5V Vcc for the level shifter.
+    - TBD
    
 ## FEATURES
 
@@ -82,12 +87,10 @@ A Wifi network is available to send sensor data and send alarms. In my case this
 
 ## About the SQM feature
 
-This is still under development, the remaining points to be closed are:
+This is now almost validated.
 
-    - Choice of a lens to be put in front of the TSL2591 to get a 20° FoV (comparable to the SQM-Lx)
-    - Impact study of the lens on the solar irradiance readings if only one TSL1591 is to be used
-    - Calibration against my SQM-LE
-    - Reliability of the MLX90614 ambient temperature reading (a second probe can be used, a Si7021 for instance) for TSL2591 temperature correction.
+    - 20°FoV lens put in front of the TSL2591 (comparable to the SQM-Lx)
+    - Calibration against my SQM-LE done
     
 ## Open points
 
