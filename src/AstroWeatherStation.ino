@@ -1,5 +1,5 @@
-/*
-	AstroWeatherStation.ino
+/*	
+  	AstroWeatherStation.ino
 
 	(c) 2023 F.Lesage
 
@@ -40,9 +40,8 @@
 #include <Preferences.h>
 #include "AstroWeatherStation.h"
 
-#define REV "2.0.2"
-#define BUILD_DATE "20230703"
-#define BUILD "01"
+#define REV "2.0.3"
+#define BUILD_DATE "202307015"
 
 #define DEBUG_MODE 1
 
@@ -64,8 +63,9 @@ void setup()
 			config_mode;
 	char	string[64],
 			wakeup_string[50],
-			*hw_version = NULL;
+			hw_version[6];
 
+	uint8_t mac[6];
 	struct tm timeinfo;
 
 	const char	*ntp_server = "pool.ntp.org",
@@ -118,7 +118,7 @@ void setup()
 	config_mode = static_cast<byte>( 1 - gpio_get_level( GPIO_CONFIG_MODE ));
 		
 	if ( config_mode )
-		enter_config_mode();	// Will never get back from here if the hostspot works, either die or reboot.
+		enter_config_mode();	// Will never get back from here, if the hostspot works: either die or reboot.
 
 	if ( debug_mode )
 		displayBanner( runtime_config, hw_config, wakeup_string );
@@ -171,7 +171,16 @@ void setup()
 		pinMode( GPIO_ENABLE_12V, OUTPUT );
 		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 		digitalWrite( GPIO_ENABLE_12V, HIGH );
+		
+		delay(500);		// MLX96014 seems to take some time to properly initialise
 
+		esp_read_mac( mac, ESP_MAC_WIFI_STA );
+		snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+		values[ "ota_device" ] = string;
+
+		snprintf( string, 64, "%s-%s", (char *)(hw_config.getString( "HWVersion", "0" ).c_str()), BUILD_DATE );
+		values[ "ota_config" ] = string;
+		
 		initialise_sensors( runtime_config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
 		retrieve_sensor_data( runtime_config, values, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, ntp_synced, rain_event, &rain_intensity, debug_mode, &available_sensors );
 
@@ -261,10 +270,15 @@ void retrieve_sensor_data( JsonObject &config, JsonDocument& values, Adafruit_BM
 
 	time_t		now = 0;
 
+	char		string[64];
+	
 	if ( is_ntp_synced )
 		time( &now );
 
+	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+	
 	values[ "timestamp" ] = now;
+	values[ "ota_board" ] = string;
 	values[ "rain_event" ] = rain_event;
 
 	read_BME( bme, &temp, &pres, &rh, *available_sensors, debug_mode );
@@ -538,13 +552,18 @@ void check_ota_updates( char *hw_version, byte debug_mode )
 	ESP32OTAPull	ota;
 	char			string[64];
 	int				ret_code;
+	uint8_t 		mac[6];
 	
 	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota.OverrideBoard( string );
-	ota.OverrideDevice( hw_version );
 
-	snprintf( string, 64, "%s-%-3s", BUILD_DATE, BUILD );
+	esp_read_mac( mac, ESP_MAC_WIFI_STA );
+	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+	ota.OverrideDevice( string );
+
+	snprintf( string, 64, "%s-%s", hw_version, BUILD_DATE );
 	ota.SetConfig( string );
+	
 	ota.SetCallback( OTA_callback );
 	if ( debug_mode )
 		Serial.printf( "Checking for OTA update...\n" );
@@ -625,7 +644,7 @@ void displayBanner( JsonObject &config, Preferences &hw_config, char *wakeup_str
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 96, "# Firmware         : %s-%s-%-3s", REV, BUILD_DATE, BUILD );
+	snprintf( string, 96, "# Firmware         : %s-%s", REV, BUILD_DATE );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
@@ -723,15 +742,13 @@ bool get_hw_config( Preferences &hw_config, char *hw_version, anemometer_t *anem
 		return false;
 	}
 
-	if ( hw_version ) {};
-	
-	hw_version = (char *)( hw_config.getString( "HWVersion", "0" ).c_str());
+	strncpy( hw_version, (char *) hw_config.getString( "HWVersion", "0" ).c_str(), 5 );
 	wind_vane->version = (char *)( hw_config.getString( "WindvaneVersion", "0" ).c_str());
 	anemometer->version = (char *)( hw_config.getString( "AnemometerVers", "0" ).c_str());
 	wind_vane->speed = hw_config.getUShort( "WindvaneSpeed", 9600 );
-	uint64_t_to_byte_array( hw_config.getULong( "WindvaneReq", 0x0000000000000000 ), wind_vane->request_cmd );
+	uint64_t_to_byte_array( hw_config.getULong64( "WindvaneReq", 0x0000000000000000 ), wind_vane->request_cmd );
 	anemometer->speed = hw_config.getUShort( "AnemometerSpeed", 9600 );
-	uint64_t_to_byte_array( hw_config.getULong( "AnemometerReq", 0x0000000000000000 ), anemometer->request_cmd );
+	uint64_t_to_byte_array( hw_config.getULong64( "AnemometerReq", 0x0000000000000000 ), anemometer->request_cmd );
 	return true;
 }
 
@@ -978,6 +995,13 @@ float read_anemometer( anemometer_t *anemometer, byte *available_sensors, byte d
 	float		wind_speed = -1.F;
 
 	answer[1] = 0;
+
+	if ( debug_mode ) {
+		
+		Serial.printf( "Sending command to the anemometer @ %dbps:", anemometer->speed );
+		for ( j = 0; j < 7; Serial.printf( " %02x", anemometer->request_cmd[ j++ ] ));
+		Serial.println();
+	}
 
 	while ( answer[1] != 0x03 ) {
 
@@ -1232,6 +1256,13 @@ int read_wind_vane( wind_vane_t *wind_vane, byte *available_sensors, byte debug_
 
 	answer[1] = 0;
 
+	if ( debug_mode ) {
+		
+		Serial.printf( "Sending command to the wind vane @ %dbps:", wind_vane->speed );
+		for ( j = 0; j < 7; Serial.printf( " %02x", wind_vane->request_cmd[ j++ ] ));
+		Serial.println();
+	}
+
 	while ( answer[1] != 0x03 ) {
 
 		digitalWrite( GPIO_WIND_VANE_CTRL, SEND );
@@ -1432,7 +1463,7 @@ bool read_runtime_config( JsonObject *runtime_config, byte debug_mode )
 
 void reset_config_parameter( void )
 {
-	JsonObject	*runtime_config;
+	JsonObject	*runtime_config = NULL;
 	char		parameter[32],
 				json_string[2000];
 	bool		ok;
