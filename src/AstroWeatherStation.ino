@@ -41,7 +41,7 @@
 #include "AstroWeatherStation.h"
 
 #define REV "2.0.3"
-#define BUILD_DATE "202307015"
+#define BUILD_DATE "20230715.01"
 
 #define DEBUG_MODE 1
 
@@ -82,7 +82,7 @@ void setup()
 
 	HardwareSerial		rg9( RG9_UART );
 
-	StaticJsonDocument<384> values;
+	StaticJsonDocument<512> values;
 
 	Preferences hw_config;
 	JsonObject runtime_config;
@@ -178,7 +178,7 @@ void setup()
 		snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 		values[ "ota_device" ] = string;
 
-		snprintf( string, 64, "%s-%s", (char *)(hw_config.getString( "HWVersion", "0" ).c_str()), BUILD_DATE );
+		snprintf( string, 64, "%s-%s-%s", (char *)(hw_config.getString( "HWVersion", "0" ).c_str()), REV, BUILD_DATE );
 		values[ "ota_config" ] = string;
 		
 		initialise_sensors( runtime_config, &bme, &mlx, &tsl, &anemometer, &wind_vane, &rg9, &available_sensors, reboot_count, debug_mode );
@@ -561,7 +561,7 @@ void check_ota_updates( char *hw_version, byte debug_mode )
 	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 	ota.OverrideDevice( string );
 
-	snprintf( string, 64, "%s-%s", hw_version, BUILD_DATE );
+	snprintf( string, 64, "%s-%s-%s", hw_version, REV, BUILD_DATE );
 	ota.SetConfig( string );
 	
 	ota.SetCallback( OTA_callback );
@@ -652,17 +652,17 @@ void displayBanner( JsonObject &config, Preferences &hw_config, char *wakeup_str
 	Serial.println( "# GPIO PIN CONFIGURATION                                                                     #" );
 	Serial.println( "#--------------------------------------------------------------------------------------------#" );
 	memset( string, 0, 96 );
-	snprintf( string, 92, "# Wind vane : RX=%d TX=%d CTRL=%d", GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX, GPIO_WIND_VANE_CTRL );
+	snprintf( string, 92, "# Wind vane  : RX=%d TX=%d CTRL=%d", GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX, GPIO_WIND_VANE_CTRL );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
   	memset( string, 0, 96 );
-	snprintf( string, 93, "# Anemometer: RX=%d TX=%d CTRL=%d", GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX, GPIO_ANEMOMETER_CTRL );
+	snprintf( string, 93, "# Anemometer : RX=%d TX=%d CTRL=%d", GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX, GPIO_ANEMOMETER_CTRL );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# RG9       : RX=%d TX=%d MCLR=%d RAIN=%d", GPIO_RG9_RX, GPIO_RG9_TX, GPIO_RG9_MCLR, GPIO_RG9_RAIN );
+	snprintf( string, 93, "# RG9        : RX=%d TX=%d MCLR=%d RAIN=%d", GPIO_RG9_RX, GPIO_RG9_TX, GPIO_RG9_MCLR, GPIO_RG9_RAIN );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
@@ -677,17 +677,17 @@ void displayBanner( JsonObject &config, Preferences &hw_config, char *wakeup_str
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# DEBUG     : %d", GPIO_DEBUG );
+	snprintf( string, 93, "# DEBUG      : %d", GPIO_DEBUG );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# CONFIG    : %d", GPIO_CONFIG_MODE );
+	snprintf( string, 93, "# CONFIG     : %d", GPIO_CONFIG_MODE );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
 	memset( string, 0, 96 );
-	snprintf( string, 93, "# BAT LVL   : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
+	snprintf( string, 93, "# BAT LVL    : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
 	for ( i = strlen( string ); i < 93; string[i++] = ' ' );
 	strcat( string, "#\n" );
 	Serial.printf( string );
@@ -898,7 +898,7 @@ const char *RG9_reset_cause( char code )
 
 void send_data( const JsonObject& config, const JsonDocument& values, byte debug_mode )
 {
-	char json[400];
+	char json[512];
 	serializeJson( values, json );
 	
 	if ( debug_mode ) {
