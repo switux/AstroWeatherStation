@@ -75,6 +75,13 @@
 #define US_SLEEP		5 * 60 * 1000000				// 5 minutes
 #define US_HIBERNATE	30 * 24 * 60 * 60 * 1000000ULL	// 30 days
 
+#define	USE_MLX				"1"
+#define	USE_BME				"1"
+#define	USE_TSL				"1"
+#define	USE_WV				"1"
+#define	USE_WS				"1"
+#define	USE_RG9				"1"
+
 #define MLX_SENSOR			0x01
 #define TSL_SENSOR			0x02
 #define BME_SENSOR			0x04
@@ -132,8 +139,8 @@
 
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 
-const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset" };
-const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, MSAS_CORRECTION };
+const char *configuration_items[] = { "ssid", "password", "server", "url_path", "tzname", "root_ca", "msas_calibration_offset", "use_bme", "use_mlx", "use_tsl", "use_ws", "use_wv", "use_rg9" };
+const char *default_configuration[] = { CONFIG_SSID, CONFIG_SSID_PASSWORD, SERVER, URL_PATH, TZNAME, ROOT_CA, MSAS_CORRECTION, USE_BME, USE_MLX, USE_TSL, USE_WS, USE_WV, USE_RG9 };
 
 struct anemometer_t {
 
@@ -161,7 +168,7 @@ void change_gain( Adafruit_TSL2591 *, byte, tsl2591Gain_t * );
 void change_integration_time( Adafruit_TSL2591 *, byte, tsl2591IntegrationTime_t * );
 void check_ota_updates( char *, byte );
 byte connect_to_wifi( JsonObject &, byte );
-void deep_sleep();
+void deep_sleep( int );
 void displayBanner( JsonObject &, Preferences &, char * );
 void enter_config_mode( void );
 float get_battery_level( byte );

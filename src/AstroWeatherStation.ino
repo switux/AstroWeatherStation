@@ -40,8 +40,8 @@
 #include <Preferences.h>
 #include "AstroWeatherStation.h"
 
-#define REV "2.0.3"
-#define BUILD_DATE "20230715.01"
+#define REV "2.0.4"
+#define BUILD_DATE "20230717.01"
 
 #define DEBUG_MODE 1
 
@@ -149,7 +149,7 @@ void setup()
 			Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
 		}
 
-		if ( rain_event ) {
+		if ( atoi(get_config_parameter( runtime_config, "use_rg9")) && rain_event ) {
 
 			initialise_RG9( &rg9, runtime_config, &available_sensors, reboot_count, debug_mode );
 			rain_intensity = read_RG9( &rg9, debug_mode );
@@ -172,7 +172,10 @@ void setup()
 		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
 		digitalWrite( GPIO_ENABLE_12V, HIGH );
 		
-		delay(500);		// MLX96014 seems to take some time to properly initialise
+		delay( 500 );		// MLX96014 seems to take some time to properly initialise
+
+		snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+		values[ "ota_board" ] = string;
 
 		esp_read_mac( mac, ESP_MAC_WIFI_STA );
 		snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
@@ -216,13 +219,14 @@ enter_sleep:
 	if ( debug_mode )
 		Serial.println( "Entering sleep mode." );
 
-	deep_sleep();
+	deep_sleep( atoi(get_config_parameter( runtime_config, "use_rg9")) );
 }
 
-void deep_sleep()
+void deep_sleep( int use_rg9 )
 {
 	esp_sleep_enable_timer_wakeup( US_SLEEP );
-	esp_sleep_enable_ext0_wakeup( GPIO_RG9_RAIN, LOW );
+	if ( use_rg9 )
+		esp_sleep_enable_ext0_wakeup( GPIO_RG9_RAIN, LOW );
 	gpio_deep_sleep_hold_en();
 	esp_deep_sleep_start();
 }
@@ -270,15 +274,10 @@ void retrieve_sensor_data( JsonObject &config, JsonDocument& values, Adafruit_BM
 
 	time_t		now = 0;
 
-	char		string[64];
-	
 	if ( is_ntp_synced )
 		time( &now );
 
-	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
-	
 	values[ "timestamp" ] = now;
-	values[ "ota_board" ] = string;
 	values[ "rain_event" ] = rain_event;
 
 	read_BME( bme, &temp, &pres, &rh, *available_sensors, debug_mode );
@@ -292,8 +291,10 @@ void retrieve_sensor_data( JsonObject &config, JsonDocument& values, Adafruit_BM
 	values[ "ambient_temp" ] = ambient_temp;
 	values[ "sky_temp" ] = sky_temp;
 
-	values[ "wind_direction" ] = read_wind_vane( wind_vane, available_sensors, debug_mode );
-	values[ "wind_speed" ] = read_anemometer( anemometer, available_sensors, debug_mode );
+	if ( atoi(get_config_parameter( config, "use_wv" )))
+		values[ "wind_direction" ] = read_wind_vane( wind_vane, available_sensors, debug_mode );
+	if ( atoi(get_config_parameter( config, "use_ws" )))
+		values[ "wind_speed" ] = read_anemometer( anemometer, available_sensors, debug_mode );
 
 	*rain_intensity = read_RG9( rg9, debug_mode );
 	values[ "rain_intensity" ] = *rain_intensity;
@@ -319,12 +320,18 @@ void retrieve_sensor_data( JsonObject &config, JsonDocument& values, Adafruit_BM
 */
 void initialise_sensors( JsonObject &runtime_config, Adafruit_BME280 *bme, Adafruit_MLX90614 *mlx, Adafruit_TSL2591 *tsl, anemometer_t *anemometer, wind_vane_t *wind_vane, HardwareSerial *rg9, byte *available_sensors, byte reboot_count, byte debug_mode )
 {
-	initialise_BME( bme, available_sensors, debug_mode );
-	initialise_MLX( mlx, available_sensors, debug_mode );
-	initialise_TSL( tsl, available_sensors, debug_mode );
-	initialise_anemometer( anemometer );
-	initialise_wind_vane( wind_vane );
-	initialise_RG9( rg9, runtime_config, available_sensors, reboot_count, debug_mode );
+	if ( atoi(get_config_parameter( runtime_config, "use_bme" )))
+		initialise_BME( bme, available_sensors, debug_mode );
+	if ( atoi(get_config_parameter( runtime_config, "use_mlx" )))
+		initialise_MLX( mlx, available_sensors, debug_mode );
+	if ( atoi(get_config_parameter( runtime_config, "use_tsl" )))
+		initialise_TSL( tsl, available_sensors, debug_mode );
+	if ( atoi(get_config_parameter( runtime_config, "use_ws" )))
+		initialise_anemometer( anemometer );
+	if ( atoi(get_config_parameter( runtime_config, "use_wv" )))
+		initialise_wind_vane( wind_vane );
+	if ( atoi(get_config_parameter( runtime_config, "use_rg9" )))
+		initialise_RG9( rg9, runtime_config, available_sensors, reboot_count, debug_mode );
 }
 
 void initialise_anemometer( anemometer_t *anemometer )
@@ -747,8 +754,12 @@ bool get_hw_config( Preferences &hw_config, char *hw_version, anemometer_t *anem
 	anemometer->version = (char *)( hw_config.getString( "AnemometerVers", "0" ).c_str());
 	wind_vane->speed = hw_config.getUShort( "WindvaneSpeed", 9600 );
 	uint64_t_to_byte_array( hw_config.getULong64( "WindvaneReq", 0x0000000000000000 ), wind_vane->request_cmd );
+	if ( wind_vane->request_cmd == 0x0ULL )
+		Serial.printf( "Error: command to query wind vane is = 0x0ULL\n" ); 
 	anemometer->speed = hw_config.getUShort( "AnemometerSpeed", 9600 );
 	uint64_t_to_byte_array( hw_config.getULong64( "AnemometerReq", 0x0000000000000000 ), anemometer->request_cmd );
+	if ( anemometer->request_cmd == 0x0ULL )
+		Serial.printf( "Warning: command to query anemometer is = 0x0ULL\n" ); 
 	return true;
 }
 
@@ -876,7 +887,8 @@ byte RG9_read_string( HardwareSerial *rg9, char *str, byte len )
 	if ( rg9->available() > 0 ) {
 
 		i = rg9->readBytes( str, len );
-		str[ i-2 ] = 0;	// trim trailing \n
+		if ( i >= 2 )
+			str[ i-2 ] = 0;	// trim trailing \n
 		return i-1;
 	}
 	return 0;
@@ -974,7 +986,7 @@ float get_battery_level( byte debug_mode )
 	}
 	adc_value = static_cast<int>( adc_value / 5 );
 	
-	battery_level = map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 );
+	battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 
 	if ( debug_mode ) {
 
