@@ -51,7 +51,7 @@ The things that might be improved in v2.1 are:
   
     - Cloud coverage
     - Solar irradiance
-    - Sky Quality Meter (still experimental, see below)
+    - Sky Quality Meter
   
   - Alarms (to be handled on the server side) for:
   
