@@ -11,6 +11,7 @@ This project aims to provide all the instructions that are needed to build a wea
 This is version 2.0-RC of the project. **Do not update a 1.x hardware design with a 2.0 firmware.**
 
 Stability tests are underway.
+See it in action @ https://www.datamancers.net/weather
 
 New features & improvements in this version:
 
