@@ -36,6 +36,7 @@ New features & improvements in this version:
     - Removal of MOSFETs and LM7805
     - Removal of battery load monitoring
     - Addition of GPS
+    - Addition of PoE (and, incidently, ethernet ...)
     
   - Software
     - Disabling of battery monitoring
@@ -44,11 +45,17 @@ New features & improvements in this version:
     - ASCOM Alpaca
     - Monitoring and configuration web server
     - NTP Server
+    - Web setup UI
+    - Simulatenous support of WiFi and ethernet with fallback strategies
     
 The things that might be improved in v2.1 are:
 
   - Software
     - ASCOM Alpaca
+    - Finer cloud sensor reporting: clear/cloudy/overcast instead of only clear/clouds
+    - QNH pressure
+    - Dew point reporting
+      
   - Hardware
     - GPS
    
@@ -66,9 +73,9 @@ The things that might be improved in v2.1 are:
   
   - Astronomical parameters:
   
-    - Cloud coverage
+    - Cloud coverage (Clear/Clouds)
     - Solar irradiance
-    - Sky Quality Meter
+    - Sky Quality Meter (MPSAS and MELM)
   
   - Alarms (to be handled on the server side) for:
   
@@ -94,8 +101,10 @@ A Wifi network is available to send sensor data and send alarms. In my case this
 
 ## SPECIFICATIONS
 
-  - Power consumption: N/A (collecting data)
-  - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
+  - Power consumption:
+    - 14mA in sleep mode
+    - 40mA when active (for about 20s every 5 minutes)
+  - Autonomy: measurement in progress!
   - Measures (from sensor specs)
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
@@ -111,7 +120,7 @@ This is now validated.
     
 ## Open points
 
-  - Battery level readings often overrun 100%, the problem is not the ADC but the batteries themselves or the charger as I checked with a voltmeter, they often deliver up to 4.8/4.9V. I will try with a TP5100 or TP4056
+  - The RG9 sensor raises false positives during day because (I guess) of condensation. I try to mitigate this but since it is happening during daytime, it is only a minor issue.
   
 ## Runtime configuration interface
 
