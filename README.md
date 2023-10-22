@@ -8,27 +8,26 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 2.0-RC of the project. **Do not update a 1.x hardware design with a 2.0 firmware.**
+This is version 3.0 of the project. **It is still work in progress.**
 
 Stability tests are underway.
 
 New features in this version:
 
   - Hardware
-    - Replacement of relays by mosfets.
-    - Button to enter configuration mode.
-    - Use of logic level mosfets (IRLZ44N) along with a 3.3V to 5V level shifter (SN74AHCT125) to reach minimum Rds(on).
-    - Use of LM7805 to deliver 5V to the level shifter.
+    - Addition of POE module
+    - Addition of GPS support
+  - Software
+    - ASCOM ALPACA Server
+    - Support of ultrasonic wind sensors for adverse conditions (frost)
 
 Improvements:
 
-  - To save batteries, in case of a potential rain event, other sensors are no longer powered up and interrogated.
-  - Support of different wind sensors models requiring different command messages and communication speeds.
-  - OTA updates are no longer performed in case of a potential rain event (we have better things to do).
-  - Using ESP chip id and revision to better identify boards for OTA updates.
-  - DD04CVSA 12V instead of 5V, removal of MT3608.
-  
-The things that might be improved in v2.1 are:
+  - Configuration UI
+  - Removed configuration button and replaced by guard time on the reboot button (10s)
+  - Clear/cloudy/overcast sky states instead of overcast/clear
+
+The things that might be improved in v3.1 are:
 
   - Software
     - TBD
@@ -69,33 +68,31 @@ The things that might be improved in v2.1 are:
 
 ## Pricing
 
-All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 215.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
-
-## ASSUMPTIONS
-
-A Wifi network is available to send sensor data and send alarms. In my case this is provided by a 4G module attached to a Raspberry Pi 4 which pilots the instruments.
+This section is being reorganised as there are different hardware setups. All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 215.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
 
 ## SPECIFICATIONS
 
+This section is being reworked as there are different hardware setups.
+
   - Power consumption: N/A (collecting data)
-  - Autonomy: N/A but I think at least a couple of weeks (will cover the panel when the above point is done, and see how long it will survive as there is always a gap between theory and practice)
+  - Autonomy: N/A (collecting data)
   - Measures (from sensor specs)
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
-    - Wind speed: 0 to 30 m/s
+    - Wind speed: 0 to 60 m/s
 
 ## About the SQM feature
 
-This is now almost validated.
+This is now validated.
 
     - 20°FoV lens put in front of the TSL2591 (comparable to the SQM-Lx)
     - Calibration against my SQM-LE done
     
 ## Open points
 
-  - Battery level readings often overrun 100%, the problem is not the ADC but the batteries themselves or the charger as I checked with a voltmeter, they often deliver up to 4.8/4.9V. I will try with a TP5100 or TP4056
-  
+   - The RG9 sensor raises false positives during day because (I guess) of condensation. I try to mitigate this but since it is happening during daytime, it is only a minor issue.
+
 ## Runtime configuration interface
 
 ## Alarms format

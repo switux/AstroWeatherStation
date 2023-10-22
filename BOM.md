@@ -1,4 +1,4 @@
-# Bill of materials
+# Bill of materials (WIP)
 
 ## Enclosures
 
@@ -11,12 +11,17 @@
 
 - 1x ESP32 WROOM 32U (DevKit C), 38 pins
 - 2x MAX485
+- 1x SC16IS750 UART/GPIO module
 
 ## Wifi
 
 - 1x 5dBi external antenna
 - 1x SMA male connector
 - 1x IPEX to RP-SMA pigtail
+
+## Ethernet
+
+- 1x W5500 Mini module
 
 ## PCB
 
@@ -52,6 +57,7 @@
 - 1x RS485 Wind vane
 - 1x RS485 Anemometer
 - 1x Hydreon RG-9
+- 1x Neo-8M/Neo-6M GPS
 
 ## Power
 
@@ -59,6 +65,7 @@
 - 1x DD04CVSA 12V
 - 2x LiPo battery 103450
 - 1x Solar panel 6V 3W
+- 1x 48V POE PD (for IPTV camera) 12V2A
 
 ## Small parts -- electronics
 
@@ -67,8 +74,9 @@
 - 1x 0.25W 300k resistor
 - 3x 0.25W 1M resistor
 - 1x 10uF electrolytic capacitor
-- 3x IRF530
-- 3x IRF9540
+- 3x IRZN44L
+- 1x LM 7805
+- 1x SN
 
 ## Small parts -- mechanics
 
@@ -76,5 +84,4 @@
 - 8x M2.6 8mm screws
 - 1x IP55 Push button red
 - 1x IP55 Push button black, latching
-- 1x DIP Micro push button
 - 1deg FoV LED clear lens with holder (diam. 13mm)
