@@ -11,6 +11,7 @@
 #define GPIO_ANEMOMETER_TX		GPIO_NUM_25	// DI Pin
 #define GPIO_ANEMOMETER_CTRL	GPIO_NUM_32	// RE+DE Pins
 
+// FIXME: this is not compatible with W5500 / POE
 // Rain sensor
 #define GPIO_RG9_RX				GPIO_NUM_17	// J2 SO PIN
 #define GPIO_RG9_TX				GPIO_NUM_16	// J2 SI PIN

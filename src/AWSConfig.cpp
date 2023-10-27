@@ -1,3 +1,22 @@
+/*	
+  	AWSConfig.cpp
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <Ethernet.h>
 #include <SSLClient.h>
 #include <time.h>
@@ -11,7 +30,7 @@
 
 #include "defaults.h"
 #include "SC16IS750.h"
-#include "GPS.h"
+#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "SC16IS750.h"
@@ -193,23 +212,8 @@ char *AWSConfig::get_json_string_config( void )
 
 	aws_json_config["ap_ssid"] = ap_ssid;
 	aws_json_config["wifi_ap_password"] = wifi_ap_password;
-	aws_json_config["wifi_ap_ip_mode"] = wifi_ap_ip_mode;
-
-	if ( wifi_ap_ip_mode == dhcp ) {
-
-		sprintf( buf, "%s/%d", station.get_ap_ip()->toString().c_str(), station.get_ap_cidr_prefix() );
-		aws_json_config["wifi_ap_ip"] = buf;
-		sprintf( buf, "%s", station.get_ap_gw()->toString().c_str() );
-		aws_json_config["wifi_ap_gw"] = buf;
-		sprintf( buf, "%s", station.get_ap_dns()->toString().c_str() );
-		aws_json_config["wifi_ap_dns"] = buf;
-
-	} else {
-
-		aws_json_config["wifi_ap_ip"] = wifi_ap_ip;
-		aws_json_config["wifi_ap_gw"] = wifi_ap_gw;
-
-	}
+	aws_json_config["wifi_ap_ip"] = wifi_ap_ip;
+	aws_json_config["wifi_ap_gw"] = wifi_ap_gw;
 
 	aws_json_config["remote_server"] = remote_server;
 	aws_json_config["url_path"] = url_path;
@@ -267,6 +271,21 @@ char *AWSConfig::get_root_ca( void )
 	return root_ca;
 }
 
+char *AWSConfig::get_sta_dns( void )
+{
+	return wifi_sta_dns;
+}
+
+char *AWSConfig::get_sta_gw( void )
+{
+	return wifi_sta_gw;
+}
+
+char *AWSConfig::get_sta_ip( void )
+{
+	return wifi_sta_ip;
+}
+
 char *AWSConfig::get_sta_ssid( void )
 {
 	return sta_ssid;
@@ -322,6 +341,11 @@ char *AWSConfig::get_wifi_sta_ip( void )
 	return wifi_sta_ip;
 }
 
+aws_ip_mode_t AWSConfig::get_wifi_sta_ip_mode( void )
+{
+	return wifi_sta_ip_mode;
+}
+
 char *AWSConfig::get_wifi_sta_password( void )
 {
 	return wifi_sta_password;
@@ -372,9 +396,11 @@ bool AWSConfig::read_config( void )
 	if ( !read_file( "/aws.conf", aws_json_config ) ) {
 		
 		if ( !read_file( "/aws.conf.dfl", aws_json_config )) {
+			
 			Serial.printf( "\n[ERROR] Could not read config file.\n" );
 			return false;
 		}
+		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
 	}
 
 	if ( (!aws_json_config.containsKey( "pwr_mode" )) || (!aws_json_config.containsKey( "pcb_version" )) ) {
@@ -415,11 +441,6 @@ bool AWSConfig::read_config( void )
 
 	set_parameter( aws_json_config, "ap_ssid", &ap_ssid, DEFAULT_AP_SSID );
 	set_parameter( aws_json_config, "wifi_ap_password", &wifi_ap_password, DEFAULT_WIFI_AP_PASSWORD );
-
-	t = aws_json_config.containsKey( "wifi_ap_ip_mode" ) ? aws_json_config["wifi_ap_ip_mode"] : DEFAULT_WIFI_AP_IP_MODE;
-	if ( wifi_ap_ip_mode != t )
-		wifi_ap_ip_mode = t;
-	
 	set_parameter( aws_json_config, "wifi_ap_ip", &wifi_ap_ip, DEFAULT_WIFI_AP_IP );
 	set_parameter( aws_json_config, "wifi_ap_gw", &wifi_ap_gw, DEFAULT_WIFI_AP_GW );
 	set_parameter( aws_json_config, "wifi_ap_dns", &wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
@@ -490,15 +511,14 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 
 	if ( !file ) {
 
-		if ( debug_mode )
-			Serial.printf( "cannot read config file [%s] ", filename );
+		Serial.printf( "[ERROR] Cannot read config file [%s]\n", filename );
 		return false;
 	}
 
 	if (!( s = file.size() )) {
 
 		if ( debug_mode )
-			Serial.printf( "empty config file [%s] ", filename );
+			Serial.printf( "[DEBUG] Empty config file [%s]\n", filename );
 		return false;
 	}
 
@@ -507,19 +527,19 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 	file.close();
 
 	if ( debug_mode )
-		Serial.printf( "file successfuly read... ");
+		Serial.printf( "[DEBUG] File successfuly read... ");
 
 	if ( DeserializationError::Ok == deserializeJson( _json_config, json_string )) {
 
 		if ( debug_mode )
-			Serial.printf( "configuration format is valid... OK!\n");
+			Serial.printf( "and configuration format is valid... OK!\n");
 
 		free( json_string );
 		return true;
 	}
 
 	if ( debug_mode )
-		Serial.printf( "configuration is corrupted...");
+		Serial.printf( "but configuration has been corrupted...\n");
 
 	free( json_string );
 	return false;
@@ -530,11 +550,11 @@ bool AWSConfig::rollback()
 	uint8_t	buf[ 4096 ];
 	size_t	i;
 
-	Serial.printf( "[INFO] Rolling back last submitted configuration: " );
+	Serial.printf( "[INFO] Rolling back last submitted configuration.\n" );
   
 	if ( !SPIFFS.begin( true )) {
 		
-		Serial.printf( "Error: could not access flash filesystem.\n" );
+		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
 	File file = SPIFFS.open( "/aws.conf", FILE_WRITE );
@@ -549,7 +569,7 @@ bool AWSConfig::rollback()
 	file.close();
 	filebak.close();
 	SPIFFS.remove( "/aws.conf.bak" );
-	Serial.printf( "done.\n" );
+	Serial.printf( "[INFO] Rollback successful.\n" );
 	return true;
 }
 
@@ -560,10 +580,12 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 
 	if ( !verify_entries( json_config ))
 		return false;
-	
+
+	Serial.printf( "[INFO] Saving submitted configuration.\n" );
+
 	if ( !SPIFFS.begin( true )) {
 		
-		Serial.printf( "Error: could not access flash filesystem.\n" );
+		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
 	File file = SPIFFS.open( "/aws.conf" );
@@ -579,7 +601,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	file = SPIFFS.open( "/aws.conf", FILE_WRITE );
 	serializeJson( json_config, file );
 	file.close();
-	read_config();
+	Serial.printf( "[INFO] Save successful.\n" );
 	return true;
 }
 
@@ -640,7 +662,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("wifi_ap_dns" ):
 			case str2int("wifi_ap_gw" ):
 			case str2int("wifi_ap_ip" ):
-			case str2int("wifi_ap_ip_mode" ):
 			case str2int("wifi_ap_password" ):
 			case str2int("wifi_mode" ):
 			case str2int("wifi_sta_dns" ):
@@ -651,7 +672,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("windvane_model"):
 				break;
 			case str2int("eth_ip_mode"):
-				x = item.value() == "0" ? dhcp:fixed;
+				x = ( item.value() == "0" ) ? dhcp : fixed;
 				break;
 			case str2int("has_bme"):
 			case str2int("has_gps"):

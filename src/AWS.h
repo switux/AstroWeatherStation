@@ -1,3 +1,22 @@
+/*	
+  	AWS.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _AWS_H
 #define _AWS_H
@@ -54,7 +73,6 @@ class AstroWeatherStation {
 		void		report_unavailable_sensors( void );
 		void		send_alarm( const char *, const char * );
 		void		send_rain_event_alarm( uint8_t );
-		bool		setup_pref_iface( void );
 		bool		shutdown_wifi( void );
 		bool		start_config_server( void );
 		bool		start_hotspot( void );
@@ -80,10 +98,6 @@ class AstroWeatherStation {
 		IPAddress       *get_sta_dns( void );
 		IPAddress       *get_sta_gw( void );
         IPAddress       *get_sta_ip( void );
-        byte            get_ap_cidr_prefix( void );
-		IPAddress       *get_ap_dns( void );
-		IPAddress       *get_ap_gw( void );
-        IPAddress       *get_ap_ip( void );
 		void            handle_rain_event( void );
 		bool            initialise( void );
 		bool            is_rain_event( void );

@@ -1,3 +1,22 @@
+/*	
+  	AWSSensorManager.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _AWSSensorManager_H
 #define _AWSSensorManager_H
@@ -48,12 +67,14 @@ struct anemometer_t {
 
 	SoftwareSerial	*device;
 	uint8_t			request_cmd[8];
+	byte			byte_idx;
 };
 
 struct wind_vane_t {
 
 	SoftwareSerial	*device;
 	uint8_t			request_cmd[8];
+	byte			byte_idx;
 };
 
 
@@ -76,18 +97,18 @@ class AWSSensorManager {
 		bool				debug_mode,
 							rain_event,
 							solar_panel;
-		
+		TaskHandle_t		sensors_task_handle;
+
 		
 	public:
 		AWSSensorManager( void );
 		bool initialise( AWSConfig *, bool );
-		bool initialise( uint16_t );
+		//bool initialise( uint16_t );
 		bool begin( void );
 		uint8_t get_available_sensors( void );
 		sensor_data_t *get_sensor_data( void );
 		bool	get_debug_mode( void );
 		void read_sensors( void );
-		void reinit( uint16_t );
 		void reset_rain_event( void );
 		void set_rain_event( void );
 		void initialise_RG9( void );
@@ -105,6 +126,7 @@ class AWSSensorManager {
 		void initialise_MLX( void );
 		void initialise_TSL( void );
 		void initialise_wind_vane( void );
+		void poll_sensors_task( void * );
 		void read_anemometer( void );
 		void read_BME( void );
 		void read_GPS( void );

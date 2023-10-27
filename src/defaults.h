@@ -16,8 +16,6 @@
 #define	DEFAULT_PREF_IFACE			ap
 #define	DEFAULT_WIFI_MODE			both
 #define	DEFAULT_WIFI_STA_IP_MODE	dhcp
-#define	DEFAULT_WIFI_AP_IP_MODE		fixed
-
 
 #define	DEFAULT_SC16IS750_ADDR		0x90
 #define	GPS_RX		GPIO_NUM_23	// FIXME

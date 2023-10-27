@@ -1,9 +1,28 @@
+/*	
+  	AWSConfig.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _AWSConfig_H
 #define _AWSConfig_H
 
-extern const char *_anemometer_model[2];
-extern const char *_windvane_model[2];
+extern const char *_anemometer_model[3];
+extern const char *_windvane_model[3];
 
 typedef enum {
 
@@ -68,6 +87,9 @@ class AWSConfig {
 		aws_pwr_src_t	get_pwr_mode( void );
 		char            *get_remote_server( void );
 		char            *get_root_ca( void );
+		char            *get_sta_dns( void );
+		char            *get_sta_gw( void );
+		char            *get_sta_ip( void );
 		char            *get_sta_ssid( void );
 		char            *get_tzname( void );
 		char            *get_url_path( void );
@@ -79,6 +101,7 @@ class AWSConfig {
 		char *			get_wifi_sta_dns( void );
 		char *			get_wifi_sta_gw( void );
 		char *			get_wifi_sta_ip( void );
+		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
 		char *			get_wifi_sta_password( void );
 		uint8_t *		get_wind_vane_cmd( void );
 		uint16_t		get_wind_vane_com_speed( void );
@@ -98,7 +121,6 @@ class AWSConfig {
 						config_iface,
 						pref_iface;
 		aws_ip_mode_t	eth_ip_mode,
-						wifi_ap_ip_mode,
 						wifi_sta_ip_mode;
 		
 		bool		debug_mode,
@@ -126,8 +148,8 @@ class AWSConfig {
 					*wifi_sta_ip,
 					*wifi_sta_gw,
 					*ap_ssid,
-					*wifi_ap_password,
 					*wifi_ap_dns,
+					*wifi_ap_password,
 					*wifi_ap_ip,
 					*wifi_ap_gw,
 					*tzname,

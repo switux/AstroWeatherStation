@@ -3,8 +3,6 @@
 
 	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
 
-	1.0.x - Initial version
-
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
 	Free Software Foundation, either version 3 of the License, or (at your option)
@@ -31,7 +29,7 @@
 #include <SoftwareSerial.h>
 
 
-#include "GPS.h"
+#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "SC16IS750.h"

@@ -27,7 +27,7 @@
 #include <SoftwareSerial.h>
 
 
-#include "GPS.h"
+#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "SC16IS750.h"

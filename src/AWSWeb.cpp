@@ -1,4 +1,21 @@
+/*	
+  	AWSWeb.cpp
+  	
+	(c) 2023 F.Lesage
 
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
@@ -14,7 +31,7 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include "SC16IS750.h"
-#include "GPS.h"
+#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "AWSConfig.h"
@@ -26,6 +43,7 @@
 
 
 extern AstroWeatherStation station;
+extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
 AWSWebServer::AWSWebServer( void )
 {
@@ -52,9 +70,13 @@ void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_data( AsyncWebServerRequest *request )
 {
+	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE )
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Waiting for sensor data update to complete.\n" );
+
 	char *json_data = station.get_json_sensor_data();
 	request->send( 200, "application/json", json_data );
-
+	xSemaphoreGive( sensors_read_mutex );
 }
 
 void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
@@ -71,27 +93,6 @@ void AWSWebServer::index( AsyncWebServerRequest *request )
 {
 	request->send( SPIFFS, "/index.html" );
 	delay( 500 );		// FIXME: why ...?
-}
-
-bool AWSWebServer::initialise( uint32_t to_reinit )
-{
-Serial.printf("AWSWebServer to_reinit=%x\n",to_reinit);
-	if ( to_reinit & _AP_SSID ) {
-		Serial.printf("REINIT AP SSID\n");
-	}	
-
-	if ( to_reinit & _WIFI_AP_PASSWORD ) {
-		Serial.printf("REINIT _WIFI_AP_PASSWORD\n");
-	}
-
-	if ( to_reinit & _STA_SSID ) {
-		Serial.printf("REINIT STA SSID\n");
-	}	
-
-	if ( to_reinit & _WIFI_STA_PASSWORD ) {
-		Serial.printf("REINIT _WIFI_STA_PASSWORD\n");
-	}
-	return true;
 }
 
 bool AWSWebServer::initialise( bool _debug_mode )
@@ -116,7 +117,7 @@ bool AWSWebServer::initialise( bool _debug_mode )
 	server->on( "/get_data", HTTP_GET, std::bind( &AWSWebServer::get_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
 	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
-  server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
+	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/reboot", HTTP_GET, std::bind( &AWSWebServer::reboot, this, std::placeholders::_1 ));
 	server->onNotFound( std::bind( &AWSWebServer::handle404, this, std::placeholders::_1 ));

@@ -74,7 +74,6 @@ function display_values()
 
 			}
 			toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
-			toggle_ap_ipgw(  values['show_wifi_ap_ip_mode'] );
 			switch( values['wifi_mode'] ) {
 				case 0:
 					document.getElementById("AP").checked = true;
@@ -105,7 +104,6 @@ function toggle_wifi_mode( wifi_mode )
 	switch( wifi_mode ) {
 		case 0:
 			document.getElementById("show_wifi_ap_password").style.display = "none";
-			document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 			document.getElementById("show_wifi_ap_ip").style.display = "none";
 			document.getElementById("show_wifi_ap_gw").style.display = "none";
 			document.getElementById("show_wifi_ap_dns").style.display = "none";
@@ -119,12 +117,10 @@ function toggle_wifi_mode( wifi_mode )
 			break;
 		case 1:
 			document.getElementById("show_wifi_sta_password").style.display = "none";
-			document.getElementById("show_wifi_sta_ip_mode").style.display = "none";
 			document.getElementById("show_wifi_sta_ip").style.display = "none";
 			document.getElementById("show_wifi_sta_gw").style.display = "none";
 			document.getElementById("show_wifi_sta_dns").style.display = "none";
 			document.getElementById("show_wifi_ap_password").style.display = "table-row";
-			document.getElementById("show_wifi_ap_ip_mode").style.display = "table-row";
 			document.getElementById("show_wifi_ap_ip").style.display = "table-row";
 			document.getElementById("show_wifi_ap_gw").style.display = "table-row";
 			document.getElementById("show_wifi_ap_dns").style.display = "table-row";
@@ -153,27 +149,6 @@ function toggle_sta_ipgw( show )
 		document.getElementById("wifi_sta_ip").style.display.background = "white";
 		document.getElementById("wifi_sta_gw").style.display.background = "white";
 		document.getElementById("wifi_sta_dns").style.display.background = "white";
-	}
-}
-
-function toggle_ap_ipgw( show )
-{
-	if ( show ) {
-		document.getElementById("wifi_ap_fixed").checked = true;
-		document.getElementById("wifi_ap_ip").removeAttribute("readonly");
-		document.getElementById("wifi_ap_gw").removeAttribute("readonly");
-		document.getElementById("wifi_ap_dns").removeAttribute("readonly");
-		document.getElementById("wifi_ap_ip").style.display.background = "#d0d0d0";
-		document.getElementById("wifi_ap_gw").style.display.background = "#d0d0d0";
-		document.getElementById("wifi_ap_dns").style.display.background = "#d0d0d0";
-	} else {
-		document.getElementById("wifi_ap_dhcp").checked = true;
-		document.getElementById("wifi_ap_ip").setAttribute("readonly","true");
-		document.getElementById("wifi_ap_gw").setAttribute("readonly","true");
-		document.getElementById("wifi_ap_dns").setAttribute("readonly","true");
-		document.getElementById("wifi_ap_ip").style.display.background = "white";
-		document.getElementById("wifi_ap_gw").style.display.background = "white";
-		document.getElementById("wifi_ap_dns").style.display.background = "white";
 	}
 }
 
@@ -209,7 +184,6 @@ function hide_wifi()
 	document.getElementById("show_wifi_sta_dns").style.display = "none";
 	document.getElementById("show_ap_ssid").style.display = "none";
 	document.getElementById("show_wifi_ap_password").style.display = "none";
-	document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 	document.getElementById("show_wifi_ap_ip").style.display = "none";
 	document.getElementById("show_wifi_ap_gw").style.display = "none";
 	document.getElementById("show_wifi_ap_dns").style.display = "none";
@@ -230,7 +204,6 @@ function show_wifi()
 	document.getElementById("show_wifi_sta_dns").style.display = "table-row";
 	document.getElementById("show_ap_ssid").style.display = "table-row";
 	document.getElementById("show_wifi_ap_password").style.display = "table-row";
-	document.getElementById("show_wifi_ap_ip_mode").style.display = "table-row";
 	document.getElementById("show_wifi_ap_ip").style.display = "table-row";
 	document.getElementById("show_wifi_ap_gw").style.display = "table-row";
 	document.getElementById("show_wifi_ap_dns").style.display = "table-row";

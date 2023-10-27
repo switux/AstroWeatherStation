@@ -1,9 +1,7 @@
 /*
-	alpaca.cpp
+	alpaca.h
 
 	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
-
-	1.0.x - Initial version
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
