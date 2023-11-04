@@ -15,6 +15,7 @@ New features in this version:
   - Hardware
     - Addition of POE module
     - Addition of GPS support
+    - Addition of I2C UART/GPIO extender (SC16IS750)
     - Two relays to control the observatory dome
     - Input to receive dome status
       
