@@ -1,6 +1,6 @@
 # AstroWeatherStation
 
-ESP32 based weather station with features to help operate and astronomical observatory.
+ESP32 based weather station with features to help operate an astronomical observatory.
 
 ## GOAL
 
