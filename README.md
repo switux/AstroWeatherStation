@@ -72,6 +72,8 @@ The things that might be improved in v3.1 are:
 
 This section is being reorganised as there are different hardware setups. All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 215.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
 
+The ultrasonic wind sensor costs about 95.- shipping included.
+
 ## SPECIFICATIONS
 
 This section is being reworked as there are different hardware setups.
