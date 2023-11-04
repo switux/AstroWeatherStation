@@ -8,7 +8,7 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.0 of the project. You may want to have a look at version 2.0 even though it is still being tested (stability/robustness).
+This is version 1.0 of the project. You may want to have a look at version 3.0 even though it is still being tested (stability/robustness).
 
 Improvements since v0.9:
 
