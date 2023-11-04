@@ -15,9 +15,13 @@ New features in this version:
   - Hardware
     - Addition of POE module
     - Addition of GPS support
+    - Two relays to control the observatory dome
+    - Input to receive dome status
+      
   - Software
     - ASCOM ALPACA Server
     - Support of ultrasonic wind sensors for adverse conditions (frost)
+    - Dome closure upon rain event
 
 Improvements:
 
@@ -72,7 +76,10 @@ This section is being reorganised as there are different hardware setups. All pa
 
 This section is being reworked as there are different hardware setups.
 
-  - Power consumption: N/A (collecting data)
+  - Power consumption:
+    - Solar panel version:
+       - 12mA in sleep mode
+       - ~40mA while active (for ~30s)
   - Autonomy: N/A (collecting data)
   - Measures (from sensor specs)
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
