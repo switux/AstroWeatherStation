@@ -1,0 +1,58 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=AWS_12V_3.0.0
+*Date=10:00:53
+*CreatedBy=Fritzing 0.9.6b..
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;THT;56.7783;-6.30811;-90;Bottom;12V RG-9
+2;;;17.6552;-18.0857;0;Bottom;TXT5
+3;;THT;100.018;-49.5482;90;Bottom;12V IN
+4;;;78.8217;-14.6698;0;Bottom;TXT4
+5;;THT;100.288;-75.6569;90;Bottom;3.3V OUT
+6;10k;THT;24.4999;-74.7909;0;Bottom;R1
+7;;THT;88.5907;-15.3028;180;Bottom;ETH Right header
+8;;THT;6.70668;-74.0256;180;Bottom;RBT_CON
+9;;THT;30.7223;-9.50081;-90;Bottom;12V WIND
+10;;;34.3238;-7.61079;0;Bottom;TXT5
+11;;THT;61.2137;-45.6885;180;Bottom;ESP32-Right header
+12;;THT;25.7893;-58.7633;90;Bottom;ANEMOMETER DATA
+13;;;51.0356;-41.958;0;Bottom;TXT4
+14;;THT;68.0348;-56.0129;0;Bottom;DOME
+15;;THT;93.6707;-62.4266;0;Bottom;UART-Right header
+16;;THT;73.7074;-62.382;0;Bottom;UART-Left header
+17;;;83.9721;-61.8362;0;Bottom;TXT4
+18;;THT;84.4366;-43.4515;90;Bottom;I2C
+19;10k;THT;42.5862;-69.9396;-90;Bottom;R3
+20;;THT;10.735;-18.1467;90;Bottom;WINDVANE PWR
+21;1µF;100 mil [THT, electrolytic];17.01;-71.2658;-90;Bottom;C1
+22;;THT;25.624;-18.1032;90;Bottom;ANEMOMETER PWR
+23;10k;THT;32.5281;-69.6368;-90;Bottom;R2
+24;;;113.598;-46.3259;0;Bottom;TXT5
+25;;;101.931;-70.4224;0;Bottom;TXT4
+26;;THT;111.695;-49.7266;-90;Bottom;GND IN
+27;;THT;10.7251;-58.7588;90;Bottom;WINDVANE DATA
+28;;;32.6068;-17.9594;0;Bottom;TXT5
+29;;THT;65.8605;-74.8064;0;Bottom;3.3V Relay
+30;;;60.31;-4.22992;0;Bottom;TXT5
+31;;THT;40.9879;-14.8005;-90;Bottom;DOME STAT
+32;;;24.8944;-78.683;0;Bottom;TXT3
+33;;THT;6.70669;-66.0485;0;Bottom;DBG_CON
+34;;;65.7595;-39.0667;0;Bottom;Via33
+35;;;37.7508;-14.5413;0;Bottom;TXT5
+36;;;65.7798;-77.6667;0;Bottom;TXT5
+37;;THT;113.631;-43.516;180;Bottom;12V PWR
+38;;;24.7227;-77.3811;0;Bottom;TXT3
+39;;THT;105.101;-36.8928;-90;Bottom;GPS
+40;;THT;36.2101;-45.6962;180;Bottom;ESP32-Left header
+41;;;58.9228;-14.8704;90;Bottom;RG-9
+42;;THT;111.739;-75.6123;-90;Bottom;GND OUT
+43;;THT;68.2707;-15.3028;180;Bottom;ETH Left header
