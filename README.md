@@ -52,10 +52,6 @@ You can see the results: https://www.datamancers.net/weather
     - External micro USB socket for debugging (serial console) and firmware updates
     - Configuration mode and runtime configuration updates
 
-## Pricing
-
-All parts can be found on aliexpress, except for the rain sensor and the PVC sheet which is much cheaper when locally sourced. I estimated the raw cost of materials (price vary ...) to be **about 215.- CHF VAT incl.** with about 50% spent on the RG-9 and the wind sensors (shipping is quite expensive for the latter). About 50.- are for enclosures and the other sensors, the rest well ... is the rest :-)
-
 ## ASSUMPTIONS
 
 A Wifi network is available to send sensor data and send alarms. In my case this is provided by a 4G module attached to a Raspberry Pi 4 which pilots the instruments.
