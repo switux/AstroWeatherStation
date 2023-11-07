@@ -8,7 +8,7 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 3.0 of the project. **It is still work in progress. DO NOT USE IT YET! Some GPIO pin conflicts are not solved yet.**
+This is version 3.0 of the project. **It is still work in progress.**
 
 New features in this version:
 
