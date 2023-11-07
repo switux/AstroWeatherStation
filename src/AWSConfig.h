@@ -21,6 +21,10 @@
 #ifndef _AWSConfig_H
 #define _AWSConfig_H
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 extern const char *_anemometer_model[3];
 extern const char *_windvane_model[3];
 
@@ -66,6 +70,7 @@ class AWSConfig {
 		uint8_t			get_anemometer_model( void );
 		const char *	get_anemometer_model_str( void );
 		char *			get_ap_ssid( void );
+		bool			get_close_dome_on_rain( void );
 		aws_iface_t		get_config_iface( void );
 		uint16_t		get_config_port( void );
 		char *			get_eth_dns( void );
@@ -74,9 +79,11 @@ class AWSConfig {
 		aws_ip_mode_t	get_eth_ip_mode( void );
 		bool			get_has_ethernet( void );
 		bool 			get_has_bme( void );
+		bool			get_has_dome( void );
 		bool			get_has_gps( void );
 		bool			get_has_mlx( void );
 		bool			get_has_rg9( void );
+		bool			get_has_sc16is750( void );
 		bool			get_has_tsl( void );
 		bool			get_has_ws( void );
 		bool			get_has_wv( void );
@@ -85,6 +92,7 @@ class AWSConfig {
 		char *			get_pcb_version( void );
 		aws_iface_t		get_pref_iface( void );
 		aws_pwr_src_t	get_pwr_mode( void );
+		uint16_t 		get_rain_event_guard_time( void );
 		char            *get_remote_server( void );
 		char            *get_root_ca( void );
 		char            *get_sta_dns( void );
@@ -123,12 +131,15 @@ class AWSConfig {
 		aws_ip_mode_t	eth_ip_mode,
 						wifi_sta_ip_mode;
 		
-		bool		debug_mode,
+		bool		close_dome_on_rain,
+					debug_mode,
 					has_ethernet,
 					has_bme,
+					has_dome,
 					has_gps,
 					has_mlx,
 					has_rg9,
+					has_sc16is750,
 					has_tsl,
 					has_ws,
 					has_wv,
@@ -161,6 +172,7 @@ class AWSConfig {
 					wind_vane_model;
 		uint16_t	anemometer_com_speed,
 					config_port,
+					rain_event_guard_time,
 					wind_vane_com_speed;
 				
 		bool	read_config( void );

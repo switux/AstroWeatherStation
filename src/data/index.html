@@ -71,6 +71,13 @@
 		<td>AP Password</td>
 		<td><input form="config" id="wifi_ap_password" name="wifi_ap_password" type="text" value="" size="15"/></td>
 	</tr>
+	<tr id="show_wifi_ap_ip_mode">
+		<td>AP IP configuration</td>
+		<td>
+			<input form="config" id="wifi_ap_dhcp" name="wifi_ap_ip_mode" value="0" type="radio"  onchange="toggle_ap_ipgw(0);"/> DHCP
+			<input form="config" id="wifi_ap_fixed" name="wifi_ap_ip_mode" value="1" type="radio"  onchange="toggle_ap_ipgw(1);"/> Fixed
+		</td>
+	</tr>
 	<tr id="show_wifi_ap_ip">
 		<td>AP IP</td>
 		<td><input form="config" id="wifi_ap_ip" name="wifi_ap_ip" value="" type="text" size="15"></td>
@@ -102,21 +109,70 @@
 		<td>Ethernet DNS</td>
 		<td><input form="config" id="eth_dns" name="eth_dns" value="" type="text" size="15"></td>
 	</tr>
-	<tr><td>Remote server</td><td><input form="config" name="remote_server" id="remote_server" type="text" value="" size="20"/></td></tr>
-	<tr><td>URL Path</td><td><input form="config" name="url_path" id="url_path" type="text" value="" size="20"/></td></tr>
-	<tr><td>ROOT CA</td><td><textarea form="config" name="root_ca" id="root_ca" type="text" value="" style="height:544px;width:475px"></textarea></td></tr>
+	<tr>
+		<td>Remote server</td>
+		<td><input form="config" name="remote_server" id="remote_server" type="text" value="" size="20"/></td>
+	</tr>
+	<tr>
+		<td>URL Path</td>
+		<td><input form="config" name="url_path" id="url_path" type="text" value="" size="20"/></td>
+	</tr>
+	<tr>
+		<td>ROOT CA</td>
+		<td><textarea form="config" name="root_ca" id="root_ca" type="text" value="" style="height:544px;width:475px"></textarea></td>
+	</tr>
 </table>
+
 <h1>Sensors</h1>
 <table>
-	<tr><td>Temperature/Pressure/Humidity</td><td><input form="config" name="has_bme" type="checkbox" id="has_bme"/></td></tr>
-	<tr><td>Luminosity</td><td><input form="config" name="has_tsl" type="checkbox" id="has_tsl"/></td></tr>
-	<tr><td>Clouds</td><td><input form="config" name="has_mlx" type="checkbox" id="has_mlx"/></td></tr>
-	<tr><td>Wind speed</td><td><input form="config" name="has_ws" type="checkbox" id="has_ws"/></td></tr>
-	<tr id="ws_config"><td> - Model</td><td><select form="config" name="anemometer_model"><option id="ws_0" value="0">PR-3000-FSJT-N01</option><option id="ws_1" value="1">GD-FS-RS485</option><option id="ws_2" value="2">VMS-3003-CFSFX-N01</option></select></td></tr>
-	<tr><td>Wind direction</td><td><input form="config" name="has_wv" type="checkbox" id="has_wv"/></td></tr>
-	<tr id="wv_config"><td> - Model</td><td><select form="config" name="windvane_model"><option id="wv_0" value="0">PR-3000-FXJT-N01</option><option id="wv_1" value="1">GD-FX-RS485</option><option id="wv_2" value="2">VMS-3003-CFSFX-N01</option></select></td></tr>
-	<tr><td>Rain</td><td><input form="config" name="has_rg9" type="checkbox" id="has_rg9"/></td></tr>
-	<tr><td>GPS</td><td><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td></tr>
+	<tr>
+		<td>Temperature/Pressure/Humidity</td>
+		<td><input form="config" name="has_bme" type="checkbox" id="has_bme"/></td>
+	</tr>
+	<tr>
+		<td>Luminosity</td>
+		<td><input form="config" name="has_tsl" type="checkbox" id="has_tsl"/></td>
+	</tr>
+	<tr>
+		<td>Clouds</td>
+		<td><input form="config" name="has_mlx" type="checkbox" id="has_mlx"/></td>
+	</tr>
+	<tr>
+		<td>Wind speed</td>
+		<td><input form="config" name="has_ws" type="checkbox" id="has_ws"/></td>
+	</tr>
+	<tr id="ws_config">
+		<td> - Model</td>
+		<td>
+			<select form="config" name="anemometer_model" id="anemometer_model">
+				<option id="ws_0" value="0">PR-3000-FSJT-N01</option>
+				<option id="ws_1" value="1">GD-FS-RS485</option>
+				<option id="ws_2" value="2">VMS-3003-CFSFX-N01</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td>Wind direction</td>
+		<td><input form="config" name="has_wv" type="checkbox" id="has_wv"/></td>
+	</tr>
+	<tr id="wv_config">
+		<td> - Model</td>
+		<td>
+			<select form="config" name="windvane_model" id="windvane_model">
+				<option id="wv_0" value="0">PR-3000-FXJT-N01</option>
+				<option id="wv_1" value="1">GD-FX-RS485</option>
+				<option id="wv_2" value="2">VMS-3003-CFSFX-N01</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<td>Rain</td>
+		<td><input form="config" name="has_rg9" type="checkbox" id="has_rg9"/></td>
+	</tr>
+	<tr>
+		<td>GPS</td>
+		<td><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
+	</tr>
 </table>
 
 <input type="button" onclick="send_config();" id="toto" form="config" value="Apply">

@@ -22,8 +22,15 @@
 #ifndef _ALPACA_H
 #define _ALPACA_H
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #define	ALPACA_SERVER_PORT	8080		// The actual stuff
-#define	AWS_UUID			"6d911cba-391f-11ee-8580-0712cceeaadf"	// FIXME
+
+#define	AWS_UUID			"ed0f1194-7cff-11ee-adf4-43fdf91ce20d"
+#define	SAFETYMONITOR_UUID	"be358e98-7cff-11ee-8804-93595b17357e"
+#define	DOME_UUID			"e3a90ace-7cff-11ee-b0f6-73db65e0b158"
 
 typedef enum 
 {
@@ -40,6 +47,15 @@ typedef enum
 	Video
 } ascom_device_t;
 
+typedef struct configured_device_t {
+	
+	char	DeviceName[32];
+	char	DeviceType[20];
+	uint32_t DeviceNumber;
+	char	UniqueID[37];
+	
+} configured_device_t;
+
 class alpaca_server {
 
 	public:
@@ -49,6 +65,7 @@ class alpaca_server {
 		void alpaca_getapiversions( AsyncWebServerRequest * );
 		void alpaca_getdescription( AsyncWebServerRequest * );
 		void alpaca_getconfigureddevices( AsyncWebServerRequest * );
+		void safetymonitor_issafe( AsyncWebServerRequest * );
 		void handle404( AsyncWebServerRequest * );
 		void alpaca_getsetup( AsyncWebServerRequest * );
 		alpaca_server *get_alpaca( void );

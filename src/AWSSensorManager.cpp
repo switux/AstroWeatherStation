@@ -16,6 +16,9 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 
 #include <ESP32Time.h>
 #include <HTTPClient.h>
@@ -27,6 +30,7 @@
 #include <TinyGPSPlus.h>
 #include <SoftwareSerial.h>
 
+#include "defaults.h"
 #include "gpio_config.h"
 #include "SC16IS750.h"
 #include "AWSGPS.h"
@@ -56,7 +60,10 @@ AWSSensorManager::AWSSensorManager( void )
 	sqm = new SQM( tsl, &sensor_data );
 
 	available_sensors = 0;
+	rg9_initialised = 0;
 	sensor_data = {0};
+
+	i2c_mutex = xSemaphoreCreateMutex();
 }
 
 uint8_t AWSSensorManager::get_available_sensors( void )
@@ -69,12 +76,17 @@ bool AWSSensorManager::get_debug_mode( void )
 	return debug_mode;
 }
 
+SemaphoreHandle_t AWSSensorManager::get_i2c_mutex( void )
+{
+	return i2c_mutex;
+}
+
 sensor_data_t *AWSSensorManager::get_sensor_data( void )
 {
 	return &sensor_data;
 }
 
-bool AWSSensorManager::initialise( AWSConfig *_config, bool _debug_mode )
+bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config, bool _debug_mode )
 {
 	char	string[64];
 	uint8_t mac[6];
@@ -98,16 +110,14 @@ bool AWSSensorManager::initialise( AWSConfig *_config, bool _debug_mode )
 
 	if ( !solar_panel ) {
 
-		initialise_sensors();
+		initialise_sensors( sc16is750 );
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore( 
 			[](void *param) {
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
-			}, "SensorsTask", 10000, &_poll_sensors_task, 10, &sensors_task_handle, 1 );
-
-
+			}, "SensorsTask", 3000, &_poll_sensors_task, 10, &sensors_task_handle, 1 );
 	}
 	
 	return true;
@@ -136,17 +146,18 @@ void AWSSensorManager::initialise_BME( void )
 	}
 }
 
-
-void AWSSensorManager::initialise_GPS( void )
+void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
 {
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Initialising GPS.\n" );
 
 	gps = new AWSGPS( debug_mode );
-	if ( gps->initialise( &sensor_data.gps )) {
+	if ( gps->initialise( &sensor_data.gps, sc16is750, i2c_mutex )) {
 
 		gps->start();
+		gps->pilot_rtc( true );
 		available_sensors |= GPS_SENSOR;
+		delay( 1000 );						// Wait a little to get a fix
 
 	} else
 		Serial.printf( "[ERROR] GPS initialisation failed.\n" );
@@ -168,7 +179,7 @@ void AWSSensorManager::initialise_MLX( void )
 	}
 }
 
-void AWSSensorManager::initialise_RG9( void )
+bool AWSSensorManager::initialise_RG9( void )
 {
 	const int	bps[ RG9_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
 	char		str[ 128 ],
@@ -227,7 +238,7 @@ void AWSSensorManager::initialise_RG9( void )
 			printf( "\n" );
 	}
 
-	Serial.println( "[ERROR] Could not find RG9, resetting sensor.\n" );
+	Serial.printf( "[ERROR] Could not find RG9, resetting sensor.\n" );
 
 	pinMode( GPIO_RG9_MCLR, OUTPUT );
 	digitalWrite( GPIO_RG9_MCLR, LOW );
@@ -242,23 +253,32 @@ handle_status:
 	switch( status ) {
 	
 		case RG9_OK:
+			rg9_initialised = true;
+			break;
 		case RG9_FAIL:
+			rg9_initialised = false;
 			break;
 		case 'B':
+			rg9_initialised = true;
 //			send_alarm( runtime_config, "RG9 low voltage", "", debug_mode );
 			break;
 		case 'O':
+			rg9_initialised = true;
 	//		send_alarm( runtime_config, "RG9 problem", "Reset because of stack overflow, report problem to support.", debug_mode );
 			break;
 		case 'U':
+			rg9_initialised = true;
 		//	send_alarm( runtime_config, "RG9 problem", "Reset because of stack underflow, report problem to support.", debug_mode );
 			break;
 		default:
+			Serial.printf( "[INFO] Unhandled RG9 reset code: %d. Report to support.\n", status );
+			rg9_initialised = false;
 			break;
 	}
+	return rg9_initialised;
 }
 
-void AWSSensorManager::initialise_sensors( void )
+void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 {
 	if ( config->get_has_bme() )
 		initialise_BME();
@@ -284,7 +304,7 @@ void AWSSensorManager::initialise_sensors( void )
 		initialise_RG9();
 
 	if ( config->get_has_gps() )
-		initialise_GPS();
+		initialise_GPS( _sc16is750 );
 }
 
 void AWSSensorManager::initialise_TSL( void )
@@ -323,7 +343,7 @@ void AWSSensorManager::read_anemometer( void )
 		
 		Serial.printf( "[DEBUG] Sending command to the anemometer:" );
 		for ( j = 0; j < 8; Serial.printf( " %02x", anemometer.request_cmd[ j++ ] ));
-		Serial.println();
+		Serial.printf( "\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -338,7 +358,7 @@ void AWSSensorManager::read_anemometer( void )
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Anemometer answer: " );
-			for ( j = 0; j < 6; j++ )
+			for ( j = 0; j < 7; j++ )
 				Serial.printf( "%02x ", answer[j] );
 
 		}
@@ -351,7 +371,7 @@ void AWSSensorManager::read_anemometer( void )
 
 			else {
 
-				sensor_data.wind_speed = static_cast<float>( (answer[4]<< 8) + answer[5] ) / 100.F;
+				sensor_data.wind_speed = static_cast<float>( (answer[3]<< 8) + answer[4] ) / 100.F;
 				sensor_data.wind_direction = ( answer[5] << 8 ) + answer[6];
 
 				if ( debug_mode )
@@ -480,7 +500,7 @@ void AWSSensorManager::read_MLX( void )
 			Serial.print( sensor_data.ambient_temperature );
 			Serial.print( "°C / Raw sky temperature = " );
 			Serial.print( sensor_data.sky_temperature );
-			Serial.println( "°C" );
+			Serial.printf( "°C\n" );
 		}
 		return;
 	}
@@ -492,7 +512,13 @@ void AWSSensorManager::read_MLX( void )
 void AWSSensorManager::read_RG9( void  )
 {
 	char	msg[128];
-	
+
+	if (( !rg9_initialised ) && ( !initialise_RG9() )) {
+
+		Serial.printf( "[INFO] Not returning rain data.\n" );
+		return;
+	}
+		
 	rg9->println( "R" );
 	memset( msg, 0, 128 );
 	RG9_read_string( msg, 128 );
@@ -526,7 +552,7 @@ void AWSSensorManager::read_sensors( void )
 		digitalWrite( GPIO_ENABLE_12V, HIGH );
 
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
-		initialise_sensors();
+		initialise_sensors( NULL );
 
 		retrieve_sensor_data();
 
@@ -593,7 +619,7 @@ void AWSSensorManager::read_wind_vane( void )
 		
 		Serial.printf( "[DEBUG] Sending command to the wind vane:" );
 		for ( j = 0; j < 8; Serial.printf( " %02x", wind_vane.request_cmd[ j++ ] ));
-		Serial.println();
+		Serial.printf( "\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -657,34 +683,41 @@ void AWSSensorManager::set_rain_event( void )
 
 void AWSSensorManager::retrieve_sensor_data( void )
 {
-	sensor_data.rain_event = rain_event;
+	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
-	if ( config->get_has_bme() )
-		read_BME();
-
-	if ( config->get_has_mlx() )
-		read_MLX();
+		sensor_data.rain_event = rain_event;
+		time( &sensor_data.timestamp );
 		
-	if ( config->get_has_tsl() ) {
+		if ( config->get_has_bme() )
+			read_BME();
 
-		// FIXME: what if mlx is down?
-		read_TSL();
-		if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
-			sqm->read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
-	}
+		if ( config->get_has_mlx() )
+			read_MLX();
+		
+		if ( config->get_has_tsl() ) {
+
+			// FIXME: what if mlx is down?
+			read_TSL();
+			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
+				sqm->read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
+		}
 	
-	if ( config->get_has_ws() )
-		read_anemometer();
+		if ( config->get_has_ws() )
+			read_anemometer();
 
-	// Wind direction has been read along with the wind speed as it is a 2-in-1 device
-	if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))
-		read_wind_vane();
+		// Wind direction has been read along with the wind speed as it is a 2-in-1 device
+		if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))
+			read_wind_vane();
 
-	if ( config->get_has_rg9() )
-		read_RG9();
+		xSemaphoreGive( i2c_mutex );
 
-	if ( config->get_has_gps() )
-		read_GPS();
+		if ( config->get_has_rg9() )
+			read_RG9();
+
+		if ( config->get_has_gps() )
+			read_GPS();
+
+	}
 }
 
 uint8_t AWSSensorManager::RG9_read_string( char *str, uint8_t len )
@@ -727,32 +760,9 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 			xSemaphoreGive( sensors_read_mutex );
 
 		}
-		delay( 5000 );
+		delay( 15000 );
 	}
 }
-/*
-bool AWS::sync_time( void )
-{
-	const char	*ntp_server = "pool.ntp.org";
-	bool	ntp_synced;
-	uint8_t	ntp_retries = 5;
-   	struct tm timeinfo;
-
-	configTzTime( tzname, ntp_server );
-
-	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
-
-		delay( 1000 );
-		configTzTime( tzname, ntp_server );
-	}
-	if ( debug_mode ) {
-
-		Serial.printf( "%sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
-		Serial.print( "Time and date: " );
-		Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
-	}
-	return ntp_synced;
-}*/
 
 void AWSSensorManager::uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array )
 {

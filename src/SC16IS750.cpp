@@ -28,7 +28,11 @@
  * I2C mode only for the moment, SPI will come later :-)
  * 
  */
- 
+
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "SC16IS750.h"
@@ -266,7 +270,7 @@ int8_t I2C_SC16IS750::read_register( uint8_t register_address )
 			break;
 	}
 	if ( ( n = Wire.requestFrom( address, 1 )) != 1 )
-		Serial.printf( "ERROR: SC16IS750 received %d bytes instead of 1\n", n );
+		Serial.printf( "ERROR: SC16IS750 received %d bytes instead of 1 while addressing register 0x%02x\n", n, register_address );
 	return Wire.read();
 }
 
@@ -330,18 +334,53 @@ void I2C_SC16IS750::FIFO_reset( bool rx, bool tx )
 // GPIO handling
 //
 
-/*void I2C_SC16IS750::pin_mode( uint8_t pin, bool write )
+bool I2C_SC16IS750::set_IO_direction( uint8_t pin, bool write )
 {
-	
+	uint8_t tmp = read_register( SC16IS750_IODIR );
+
+	if ( write )
+		return write_register( SC16IS750_IODIR, tmp  | ( 1 << pin )  );
+	else
+		return write_register( SC16IS750_IODIR, tmp  & ~( 1 << pin )  );
 }
 
-bool I2C_SC16IS750::read_GPIO( uint8_t pin )
+bool I2C_SC16IS750::pinMode( uint8_t pin, bool write )
 {
-	uint8_t pinStates = getIOState();
+	return set_IO_direction( pin, write ); 
+}
+
+uint8_t I2C_SC16IS750::get_IO_state( void )
+{
+	return read_register( SC16IS750_IOSTATE );
+}
+
+bool I2C_SC16IS750::digitalRead( uint8_t pin )
+{
+	uint8_t pinStates = get_IO_state();
 
 	if ( pin > 7 )
 		return false;
 
 	return (( pinStates & (1 << pin) ) != 0 );
 }
-*/
+
+bool I2C_SC16IS750::setup_GPIO_interrupt( uint8_t pin, bool enable )
+{
+	uint8_t tmp = read_register( SC16IS750_IOINTENA );
+
+	if ( enable )
+		return write_register( SC16IS750_IOINTENA, tmp | (1 << pin));
+	else
+		return write_register( SC16IS750_IOINTENA, tmp & ~(1 << pin));
+
+}
+
+bool I2C_SC16IS750::digitalWrite( uint8_t pin, bool high )
+{
+	uint8_t tmp = get_IO_state();
+
+	if ( high )
+		return write_register( SC16IS750_IOSTATE, tmp  | (1 << pin)  );
+	else
+		return write_register( SC16IS750_IOSTATE, tmp  & ~(1 << pin)  );
+}

@@ -21,6 +21,10 @@
 #ifndef _AWS_H
 #define _AWS_H
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 void OTA_callback( int, int );
 
 class AstroWeatherStation {
@@ -29,12 +33,13 @@ class AstroWeatherStation {
 		bool				debug_mode,
 							config_mode,
 							rain_event,
+							catch_rain_event,
 							solar_panel;
 		char				*json_sensor_data;
 		char				uptime[32];
 		uint8_t				eth_mac[6] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED },
 							wifi_mac[6];
-                
+
 		EthernetClient		*ethernet;
 		SSLClient			*ssl_eth_client;
 		IPAddress			ap_dns,
@@ -51,12 +56,17 @@ class AstroWeatherStation {
 							eth_subnet;
 		aws_wifi_mode_t		current_wifi_mode;
 		aws_iface_t			current_pref_iface;
-						
+
+		TaskHandle_t		aws_periodic_task_handle;
+		
 		AWSSensorManager 	sensor_manager;
 		AWSConfig			*config;
 		AWSWebServer 		*server;
 		alpaca_server		*alpaca;
+		AWSDome				*dome;
+		I2C_SC16IS750		*sc16is750;
 
+		void		check_rain_event_guard_time( void );
 		IPAddress	cidr_to_mask( byte );
 		bool		connect_to_wifi( void );
 		bool		disconnect_from_wifi( void );
@@ -67,6 +77,7 @@ class AstroWeatherStation {
 		bool		initialise_wifi( void );
 		byte		mask_to_cidr( uint32_t );
 		const char	*OTA_message( int );
+		void		periodic_tasks( void * );
 		void		post_content( const char *, const char * );
 		void		print_config_string( const char *, ... );
 		void		print_runtime_config( void );
@@ -105,6 +116,7 @@ class AstroWeatherStation {
 		void            reboot( void );
 		void            read_sensors( void );
 		void            send_data( void );
+		bool			sync_time( void );
 		void            initialise_sensors( void );
 		bool            update_config( JsonVariant & );
 };

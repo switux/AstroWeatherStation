@@ -19,6 +19,11 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 
 */
+
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #include <Arduino.h>
 #include <time.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
@@ -26,11 +31,10 @@
 #include <TinyGPSPlus.h>
 #include <SoftwareSerial.h>
 
-
+#include "SC16IS750.h"
 #include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
-#include "SC16IS750.h"
 #include "AWSSensorManager.h"
 
 SQM::SQM( Adafruit_TSL2591 *_tsl, sensor_data_t *_sensor_data )
@@ -143,7 +147,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 		if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
 
 				if ( debug_mode )
-					Serial.println( "[DEBUG] SQM: Increasing integration time." );
+					Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
 
 				change_integration_time( UP, &int_time_idx );
 				return false;
@@ -154,7 +158,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 			if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
 
 				if ( debug_mode )
-					Serial.println( "[DEBUG] SQM: Increasing integration time." );
+					Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
 
 				change_integration_time( UP, &int_time_idx );
 				return false;
@@ -169,7 +173,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 		} else {
 
 				if ( debug_mode )
-					Serial.println( "[DEBUG] Increasing gain." );
+					Serial.printf( "[DEBUG] Increasing gain.\n" );
 
 				change_gain( UP, &gain_idx );
 				return false;
@@ -180,7 +184,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 		if ( gain_idx != TSL2591_GAIN_LOW ) {
 
 			if ( debug_mode )
-				Serial.printf( "[DEBUG] Decreasing gain." );
+				Serial.printf( "[DEBUG] Decreasing gain.\n" );
 
 			change_gain( DOWN, &gain_idx );
 			return false;
@@ -188,7 +192,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 		} else {
 
 			if ( debug_mode )
-				Serial.println( "[DEBUG] Decreasing integration time." );
+				Serial.printf( "[DEBUG] Decreasing integration time.\n" );
 
 			change_integration_time( DOWN, &int_time_idx );
 			return false;

@@ -53,6 +53,9 @@ function display_values()
 			document.getElementById("has_rg9").checked = values['has_rg9'];
 			document.getElementById("has_gps").checked = values['has_gps'];
 
+			document.querySelector("#anemometer_model").value=values['anemometer_model'];
+			document.querySelector("#windvane_model").value=values['windvane_model'];
+			
 			if ( values['has_ethernet'] === true )
 				document.getElementById("iface_option").style.display = "table-row";
 			else

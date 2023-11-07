@@ -16,6 +16,11 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
@@ -38,6 +43,7 @@
 #include "AWSWeb.h"
 #include "SC16IS750.h"
 #include "AWSSensorManager.h"
+#include "dome.h"
 #include "alpaca.h"
 #include "AWS.h"
 

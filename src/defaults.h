@@ -2,26 +2,29 @@
 #ifndef _defaults_H
 #define _defaults_H
 
-#define	DEFAULT_CONFIG_PORT			80
-#define	DEFAULT_ETH_IP_MODE			dhcp
-#define	DEFAULT_HAS_BME				0
-#define	DEFAULT_HAS_ETHERNET		0
-#define	DEFAULT_HAS_GPS				0
-#define	DEFAULT_HAS_MLX				0
-#define	DEFAULT_HAS_RG9				0
-#define	DEFAULT_HAS_TSL				0
-#define	DEFAULT_HAS_WS				0
-#define	DEFAULT_HAS_WV				0
-#define	DEFAULT_MSAS_CORRECTION		-0.55
-#define	DEFAULT_PREF_IFACE			ap
-#define	DEFAULT_WIFI_MODE			both
-#define	DEFAULT_WIFI_STA_IP_MODE	dhcp
+#define	DEFAULT_CLOSE_DOME_ON_RAIN		1
+#define	DEFAULT_CONFIG_PORT				80
+#define	DEFAULT_ETH_IP_MODE				dhcp
+#define	DEFAULT_HAS_BME					0
+#define	DEFAULT_HAS_DOME				0
+#define	DEFAULT_HAS_ETHERNET			1
+#define	DEFAULT_HAS_GPS					0
+#define	DEFAULT_HAS_MLX					0
+#define	DEFAULT_HAS_RG9					0
+#define	DEFAULT_HAS_SC16IS750			1
+#define	DEFAULT_HAS_TSL					0
+#define	DEFAULT_HAS_WS					0
+#define	DEFAULT_HAS_WV					0
+#define	DEFAULT_MSAS_CORRECTION			-0.55
+#define	DEFAULT_PREF_IFACE				ap
+#define	DEFAULT_RAIN_EVENT_GUARD_TIME	60
+#define	DEFAULT_WIFI_MODE				both
+#define	DEFAULT_WIFI_STA_IP_MODE		dhcp
 
 #define	DEFAULT_SC16IS750_ADDR		0x90
 #define	GPS_RX		GPIO_NUM_23	// FIXME
 #define	GPS_TX		GPIO_NUM_5
 #define	GPS_SPEED	9600
-#define	SC16IS750	1
 
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_STA_SSID[]			= "AstroWeatherStation";

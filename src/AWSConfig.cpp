@@ -16,6 +16,9 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 
 #include <Ethernet.h>
 #include <SSLClient.h>
@@ -33,9 +36,9 @@
 #include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
-#include "SC16IS750.h"
 #include "AWSSensorManager.h"
 #include "AWSWeb.h"
+#include "dome.h"
 #include "alpaca.h"
 #include "AWSConfig.h"
 #include "AWS.h"
@@ -60,7 +63,8 @@ AWSConfig::AWSConfig( void )
 {
 	ap_ssid = NULL;
 	wifi_ap_password = NULL;
-	 sta_ssid = wifi_sta_password = remote_server = url_path = root_ca = tzname = eth_dns = eth_ip = eth_gw = wifi_sta_dns = wifi_sta_ip = wifi_sta_gw = wifi_ap_dns = wifi_ap_ip = wifi_ap_gw = NULL;
+	rain_event_guard_time = 60;
+	sta_ssid = wifi_sta_password = remote_server = url_path = root_ca = tzname = eth_dns = eth_ip = eth_gw = wifi_sta_dns = wifi_sta_ip = wifi_sta_gw = wifi_ap_dns = wifi_ap_ip = wifi_ap_gw = NULL;
 	wifi_mode = ap;
 }
 
@@ -92,6 +96,11 @@ const char *AWSConfig::get_anemometer_model_str( void )
 char *AWSConfig::get_ap_ssid( void )
 {
 	return ap_ssid;
+}
+
+bool AWSConfig::get_close_dome_on_rain( void )
+{
+	return close_dome_on_rain;
 }
 
 aws_iface_t	AWSConfig::get_config_iface( void )
@@ -129,6 +138,11 @@ bool AWSConfig::get_has_bme( void )
 	return has_bme;
 }
 
+bool AWSConfig::get_has_dome( void )
+{
+	return has_dome;
+}
+
 bool AWSConfig::get_has_ethernet( void )
 {
 	return has_ethernet;
@@ -147,6 +161,11 @@ bool AWSConfig::get_has_mlx( void )
 bool AWSConfig::get_has_rg9( void )
 {
 	return has_rg9;
+}
+
+bool AWSConfig::get_has_sc16is750( void )
+{
+	return has_sc16is750;
 }
 
 bool AWSConfig::get_has_tsl( void )
@@ -225,11 +244,17 @@ char *AWSConfig::get_json_string_config( void )
 	aws_json_config["has_wv"] = has_wv;
 	aws_json_config["windvane_model"] = wind_vane_model;
 	aws_json_config["has_rg9"] = has_rg9;
+	aws_json_config["rain_event_guard_time"] = rain_event_guard_time;
 	aws_json_config["has_gps"] = has_gps;
 	aws_json_config["wifi_mode"] = wifi_mode;
 	aws_json_config["alpaca_iface"] = alpaca_iface;
 	aws_json_config["config_iface"] = config_iface;
 
+	aws_json_config["has_sc16is750" ] = has_sc16is750;
+	
+	aws_json_config["has_dome"] = has_dome;
+	aws_json_config["close_dome_on_rain"] = close_dome_on_rain;
+	
 	aws_json_config["has_ethernet"] = has_ethernet;
 	
 	if ( serializeJson( aws_json_config, json_string, 1024 ) >= 1024 ) {
@@ -259,6 +284,11 @@ aws_iface_t AWSConfig::get_pref_iface( void )
 aws_pwr_src_t AWSConfig::get_pwr_mode( void )
 {
 	return pwr_mode;
+}
+
+uint16_t AWSConfig::get_rain_event_guard_time( void )
+{
+	return rain_event_guard_time;
 }
 
 char *AWSConfig::get_remote_server( void )
@@ -392,6 +422,7 @@ bool AWSConfig::read_config( void )
 	float			w;
 	bool			x;
 	uint8_t			y;
+	uint16_t		z;
 		
 	if ( !read_file( "/aws.conf", aws_json_config ) ) {
 		
@@ -471,6 +502,14 @@ bool AWSConfig::read_config( void )
 	if ( msas_calibration_offset != w )
 		msas_calibration_offset = w;
 
+	x = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
+	if ( close_dome_on_rain != x )
+		close_dome_on_rain = x;
+
+	x = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
+	if ( has_dome != x )
+		has_dome = x;
+
 	x = aws_json_config.containsKey( "has_bme" ) ? ( aws_json_config["has_bme"] == 1 ) : DEFAULT_HAS_BME;
 	if ( has_bme != x )
 		has_bme = x;
@@ -486,6 +525,14 @@ bool AWSConfig::read_config( void )
 	x = aws_json_config.containsKey( "has_rg9" ) ? ( aws_json_config["has_rg9"] == 1 ) : DEFAULT_HAS_RG9;
 	if ( has_rg9 != x )
 		has_rg9 = x;
+
+	z = aws_json_config.containsKey( "rain_event_guard_time" ) ? atof( aws_json_config["rain_event_guard_time"] ) : DEFAULT_RAIN_EVENT_GUARD_TIME;
+	if ( rain_event_guard_time != z )
+		rain_event_guard_time = z;
+		
+	x = aws_json_config.containsKey( "has_sc16is750" ) ? ( aws_json_config["has_sc16is750"] == 1 ) : DEFAULT_HAS_SC16IS750;
+	if ( has_sc16is750 != x )
+		has_sc16is750 = x;
 
 	x = aws_json_config.containsKey( "has_tsl" ) ? ( aws_json_config["has_tsl"] == 1 ) : DEFAULT_HAS_TSL;
 	if ( has_tsl != x )
@@ -654,6 +701,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("eth_gw"):
 			case str2int("eth_ip"):
 			case str2int("pref_iface"):
+			case str2int("rain_event_guard_time"):
 			case str2int("remote_server" ):
 			case str2int("root_ca" ):
 			case str2int("sta_ssid" ):
@@ -674,7 +722,9 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("eth_ip_mode"):
 				x = ( item.value() == "0" ) ? dhcp : fixed;
 				break;
+			case str2int("clone_dome_on_rain"):
 			case str2int("has_bme"):
+			case str2int("has_dome"):
 			case str2int("has_gps"):
 			case str2int("has_mlx"):
 			case str2int("has_rg9"):
@@ -700,6 +750,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	config_items["pcb_version"] = pcb_version;
 	config_items["pwr_mode"] = pwr_mode;
 	config_items["has_ethernet"] = has_ethernet;
+	config_items["has_sc16is750"] = has_sc16is750;
 
 	return true;	
 }

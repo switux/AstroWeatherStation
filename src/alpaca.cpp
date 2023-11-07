@@ -18,6 +18,10 @@
 
  */
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
@@ -29,17 +33,26 @@
 #include <SoftwareSerial.h>
 
 
+#include "SC16IS750.h"
 #include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
-#include "SC16IS750.h"
 #include "AWSSensorManager.h"
 #include "AWSWeb.h"
+#include "dome.h"
 #include "alpaca.h"
 #include "AWS.h"
 
 
 extern AstroWeatherStation station;
+
+const configured_device_t configured_devices[] = {
+
+	{ "Rain sensor", "Safetymonitor", 0, SAFETYMONITOR_UUID },
+	{ "Dome", "Dome", 0, DOME_UUID },
+	{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID }
+};
+
 
 alpaca_server::alpaca_server( void )
 {
@@ -99,10 +112,16 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 	server->on( "/management/v1/configureddevices", HTTP_GET, std::bind( &alpaca_server::alpaca_getconfigureddevices, this, std::placeholders::_1 ));
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &alpaca_server::send_file, this, std::placeholders::_1 ));
 
+	server->on( "/api/v1/safetymonitor/0/issafe", HTTP_GET, std::bind( &alpaca_server::safetymonitor_issafe, this, std::placeholders::_1 ));
 	server->onNotFound( std::bind( &alpaca_server::handle404, this, std::placeholders::_1 ));
 	server->begin();
 
 	return true;
+}
+
+void alpaca_server::safetymonitor_issafe( AsyncWebServerRequest *request )
+{
+	
 }
 
 void alpaca_server::get_config( AsyncWebServerRequest *request )

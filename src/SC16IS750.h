@@ -18,9 +18,13 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 
 */
-
+#pragma once
 #ifndef	_SC16IS750_H_
 #define	_SC16IS750_H_
+
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 
 #define	SC16IS750_RHR		(0x00)		// RX FIFO
 #define	SC16IS750_THR		(0X00)		// TX FIFO
@@ -164,8 +168,10 @@ class I2C_SC16IS750
 		int		peek( void );
 		void	flush( void );
 
-		bool	readGPIO( uint8_t );
-		void	pinMode( uint8_t, bool );
+		bool	digitalRead( uint8_t );
+		bool	digitalWrite( uint8_t, bool );
+		bool	pinMode( uint8_t, bool );
+		bool 	setup_GPIO_interrupt( uint8_t, bool );
 
 	private:
 
@@ -174,6 +180,7 @@ class I2C_SC16IS750
 		int		peek_byte;
 
 		void	FIFO_enable( bool );
+		uint8_t get_IO_state( void );
 		void	set_baudrate( uint32_t );
 		int8_t	read_register( uint8_t );
 		bool	write_register( uint8_t, uint8_t );
@@ -186,6 +193,8 @@ class I2C_SC16IS750
 		void	enable_extra_features( void );
 		void 	toggle_sleep( bool );
 		void	set_flow_control_levels( uint8_t, uint8_t );
+		bool 	set_IO_direction( uint8_t pin, bool write );
+
 		void 	enable_tcr_tlr( void );
 		void	enable_TX_RX( void );
 };

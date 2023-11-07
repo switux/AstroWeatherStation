@@ -22,10 +22,14 @@
 #ifndef _AstroWeatherStation_H
 #define _AstroWeatherStation_H
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #define DEBUG_MODE 1
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "20231027"
+#define BUILD_DATE "20231104"
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34

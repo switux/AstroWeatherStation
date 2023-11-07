@@ -16,6 +16,9 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 
 #include <Arduino.h>
 #include <time.h>
@@ -39,10 +42,10 @@
 #include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
-#include "SC16IS750.h"
 #include "AWSSensorManager.h"
 #include "AWSConfig.h"
 #include "AWSWeb.h"
+#include "dome.h"
 #include "alpaca.h"
 #include "AWS.h"
 
@@ -50,13 +53,17 @@ extern void IRAM_ATTR _handle_rain_event( void );
 extern char *pwr_mode_str[3];
 extern SemaphoreHandle_t sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
+RTC_DATA_ATTR time_t rain_event_timestamp = 0;
+
 AstroWeatherStation::AstroWeatherStation( void )
 {
 	rain_event = false;
 	config_mode = false;
 	debug_mode = false;
+	catch_rain_event = true;
 	config = new AWSConfig();
 	json_sensor_data = (char *)malloc( 1024 );
+	sc16is750 = NULL;
 }
 
 void AstroWeatherStation::check_ota_updates( void )
@@ -75,6 +82,25 @@ void AstroWeatherStation::check_ota_updates( void )
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
 	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV );
 	Serial.printf( "[INFO] Firmware OTA update result: %s.\n", OTA_message( ret_code ));
+}
+
+void AstroWeatherStation::check_rain_event_guard_time( void )
+{
+	if ( catch_rain_event )
+		return;
+		
+	if ( ( time( NULL) - rain_event_timestamp ) <= config->get_rain_event_guard_time() )
+		return;
+
+	if ( config->get_has_rg9() ) {
+
+		if ( debug_mode )
+			Serial.printf( "\n[DEBUG] Now monitoring rain event pin from RG-9\n" );
+
+		pinMode( GPIO_RG9_RAIN, INPUT );
+		attachInterrupt( GPIO_RG9_RAIN, _handle_rain_event, FALLING );
+		catch_rain_event = true;
+	}
 }
 
 IPAddress AstroWeatherStation::cidr_to_mask( byte cidr )
@@ -327,11 +353,17 @@ IPAddress *AstroWeatherStation::get_sta_ip( void )
 
 void AstroWeatherStation::handle_rain_event( void )
 {
-	Serial.printf("RAIN\n");
-	// FIXME: double?
-	rain_event = true;
-	sensor_manager.set_rain_event();
 	detachInterrupt( GPIO_RG9_RAIN );
+
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Rain event.\n" );
+
+	time( &rain_event_timestamp );
+	sensor_manager.set_rain_event();
+	if ( config->get_has_dome() && config->get_close_dome_on_rain() )
+		dome->trigger_close();
+
+	catch_rain_event = false;
 }
 
 bool AstroWeatherStation::initialise( void )
@@ -362,6 +394,26 @@ bool AstroWeatherStation::initialise( void )
 
 		config->rollback();
 		return false;
+	}
+
+	if ( config->get_has_sc16is750() ) {
+		sc16is750 = new I2C_SC16IS750( DEFAULT_SC16IS750_ADDR );
+	}
+
+	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
+	if ( config->get_has_dome() )
+		dome = new AWSDome( sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+
+	if ( !solar_panel ) {
+
+		if ( config->get_has_rg9() ) {
+
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Now monitoring rain event pin from RG-9\n" );
+
+			pinMode( GPIO_RG9_RAIN, INPUT );
+			attachInterrupt( GPIO_RG9_RAIN, _handle_rain_event, FALLING );
+		}
 	}
 
 	if ( solar_panel ) {
@@ -406,7 +458,7 @@ bool AstroWeatherStation::initialise( void )
 	if ( rain_event ) {
 
 		Serial.printf("RAIN EVENT\n");
-		sensor_manager.initialise( config, debug_mode );
+		sensor_manager.initialise( sc16is750, config, debug_mode );
 		sensor_manager.initialise_RG9();
 		sensor_manager.read_RG9();
 		rain_intensity = sensor_manager.get_sensor_data()->rain_intensity;
@@ -417,18 +469,15 @@ bool AstroWeatherStation::initialise( void )
 		return true;
 	}
 
-	if ( !sensor_manager.initialise( config, debug_mode ))
+	if ( !sensor_manager.initialise( sc16is750, config, debug_mode ))
 		return false;
 
-	// QUESTION: move earlier?
-	if ( !solar_panel ) {
-
-		if ( config->get_has_rg9() ) {
-
-			pinMode( GPIO_RG9_RAIN, INPUT );
-			attachInterrupt( GPIO_RG9_RAIN, _handle_rain_event, FALLING );
-		}
-	}
+	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
+	xTaskCreatePinnedToCore( 
+		[](void *param) {
+            std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );
+            (*periodic_tasks_proxy)( NULL );
+		}, "GPSFeed", 2000, &_feed, 5, &aws_periodic_task_handle, 1 );
 
 	return true;
 }
@@ -506,7 +555,7 @@ bool AstroWeatherStation::initialise_network( void )
 
 void AstroWeatherStation::initialise_sensors( void )
 {
-	sensor_manager.initialise_sensors();
+	sensor_manager.initialise_sensors( sc16is750 );
 }
 
 bool AstroWeatherStation::initialise_wifi( void )
@@ -608,6 +657,26 @@ const char *AstroWeatherStation::OTA_message( int code )
 			break;
 	}
 	return "Unknown error";
+}
+
+void AstroWeatherStation::periodic_tasks( void *dummy )
+{
+	uint8_t	sync_time_mod = 1;
+	
+	while ( true ) {
+
+		if ( sync_time_mod % 5 )
+
+			sync_time_mod++;
+
+		else {
+
+			sync_time();
+			sync_time_mod = 1;
+		}
+		check_rain_event_guard_time();
+		delay( 1000 );
+	}
 }
 
 void AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
@@ -894,6 +963,32 @@ bool AstroWeatherStation::startup_sanity_check( void )
 bool AstroWeatherStation::stop_hotspot( void )
 {
 	return WiFi.softAPdisconnect();
+}
+
+bool AstroWeatherStation::sync_time( void )
+{
+	const char	*ntp_server = "pool.ntp.org";
+	bool		ntp_synced;
+	uint8_t		ntp_retries = 5;
+   	struct 		tm timeinfo;
+
+	if ( config->get_has_gps() && sensor_manager.get_sensor_data()->gps.fix )
+		return true;
+	return true;
+	configTzTime( config->get_tzname(), ntp_server );
+
+	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
+
+		delay( 1000 );
+		configTzTime( config->get_tzname(), ntp_server );
+	}
+	if ( debug_mode ) {
+
+		Serial.printf( "[DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
+		Serial.print( "Time and date: " );
+		Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
+	}
+	return ntp_synced;
 }
 
 bool AstroWeatherStation::update_config( JsonVariant &proposed_config )

@@ -17,15 +17,21 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+
 #include <SoftwareSerial.h>
 #include <TinyGPSPlus.h>
 #include "defaults.h"
 #include "SC16IS750.h"
+
 #include "AWSGPS.h"
 
-AWSGPS::AWSGPS( bool _debug_mode )
+AWSGPS::AWSGPS( bool _debug_mode)
 {
 	debug_mode = _debug_mode;
+	update_rtc = false;
 	gps_task_handle = NULL;
 }
 
@@ -35,14 +41,23 @@ void AWSGPS::feed( void *dummy )
 
 	while( true ) {
 
-		start = millis();
-		do {
-			while( gps_serial->available() )
-				gps.encode( gps_serial->read() );
-			delay( 5 );
-		} while( ( millis() - start ) < 1000 );
-		update_data();
-		delay( 100 );
+#ifdef DEFAULT_HAS_SC16IS750
+		if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
+#endif
+			start = millis();
+			do {
+				while( gps_serial->available() )
+					gps.encode( gps_serial->read() );
+				delay( 5 );
+			} while( ( millis() - start ) < 1000 );
+
+			xSemaphoreGive( i2c_mutex );
+			update_data();
+			delay( 5000 );
+#ifdef DEFAULT_HAS_SC16IS750
+		} else
+			delay( 5000 );
+#endif
 	}
 }
 
@@ -67,6 +82,8 @@ void AWSGPS::update_data( void )
 		gpstime.tm_isdst = -1;
 		now = mktime( &gpstime );
 		gps_data->time.tv_sec = now;
+		if ( update_rtc )
+			settimeofday( &gps_data->time, 0 );
 
 	} else {
 
@@ -79,18 +96,23 @@ void AWSGPS::update_data( void )
 	}
 }
 
-bool AWSGPS::initialise( gps_data_t *_gps_data )
+bool AWSGPS::initialise( gps_data_t *_gps_data, I2C_SC16IS750 *sc16is750, SemaphoreHandle_t _i2c_mutex )
 {
 	gps_data = _gps_data;
 
-#ifdef SC16IS750
+#ifdef DEFAULT_HAS_SC16IS750
 
-	gps_serial = new I2C_SC16IS750( DEFAULT_SC16IS750_ADDR );
+	i2c_mutex = _i2c_mutex;
+	while ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) != pdTRUE );
+	
+	gps_serial = sc16is750;
 	if ( !gps_serial->begin( GPS_SPEED )) {
 
 		Serial.printf( "[ERROR] Could not find I2C UART. GPS disabled!\n" );
+		xSemaphoreGive( i2c_mutex );
 		return false;
 	}
+	xSemaphoreGive( i2c_mutex );
 
 #else
 
@@ -99,6 +121,11 @@ bool AWSGPS::initialise( gps_data_t *_gps_data )
 
 #endif
 	return true;
+}
+
+void AWSGPS::pilot_rtc( bool _update_rtc )
+{
+	update_rtc = _update_rtc;
 }
 
 void AWSGPS::resume( void )
@@ -114,7 +141,7 @@ bool AWSGPS::start( void )
 		[](void *param) {
             std::function<void(void*)>* feed_proxy = static_cast<std::function<void(void*)>*>( param );
             (*feed_proxy)( NULL );
-		}, "GPSFeed", 10000, &_feed, 10, &gps_task_handle, 1 );
+		}, "GPSFeed", 2000, &_feed, 10, &gps_task_handle, 1 );
 
 	return true;
 }

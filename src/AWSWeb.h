@@ -21,6 +21,9 @@
 #ifndef _AWSWebServer_H
 #define _AWSWebServer_H
 
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 
 class AWSWebServer {
 
