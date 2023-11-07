@@ -8,31 +8,35 @@ This project aims to provide all the instructions that are needed to build a wea
 
 ## STATUS & DEVELOPMENT
 
-This is version 1.0 of the project. You may want to have a look at version 3.0 even though it is still being tested (stability/robustness).
+This is version 3.0 of the project. **It is still work in progress.**
 
-Improvements since v0.9:
-
-  - Hardware
-    - Single universal PCB
-    - RG-9 has now a 12V power input, aligned with the wind sensors, because of brownouts with the 5V output (unstabilitiy with the Mini560, too close from RG-9 voltage requirements)
-    - 5V relay is now a 12V relay and has been moved between the wind sensors' power input and the MT3608 output, because of the above RG9 issue
-    - Using a latching push button for debug mode
-    - Better voltage divider resistor values to be closer to the 3.3V max voltage while still using mostly "mainstream" resistor values
-    
-  - Software
-    - More robust RG-9 probing (although rain events are correctly reported)
-    - Battery level estimation improvements, shrunk voltage range from 0V-4.2V to 3V-4.2V to take battery's EODV into account
-    - Alarms sent in case the RG-9 has firmware issues reported during its initialisation
-    
-Possible future improvements:
+New features in this version:
 
   - Hardware
-    - Maybe replace the 2 channels relay by a set of mosfets to further reduce current drain (as the relay itself needs to be powered up)
-    
+    - Addition of POE module
+    - Addition of GPS support
+    - Addition of I2C UART/GPIO extender (SC16IS750)
+    - Two relays to control the observatory dome
+    - Input to receive dome status
+      
   - Software
-    - Some runtime configuration parameters can be retrieved over HTTPS from the observatory's server (to avoid rebuilds)
-    - Stay in debug mode until the next reboot
-       
+    - ASCOM ALPACA Server
+    - Support of ultrasonic wind sensors for adverse conditions (frost)
+    - Dome closure upon rain event
+
+Improvements:
+
+  - Configuration UI
+  - Removed configuration button and replaced by guard time on the reboot button (10s)
+  - Clear/cloudy/overcast sky states instead of overcast/clear
+
+The things that might be improved in v3.1 are:
+
+  - Software
+    - TBD
+  - Hardware
+    - TBD
+
 ## FEATURES
 
   - Weather parameters:
@@ -49,6 +53,7 @@ Possible future improvements:
   
     - Cloud coverage
     - Solar irradiance
+    - Sky Quality Meter
   
   - Alarms for:
   
@@ -62,21 +67,35 @@ Possible future improvements:
     - External reboot button
     - Debug button (to be pushed when rebooting to activate debug mode)
     - External micro USB socket for debugging (serial console) and firmware updates
-
-## ASSUMPTIONS
-
-A Wifi network is available to send sensor data and send alarms. In my case this is provided by a 4G module attached to a Raspberry Pi 4 which pilots the instruments.
+    - Configuration mode and runtime configuration updates activable via button
 
 ## SPECIFICATIONS
 
-  - Power consumption: N/A
-  - Autonomy: N/A
-  - Batteries max. charges / life span: **500x or 2-3 years**
-  - Measures
+This section is being reworked as there are different hardware setups.
+
+  - Power consumption:
+    - Solar panel version:
+       - 12mA in sleep mode
+       - ~40mA while active (for ~30s)
+  - Autonomy: N/A (collecting data)
+  - Measures (from sensor specs)
     - Illuminance range: 0-88k Lux ( up to ~730 W/m² )
     - Temperature range: -40°C to +85°C
     - Pressure: 300 to 1100 hPa
-    - Wind speed: 0 to 30 m/s
+    - Wind speed: 0 to 60 m/s
+
+## About the SQM feature
+
+This is now validated.
+
+    - 20°FoV lens put in front of the TSL2591 (comparable to the SQM-Lx)
+    - Calibration against my SQM-LE done
+    
+## Open points
+
+   - The RG9 sensor raises false positives during day because (I guess) of condensation. I try to mitigate this but since it is happening during daytime, it is only a minor issue.
+
+## Runtime configuration interface
 
 ## Alarms format
 
@@ -140,3 +159,9 @@ I found inspiration in the following pages / posts:
     - https://jeelabs.org/2013/05/18/zero-power-measurement-part-2/index.html
   - To workaround the 3.3V limitation to trigger the P-FET of the above ( I used an IRF930 to drive the IRF9540 )
     - https://electronics.stackexchange.com/a/562942
+  - Solar panel tilt
+    - https://globalsolaratlas.info/
+  - TSL2591 response to temperature by Marco Gulino
+    - https://github.com/gshau/SQM_TSL2591/commit/9a9ae893cad6f4f078f75384403336409ca85380  
+  - Conversion of lux to W/m<sup>2</sup>
+    - P. Michael, D. Johnston, W. Moreno, 2020. https://pdfs.semanticscholar.org/5d6d/ad2e803382910c8a8b0f2dd0d71e4290051a.pdf, section 5. Conclusions. The bottomline is 120 lx = 1 W/m<sup>2</sup> is the engineering rule of thumb.
