@@ -36,7 +36,7 @@ The things that might be improved in v3.1 are:
     - TBD
   - Hardware
     - TBD
-   
+
 ## FEATURES
 
   - Weather parameters:
@@ -55,7 +55,7 @@ The things that might be improved in v3.1 are:
     - Solar irradiance
     - Sky Quality Meter
   
-  - Alarms (to be handled on the server side) for:
+  - Alarms for:
   
     - Sensor unavailability
     - Rain event
@@ -151,7 +151,7 @@ Where
 
 ## REFERENCES
 
-I found inspiration and solutions to problems in the following pages / posts:
+I found inspiration in the following pages / posts:
 
   - No need to push the BOOT button on the ESP32 to upload new sketch
     - https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header

@@ -23,6 +23,9 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+#undef CONFIG_DISABLE_HAL_LOCKS
+#define _ASYNC_WEBSERVER_LOGLEVEL_       0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_       0
 
 #include <ArduinoJson.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
@@ -33,17 +36,18 @@
 #include <SSLClient.h>
 #include <SoftwareSerial.h>
 
-extern const char *_anemometer_model[2];
-extern const char *_windvane_model[2];
+extern const char *_anemometer_model[3];
+extern const char *_windvane_model[3];
 
 #include "gpio_config.h"
-#include "GPS.h"
+#include "SC16IS750.h"
+#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "AWSConfig.h"
 #include "AWSWeb.h"
-#include "SC16IS750.h"
 #include "AWSSensorManager.h"
+#include "dome.h"
 #include "alpaca.h"
 #include "AWS.h"
 
@@ -67,7 +71,10 @@ void setup()
 			station.read_sensors();
 			station.send_data();
 			station.check_ota_updates();
-		}
+
+		} else
+		
+			station.handle_rain_event();
 
 		Serial.printf( "[INFO] Entering sleep mode.\n" );
 
@@ -75,6 +82,7 @@ void setup()
 		esp_sleep_enable_ext0_wakeup( GPIO_RG9_RAIN, LOW );
 		esp_deep_sleep_start();
 	}
+
 }
 
 void loop()
@@ -85,10 +93,8 @@ void loop()
 		while (true) { delay( 10000 ); }
 	}
 
-
 	while( true ) {
 
-		station.read_sensors();
 		station.send_data();
 		station.check_ota_updates();
 		delay( 1000 * 60 * 5 );
@@ -98,5 +104,6 @@ void loop()
 
 void IRAM_ATTR _handle_rain_event( void )
 {
+	Serial.printf( "\n[INFO] ## RAIN EVENT INTERRUPT ##\n");
 	station.handle_rain_event();
 }
