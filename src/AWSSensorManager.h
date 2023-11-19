@@ -104,6 +104,11 @@ class AWSSensorManager {
 						solar_panel;
     TaskHandle_t		sensors_task_handle;
     SemaphoreHandle_t	i2c_mutex = NULL;
+   	float				*wind_speeds;
+   	uint32_t			polling_ms_interval;
+   	byte				wind_speed_index,
+   						wind_speeds_size;
+
     /*
       #ifdef USE_SC16IS750
     		SC16IS750			*sc16is750;
@@ -119,6 +124,8 @@ class AWSSensorManager {
     bool			initialise( I2C_SC16IS750 *, AWSConfig *, bool );
     bool			initialise_RG9( void );
     void			initialise_sensors( I2C_SC16IS750 * );
+    bool			poll_sensors( void );
+    bool			rain_sensor_available( void );
     void			read_RG9( void );
     void			read_sensors( void );
     void			reset_rain_event( void );
