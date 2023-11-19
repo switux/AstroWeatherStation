@@ -29,7 +29,7 @@
 #define DEBUG_MODE 1
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "20231104"
+#define BUILD_DATE "20231119"
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34
@@ -65,14 +65,24 @@
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
+#define	ASCOM_RG9_DESCRIPTION		"Hydreon RG-9 Rain sensor"
+#define	ASCOM_RG9_DRIVER_INFO		"Hydreon RG-9 Driver (c) OpenAstroDevices 2023"
+#define	ASCOM_RG9_DRIVER_VERSION	"1.0.1.0"
+#define	ASCOM_RG9_NAME				"Hydreon RG-9"
+
+#define	ASCOM_DOME_DESCRIPTION		"Generic roof top"
+#define	ASCOM_DOME_DRIVER_INFO		"Generic roof top driver (c) OpenAstroDevices 2023"
+#define	ASCOM_DOME_DRIVER_VERSION	"1.0.0.0"
+#define	ASCOM_DOMEffff_NAME				"Generic roof top"
+
 struct sensor_data_t {
 
 	char			*ota_board;
 	char			*ota_device;
 	char			*ota_config;
-	
+
 	time_t			timestamp;
-	
+
 	float			battery_level;
 
 	float			temperature;
@@ -80,15 +90,17 @@ struct sensor_data_t {
 	float			sl_pressure;
 	float			rh;
 	float			wind_speed;
+	float			wind_gust;
 	int				wind_direction;
 	float			dew_point;
 
 	bool			rain_event;
-	uint8_t			rain_intensity;
-	
+	short			rain_intensity;
+
 	float			ambient_temperature;
 	float			sky_temperature;
-
+	float			cloud_cover;
+	
 	float			msas;
 	float			nelm;
 	uint16_t		gain;
@@ -101,7 +113,7 @@ struct sensor_data_t {
 	float			irradiance;
 
 	struct timeval	ntp_time;
-	
+
 	gps_data_t		gps;
 };
 

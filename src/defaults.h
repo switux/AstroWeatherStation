@@ -26,6 +26,8 @@
 #define	GPS_TX		GPIO_NUM_5
 #define	GPS_SPEED	9600
 
+#define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
+
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_STA_SSID[]			= "AstroWeatherStation";
 static const char DEFAULT_WIFI_STA_PASSWORD[]	= "AWS2023!";

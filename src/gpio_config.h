@@ -51,4 +51,7 @@
 #define	GPIO_DOME_1				0
 #define	GPIO_DOME_2				1
 
+#define	GPIO_DOME_STATUS		GPIO_NUM_39
+#define	GPIO_DOME_OPENING		GPIO_NUM_36
+
 #endif

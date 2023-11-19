@@ -23,6 +23,7 @@
 #undef CONFIG_DISABLE_HAL_LOCKS
 #define _ASYNC_WEBSERVER_LOGLEVEL_       0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#define ASYNCWEBSERVER_REGEX	1
 
 #include <Arduino.h>
 #include <time.h>
