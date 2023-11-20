@@ -19,6 +19,7 @@
 #undef CONFIG_DISABLE_HAL_LOCKS
 #define _ASYNC_WEBSERVER_LOGLEVEL_       0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#define ASYNCWEBSERVER_REGEX	1
 
 #include <Ethernet.h>
 #include <SSLClient.h>
@@ -54,7 +55,11 @@ const char	*pwr_mode_str[3] = {
 //
 // Credits to: https://stackoverflow.com/a/16388610
 //
+<<<<<<< HEAD
+constexpr unsigned int str2int(const char* str, int h )
+=======
 constexpr unsigned int str2int(const char* str, int h = 0)
+>>>>>>> main
 {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
@@ -692,6 +697,47 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	
 	for( JsonPair item : config_items ) {
 
+<<<<<<< HEAD
+		switch( str2int( item.key().c_str(), 0 )) {
+
+			case str2int("alpaca_iface", 0 ):
+			case str2int("anemometer_model", 0 ):
+			case str2int("ap_ssid", 0  ):
+			case str2int("eth_dns", 0 ):
+			case str2int("eth_gw", 0 ):
+			case str2int("eth_ip", 0 ):
+			case str2int("pref_iface", 0 ):
+			case str2int("rain_event_guard_time", 0 ):
+			case str2int("remote_server", 0  ):
+			case str2int("root_ca", 0  ):
+			case str2int("sta_ssid", 0  ):
+			case str2int("tzname", 0 ):
+			case str2int("url_path", 0 ):
+			case str2int("wifi_ap_dns", 0 ):
+			case str2int("wifi_ap_gw", 0 ):
+			case str2int("wifi_ap_ip", 0 ):
+			case str2int("wifi_ap_password", 0 ):
+			case str2int("wifi_mode", 0 ):
+			case str2int("wifi_sta_dns", 0 ):
+			case str2int("wifi_sta_gw", 0 ):
+			case str2int("wifi_sta_ip", 0 ):
+			case str2int("wifi_sta_ip_mode", 0 ):
+			case str2int("wifi_sta_password", 0 ):
+			case str2int("windvane_model", 0 ):
+				break;
+			case str2int("eth_ip_mode", 0):
+				x = ( item.value() == "0" ) ? dhcp : fixed;
+				break;
+			case str2int("clone_dome_on_rain", 0):
+			case str2int("has_bme", 0):
+			case str2int("has_dome", 0):
+			case str2int("has_gps", 0):
+			case str2int("has_mlx", 0):
+			case str2int("has_rg9", 0):
+			case str2int("has_tsl", 0):
+			case str2int("has_ws", 0):
+			case str2int("has_wv", 0):
+=======
 		switch( str2int( item.key().c_str() )) {
 
 			case str2int("alpaca_iface"):
@@ -731,6 +777,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("has_tsl"):
 			case str2int("has_ws"):
 			case str2int("has_wv"):
+>>>>>>> main
 				config_items[item.key().c_str()] = ( item.value() == "on" ) ? 1 : 0;
 				break;
 			default:

@@ -19,6 +19,7 @@
 #undef CONFIG_DISABLE_HAL_LOCKS
 #define _ASYNC_WEBSERVER_LOGLEVEL_       0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#define ASYNCWEBSERVER_REGEX	1
 
 #include <Arduino.h>
 #include <time.h>
@@ -60,6 +61,7 @@ AstroWeatherStation::AstroWeatherStation( void )
 	rain_event = false;
 	config_mode = false;
 	debug_mode = false;
+	ntp_synced = false;
 	catch_rain_event = true;
 	config = new AWSConfig();
 	json_sensor_data = (char *)malloc( 1024 );
@@ -241,9 +243,25 @@ uint16_t AstroWeatherStation::get_config_port( void )
 	return config->get_config_port();
 }
 
+AWSDome	*AstroWeatherStation::get_dome( void )
+{
+	return dome;
+}
+
 byte AstroWeatherStation::get_eth_cidr_prefix( void )
 {
 	return mask_to_cidr( (uint32_t)eth_subnet );
+}
+
+bool AstroWeatherStation::get_location_coordinates( double *latitude, double *longitude )
+{
+	if ( sensor_manager.get_sensor_data()->gps.fix ) {
+
+		*longitude = sensor_manager.get_sensor_data()->gps.longitude;
+		*latitude = sensor_manager.get_sensor_data()->gps.latitude;
+		return true;
+	}
+	return false;
 }
 
 IPAddress *AstroWeatherStation::get_eth_dns( void )
@@ -327,7 +345,7 @@ char *AstroWeatherStation::get_uptime( void )
 	int minutes = floor( fmod( uptime_s, 3600 ) / 60 );
 	int seconds = fmod( uptime_s, 60 );
 
-	sprintf( uptime, "%llu %03dd:%02dh:%02dm:%02ds", uptime_s, days, hours, minutes, seconds );
+	sprintf( uptime, "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
 	return uptime;
 }
 
@@ -364,6 +382,16 @@ void AstroWeatherStation::handle_rain_event( void )
 		dome->trigger_close();
 
 	catch_rain_event = false;
+}
+
+bool AstroWeatherStation::has_gps( void )
+{
+	return config->get_has_gps();
+}
+
+bool AstroWeatherStation::has_rain_sensor( void )
+{
+	return config->get_has_rg9();
 }
 
 bool AstroWeatherStation::initialise( void )
@@ -429,19 +457,19 @@ bool AstroWeatherStation::initialise( void )
 		start_config_server();
 	}
 
-	alpaca = new alpaca_server();
+	alpaca = new alpaca_server( debug_mode );
 	switch ( config->get_alpaca_iface() ) {
 
 		case sta:
-			alpaca->start( WiFi.localIP(), debug_mode  );
+			alpaca->start( WiFi.localIP() );
 			break;
 
 		case ap:
-			alpaca->start( WiFi.softAPIP(), debug_mode  );
+			alpaca->start( WiFi.softAPIP() );
 			break;
 
 		case eth:
-			alpaca->start( Ethernet.localIP(), debug_mode  );
+			alpaca->start( Ethernet.localIP() );
 			break;
 
 	}
@@ -586,6 +614,11 @@ bool AstroWeatherStation::initialise_wifi( void )
 	return false;
 }
 
+bool AstroWeatherStation::is_ntp_synced( void )
+{
+	return ntp_synced;
+}
+
 bool AstroWeatherStation::is_rain_event( void )
 {
 	return rain_event;
@@ -677,6 +710,11 @@ void AstroWeatherStation::periodic_tasks( void *dummy )
 		check_rain_event_guard_time();
 		delay( 1000 );
 	}
+}
+
+bool AstroWeatherStation::poll_sensors( void )
+{
+	return sensor_manager.poll_sensors();
 }
 
 void AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
@@ -818,6 +856,11 @@ void AstroWeatherStation::print_runtime_config( void )
 	print_config_string( "# ANEMOMETER   : %s", config->get_has_ws() ? "Yes" : "No" );
 	print_config_string( "# RAIN SENSOR  : %s", config->get_has_rg9() ? "Yes" : "No" );
 
+}
+
+bool AstroWeatherStation::rain_sensor_available( void )
+{
+	return sensor_manager.rain_sensor_available();
 }
 
 void AstroWeatherStation::read_sensors( void )
@@ -968,7 +1011,6 @@ bool AstroWeatherStation::stop_hotspot( void )
 bool AstroWeatherStation::sync_time( void )
 {
 	const char	*ntp_server = "pool.ntp.org";
-	bool		ntp_synced;
 	uint8_t		ntp_retries = 5;
    	struct 		tm timeinfo;
 
