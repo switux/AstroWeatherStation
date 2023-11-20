@@ -49,7 +49,6 @@
 #include "dome.h"
 #include "alpaca.h"
 #include "AWS.h"
-#include "ta.h"
 
 extern void IRAM_ATTR _handle_rain_event( void );
 extern char *pwr_mode_str[3];
