@@ -96,7 +96,10 @@ class AstroWeatherStation {
 
 		                AstroWeatherStation( void );
 		void            check_ota_updates( void );
+<<<<<<< HEAD
 		AWSDome			*get_dome( void );
+=======
+>>>>>>> main
 		sensor_data_t   *get_sensor_data( void );
 		uint16_t        get_config_port( void );
         byte            get_eth_cidr_prefix( void );
@@ -105,7 +108,10 @@ class AstroWeatherStation {
 		IPAddress       *get_eth_ip( void );
         char            *get_json_sensor_data( void );
         char            *get_json_string_config( void );
+<<<<<<< HEAD
         bool			get_location_coordinates( double *, double * );
+=======
+>>>>>>> main
         char            *get_root_ca( void );
 		char            *get_uptime( void );
         byte            get_sta_cidr_prefix( void );
@@ -113,6 +119,7 @@ class AstroWeatherStation {
 		IPAddress       *get_sta_gw( void );
         IPAddress       *get_sta_ip( void );
 		void            handle_rain_event( void );
+<<<<<<< HEAD
 		bool			has_gps( void );
 		bool			has_rain_sensor( void );
 		bool            initialise( void );
@@ -122,6 +129,11 @@ class AstroWeatherStation {
 		bool            on_solar_panel();
 		bool			poll_sensors( void );
 		bool			rain_sensor_available( void );
+=======
+		bool            initialise( void );
+		bool            is_rain_event( void );
+		bool            on_solar_panel();
+>>>>>>> main
 		void            reboot( void );
 		void            read_sensors( void );
 		void            send_data( void );

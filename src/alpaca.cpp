@@ -541,8 +541,6 @@ void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest 
 
 void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 {
-//	int zero = 0;
-	
 	switch( _str2int( request->pathArg(1).c_str() )) {
 
 		case _str2int( "athome" ):
@@ -679,7 +677,7 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 
 		case _str2int( "equatorialsystem" ):
 			if ( request->method() == HTTP_GET )
-				telescope->return_value( request, transaction_details, (byte)0 ); // use 'zero' otherwise you're yell at by the compiler, try putting 0 and you'll see
+				telescope->return_value( request, transaction_details, (byte)0 );
 			else
 				does_not_exist( request );	
 			break;
@@ -866,6 +864,7 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 			does_not_exist( request );	
 	}
 }
+
 void alpaca_server::does_not_exist( AsyncWebServerRequest *request )
 {
 	int params = request->params();
@@ -1179,3 +1178,4 @@ void ascom_device::supportedactions( AsyncWebServerRequest *request, const char 
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
+
