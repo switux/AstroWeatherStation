@@ -63,12 +63,8 @@ AWSSensorManager::AWSSensorManager( void )
 	available_sensors = 0;
 	rg9_initialised = 0;
 	sensor_data = {0};
-<<<<<<< HEAD
 	polling_ms_interval = DEFAULT_SENSOR_POLLING_MS_INTERVAL;
 	
-=======
-
->>>>>>> main
 	i2c_mutex = xSemaphoreCreateMutex();
 }
 
@@ -117,12 +113,9 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 	if ( !solar_panel ) {
 
 		initialise_sensors( sc16is750 );
-<<<<<<< HEAD
 		wind_speeds_size = ( 2*60*1000 / polling_ms_interval );
 		wind_speeds = (float *)malloc( wind_speeds_size * sizeof( float ));
 		wind_speed_index = 0;
-=======
->>>>>>> main
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore( 
@@ -538,11 +531,7 @@ void AWSSensorManager::read_RG9( void  )
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] RG9 STATUS = [%s]\n", msg );
 
-<<<<<<< HEAD
 	sensor_data.rain_intensity = static_cast<short>( msg[2] - '0' );
-=======
-	sensor_data.rain_intensity = static_cast<uint8_t>( msg[2] - '0' );
->>>>>>> main
 }
 
 void AWSSensorManager::read_sensors( void )
@@ -766,7 +755,6 @@ const char *AWSSensorManager::RG9_reset_cause( char code )
 	}
 }
 
-<<<<<<< HEAD
 bool AWSSensorManager::poll_sensors( void )
 {
 	if ( xSemaphoreTake( sensors_read_mutex, 2000 / portTICK_PERIOD_MS ) == pdTRUE ) {
@@ -782,8 +770,6 @@ bool AWSSensorManager::poll_sensors( void )
 	return false;
 }
 
-=======
->>>>>>> main
 void AWSSensorManager::poll_sensors_task( void *dummy )
 {
 	while( true ) {
@@ -792,18 +778,12 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
-<<<<<<< HEAD
 			if ( wind_speed_index == wind_speeds_size )
 				wind_speed_index = 0;
 			wind_speeds[ wind_speed_index++ ] = sensor_data.wind_speed;
 			sensor_data.wind_gust = *std::max_element( wind_speeds, wind_speeds + wind_speeds_size );
 		}
 		delay( polling_ms_interval );
-=======
-
-		}
-		delay( 15000 );
->>>>>>> main
 	}
 }
 
