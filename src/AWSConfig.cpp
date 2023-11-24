@@ -736,7 +736,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("has_tsl", 0):
 			case str2int("has_ws", 0):
 			case str2int("has_wv", 0):
-			case str2int("has_home",0):
+			case str2int("has_dome",0):
 				config_items[item.key().c_str()] = ( item.value() == "on" ) ? 1 : 0;
 				break;
 			default:
