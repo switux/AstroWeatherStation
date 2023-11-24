@@ -21,6 +21,7 @@
 #define _ETHERNET_WEBSERVER_LOGLEVEL_      0
 #define ASYNCWEBSERVER_REGEX	1
 
+#include <esp_task_wdt.h>
 #include <ESP32Time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -198,6 +199,7 @@ bool AWSSensorManager::initialise_RG9( void )
 			
 		for ( uint8_t j = 0; j < RG9_SERIAL_SPEEDS; j++ ) {
 
+			esp_task_wdt_reset();
 			rg9->begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
 			rg9->println();
 			rg9->println();
@@ -695,13 +697,17 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		
 		if ( config->get_has_bme() )
 			read_BME();
-
+		
+		esp_task_wdt_reset();
+		
 		if ( config->get_has_mlx() )
 			read_MLX();
-		
+
+		esp_task_wdt_reset();		
+
 		if ( config->get_has_tsl() ) {
 
-			// FIXME: what if mlx is down?
+			// FIXME: what if mlx is down, since we get the temperature from it?
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
 				sqm->read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
@@ -710,10 +716,14 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		if ( config->get_has_ws() )
 			read_anemometer();
 
+		esp_task_wdt_reset();
+
 		// Wind direction has been read along with the wind speed as it is a 2-in-1 device
 		if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))
 			read_wind_vane();
 
+		esp_task_wdt_reset();
+		
 		xSemaphoreGive( i2c_mutex );
 
 		if ( config->get_has_rg9() )

@@ -29,7 +29,7 @@
 #define DEBUG_MODE 1
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "20231119"
+#define BUILD_DATE "20231124"
 
 // Misc
 #define GPIO_DEBUG		GPIO_NUM_34

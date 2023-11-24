@@ -50,9 +50,9 @@
 
 extern AstroWeatherStation station;
 
-constexpr unsigned int _str2int(const char* str, int h=0 )
+constexpr unsigned int str2int(const char* str, int h=0 )
 {
-    return !str[h] ? 5381 : (_str2int(str, h+1) * 33) ^ str[h];
+    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
 const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
@@ -152,117 +152,124 @@ void alpaca_server::alpaca_getsetup( AsyncWebServerRequest *request )
 
 void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 {
-	switch( _str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {
 
-		case _str2int( "abortslew" ):
+		case str2int( "abortslew" ):
 			if ( request->method() != HTTP_GET )
 				dome->abortslew( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
-			
-		case _str2int( "cansetshutter" ):
+
+		case str2int( "canfindhome" ):
+		case str2int( "canpark" ):
+		case str2int( "cansetaltitude" ):
+		case str2int( "cansetazimuth" ):
+		case str2int( "cansetpark" ):
+		case str2int( "canslave" ):
+		case str2int( "cansyncazimuth" ):
+		case str2int( "slewing" ):
+
+			if ( request->method() == HTTP_GET )
+				dome->default_bool( request, transaction_details, false );
+			else
+				does_not_exist( request );	
+			break;
+
+		case str2int( "cansetshutter" ):
 			if ( request->method() == HTTP_GET )
 				dome->cansetshutter( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "closeshutter" ):
+		case str2int( "closeshutter" ):
 			if ( request->method() == HTTP_GET )
 				not_implemented( request, "No closing control over the roll-off top" );
 			else
 				dome->closeshutter( request, transaction_details );
 			break;
 
-		case _str2int( "connected" ):
+		case str2int( "connected" ):
 			if ( request->method() == HTTP_GET )
 				dome->get_connected( request, transaction_details );
 			else
 				dome->set_connected( request, transaction_details );
 			break;
 
-		case _str2int( "description" ):
+		case str2int( "description" ):
 			if ( request->method() == HTTP_GET )
 				dome->description( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverinfo" ):
+		case str2int( "driverinfo" ):
 			if ( request->method() == HTTP_GET )
 				dome->driverinfo( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverversion" ):
+		case str2int( "driverversion" ):
 			if ( request->method() == HTTP_GET )
 				dome->driverversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "interfaceversion" ):
+		case str2int( "interfaceversion" ):
 			if ( request->method() == HTTP_GET )
 				dome->interfaceversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "name" ):
+		case str2int( "name" ):
 			if ( request->method() == HTTP_GET )
 				dome->name( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "openshutter" ):
+		case str2int( "openshutter" ):
 			if ( request->method() == HTTP_GET )
 				not_implemented( request, NULL );
 			else
 				dome->closeshutter( request, transaction_details );
 			break;
 
-		case _str2int( "shutterstatus" ):
+		case str2int( "shutterstatus" ):
 			if ( request->method() == HTTP_GET )
 				dome->shutterstatus( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "slaved" ):
+		case str2int( "slaved" ):
 			if ( request->method() == HTTP_GET )
 				dome->default_bool( request, transaction_details, false );
 			else
-				dome->set_slaved( request, transaction_details );
+				not_implemented( request, "Cannot slave roll-off roof to telescope" );
 			break;
 
-		case _str2int( "supportedactions" ):
+		case str2int( "supportedactions" ):
 			if ( request->method() == HTTP_GET )
 				dome->supportedactions( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "altitude" ):
-		case _str2int( "athome" ):
-		case _str2int( "atpark" ):
-		case _str2int( "azimuth" ):
-		case _str2int( "canfindhome" ):
-		case _str2int( "canpark" ):
-		case _str2int( "cansetaltitude" ):
-		case _str2int( "cansetazimuth" ):
-		case _str2int( "cansetpark" ):
-		case _str2int( "canslave" ):
-		case _str2int( "cansyncazimuth" ):
-		case _str2int( "slewing" ):
-		case _str2int( "findhome" ):
-		case _str2int( "park" ):
-		case _str2int( "setpark" ):
-		case _str2int( "slewtoaltitude" ):
-		case _str2int( "slewtoazimuth" ):
-		case _str2int( "synctoazimuth" ):
+		case str2int( "altitude" ):
+		case str2int( "athome" ):
+		case str2int( "atpark" ):
+		case str2int( "azimuth" ):
+		case str2int( "findhome" ):
+		case str2int( "park" ):
+		case str2int( "setpark" ):
+		case str2int( "slewtoaltitude" ):
+		case str2int( "slewtoazimuth" ):
+		case str2int( "synctoazimuth" ):
 			not_implemented( request, NULL );
 			break;
 
@@ -279,21 +286,21 @@ void alpaca_server::dispatch_request( AsyncWebServerRequest *request )
 		return;
 	}
 
-	switch( _str2int( request->pathArg(0).c_str() )) {
+	switch( str2int( request->pathArg(0).c_str() )) {
 
-		case _str2int( "dome" ):
+		case str2int( "dome" ):
 			dispatch_dome_request( request );
 			break;
 
-		case _str2int( "observingconditions" ):
+		case str2int( "observingconditions" ):
 			dispatch_observingconditions_request( request );
 			break;
 
-		case _str2int( "safetymonitor" ):
+		case str2int( "safetymonitor" ):
 			dispatch_safetymonitor_request( request );
 			break;
 
-		case _str2int( "telescope", 0 ):
+		case str2int( "telescope", 0 ):
 			dispatch_telescope_request( request );
 			break;
 	}
@@ -301,58 +308,58 @@ void alpaca_server::dispatch_request( AsyncWebServerRequest *request )
 
 void alpaca_server::dispatch_safetymonitor_request( AsyncWebServerRequest *request )
 {
-	switch( _str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {
 
-		case _str2int( "connected" ):
+		case str2int( "connected" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->get_connected( request, transaction_details );
 			else
 				safety_monitor->set_connected( request, transaction_details );
 			break;
 
-		case _str2int( "description" ):
+		case str2int( "description" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->description( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverinfo" ):
+		case str2int( "driverinfo" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->driverinfo( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverversion" ):
+		case str2int( "driverversion" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->driverversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "interfaceversion" ):
+		case str2int( "interfaceversion" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->interfaceversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "issafe" ):
+		case str2int( "issafe" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->issafe( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "name" ):
+		case str2int( "name" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->name( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "supportedactions" ):
+		case str2int( "supportedactions" ):
 			if ( request->method() == HTTP_GET )
 				safety_monitor->supportedactions( request, transaction_details );
 			else
@@ -368,170 +375,170 @@ void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest 
 {
 	Serial.printf("URL: [%s]\n", request->pathArg(1).c_str() );
 	
-	switch( _str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {
 
-		case _str2int( "averageperiod" ):
+		case str2int( "averageperiod" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->get_averageperiod( request, transaction_details );
 			else
 				observing_conditions->set_averageperiod( request, transaction_details );
 			break;
 
-		case _str2int( "cloudcover" ):
+		case str2int( "cloudcover" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->cloudcover( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "dewpoint" ):
+		case str2int( "dewpoint" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->dewpoint( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "humidity" ):
+		case str2int( "humidity" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->humidity( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "pressure" ):
+		case str2int( "pressure" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->pressure( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "rainrate" ):
+		case str2int( "rainrate" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->rainrate( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "skybrightness" ):
+		case str2int( "skybrightness" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->skybrightness( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "skyquality" ):
+		case str2int( "skyquality" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->skyquality( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "skytemperature" ):
+		case str2int( "skytemperature" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->skytemperature( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "temperature" ):
+		case str2int( "temperature" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->temperature( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "winddirection" ):
+		case str2int( "winddirection" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->winddirection( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "windgust" ):
+		case str2int( "windgust" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->windgust( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "windspeed" ):
+		case str2int( "windspeed" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->windspeed( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "refresh" ):
-			if ( request->method() == HTTP_GET )
+		case str2int( "refresh" ):
+			if ( request->method() != HTTP_GET )
 				observing_conditions->refresh( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "sensordescription" ):
+		case str2int( "sensordescription" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->sensordescription( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "timesincelastupdate" ):
+		case str2int( "timesincelastupdate" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->timesincelastupdate( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "connected" ):
+		case str2int( "connected" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->get_connected( request, transaction_details );
 			else
 				observing_conditions->set_connected( request, transaction_details );
 			break;
 
-		case _str2int( "description" ):
+		case str2int( "description" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->description( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverinfo" ):
+		case str2int( "driverinfo" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->driverinfo( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverversion" ):
+		case str2int( "driverversion" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->driverversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "interfaceversion" ):
+		case str2int( "interfaceversion" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->interfaceversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "name" ):
+		case str2int( "name" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->name( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "supportedactions" ):
+		case str2int( "supportedactions" ):
 			if ( request->method() == HTTP_GET )
 				observing_conditions->supportedactions( request , transaction_details);
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "starfwhm" ):
+		case str2int( "starfwhm" ):
 			not_implemented( request, "No sensor to measure star FWHM" );
 
 		default:
@@ -541,323 +548,323 @@ void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest 
 
 void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 {
-	switch( _str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {
 
-		case _str2int( "athome" ):
+		case str2int( "athome" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "atpark" ):
+		case str2int( "atpark" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canfindhome" ):
+		case str2int( "canfindhome" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canpark" ):
+		case str2int( "canpark" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canpulseguide" ):
+		case str2int( "canpulseguide" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansetdeclinationrate" ):
+		case str2int( "cansetdeclinationrate" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 
-		case _str2int( "cansetguiderates" ):
-			if ( request->method() == HTTP_GET )
-				telescope->default_bool( request, transaction_details, false );
-			else
-				does_not_exist( request );	
-			break;
-
-		case _str2int( "cansetpark" ):
+		case str2int( "cansetguiderates" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansetpierside" ):
+		case str2int( "cansetpark" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansetrightascensionrate" ):
+		case str2int( "cansetpierside" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansettracking" ):
+		case str2int( "cansetrightascensionrate" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canslew" ):
+		case str2int( "cansettracking" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canslewaltaz" ):
+		case str2int( "canslew" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canslewaltazsaync" ):
+		case str2int( "canslewaltaz" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canslewasync" ):
+		case str2int( "canslewaltazasync" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansync" ):
+		case str2int( "canslewasync" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "cansyncaltaz" ):
+		case str2int( "cansync" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canunpark" ):
+		case str2int( "cansyncaltaz" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request, transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "declination" ):
+		case str2int( "canunpark" ):
+			if ( request->method() == HTTP_GET )
+				telescope->default_bool( request, transaction_details, false );
+			else
+				does_not_exist( request );	
+			break;
+
+		case str2int( "declination" ):
 			if ( request->method() == HTTP_GET )
 				telescope->return_value( request, transaction_details, 0.0 );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "equatorialsystem" ):
+		case str2int( "equatorialsystem" ):
 			if ( request->method() == HTTP_GET )
 				telescope->return_value( request, transaction_details, (byte)0 );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "declinationrate" ):
+		case str2int( "declinationrate" ):
 			if ( request->method() == HTTP_GET )
 				telescope->return_value( request, transaction_details, 0.0 );
 			else
-				telescope->device_error( request, transaction_details, NotAvailable, "This is a fake telescope" );
+				not_implemented( request, "This is a fake telescope" );
 			break;
 
-		case _str2int( "rightascension" ):
+		case str2int( "rightascension" ):
 			if ( request->method() == HTTP_GET )
 				telescope->return_value( request, transaction_details, 0.0 );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "rightascensionrate" ):
+		case str2int( "rightascensionrate" ):
 			if ( request->method() == HTTP_GET )
 				telescope->return_value( request, transaction_details, 0.0 );
 			else
-				telescope->device_error( request, transaction_details, NotAvailable, "This is a fake telescope" );
+				not_implemented( request, "This is a fake telescope" );
 			break;
 
-		case _str2int( "siderealtime" ):
+		case str2int( "siderealtime" ):
 			if ( request->method() == HTTP_GET )
 				telescope->siderealtime( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "siteelevation" ):
+		case str2int( "siteelevation" ):
 			if ( request->method() == HTTP_GET )
 				telescope->siteelevation( request, transaction_details );
 			else
 				telescope->set_siteelevation( request, transaction_details );
 			break;
 
-		case _str2int( "sitelatitude" ):
+		case str2int( "sitelatitude" ):
 			if ( request->method() == HTTP_GET )
 				telescope->sitelatitude( request, transaction_details );
 			else
 				telescope->set_sitelatitude( request, transaction_details );
 			break;
 
-		case _str2int( "sitelongitude" ):
+		case str2int( "sitelongitude" ):
 			if ( request->method() == HTTP_GET )
 				telescope->sitelongitude( request, transaction_details );
 			else
 				telescope->set_sitelongitude( request, transaction_details );
 			break;
 			
-		case _str2int( "tracking" ):
+		case str2int( "tracking" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request , transaction_details, false );
 			else
-				telescope->device_error( request , transaction_details, NotAvailable, "This is a fake telescope" );
+				not_implemented( request, "This is a fake telescope" );
 			break;
 
-		case _str2int( "trackingrate" ):
+		case str2int( "trackingrate" ):
 			if ( request->method() == HTTP_GET )
-				telescope->return_value( request , transaction_details, 0.0 );
+				telescope->return_value( request , transaction_details, (byte)0 );
 			else
-				telescope->device_error( request , transaction_details, NotAvailable, "This is a fake telescope" );
+				not_implemented( request, "This is a fake telescope" );
 			break;
 
-		case _str2int( "trackingrates" ):
+		case str2int( "trackingrates" ):
 			if ( request->method() == HTTP_GET )
 				telescope->trackingrates( request , transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "utcdate" ):
+		case str2int( "utcdate" ):
 			if ( request->method() == HTTP_GET )
 				telescope->utcdate( request , transaction_details );
 			else
 				telescope->set_utcdate( request , transaction_details);
 			break;
 
-		case _str2int( "abortslew" ):
+		case str2int( "abortslew" ):
 			if ( request->method() != HTTP_GET )
 				telescope->default_bool( request , transaction_details, true );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "axisrates" ):
+		case str2int( "axisrates" ):
 			if ( request->method() == HTTP_GET )
 				telescope->axisrates( request , transaction_details);
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "canmoveaxis" ):
+		case str2int( "canmoveaxis" ):
 			if ( request->method() == HTTP_GET )
 				telescope->default_bool( request , transaction_details, false );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "connected" ):
+		case str2int( "connected" ):
 			if ( request->method() == HTTP_GET )
 				telescope->get_connected( request, transaction_details );
 			else
 				telescope->set_connected( request, transaction_details );
 			break;
 
-		case _str2int( "description" ):
+		case str2int( "description" ):
 			if ( request->method() == HTTP_GET )
 				telescope->description( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverinfo" ):
+		case str2int( "driverinfo" ):
 			if ( request->method() == HTTP_GET )
 				telescope->driverinfo( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "driverversion" ):
+		case str2int( "driverversion" ):
 			if ( request->method() == HTTP_GET )
 				telescope->driverversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "interfaceversion" ):
+		case str2int( "interfaceversion" ):
 			if ( request->method() == HTTP_GET )
 				telescope->interfaceversion( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "name" ):
+		case str2int( "name" ):
 			if ( request->method() == HTTP_GET )
 				telescope->name( request, transaction_details );
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "supportedactions" ):
+		case str2int( "supportedactions" ):
 			if ( request->method() == HTTP_GET )
 				telescope->supportedactions( request , transaction_details);
 			else
 				does_not_exist( request );	
 			break;
 
-		case _str2int( "alignmentmode" ):
-		case _str2int( "altitude" ):
-		case _str2int( "aperturearea" ):
-		case _str2int( "aperturediameter" ):
-		case _str2int( "azimuth" ):
-		case _str2int( "doesrefraction" ):
-		case _str2int( "focallength" ):
-		case _str2int( "guideratedeclination" ):
-		case _str2int( "guideraterightascension" ):
-		case _str2int( "ispulseguiding" ):
-		case _str2int( "sideofpier" ):
-		case _str2int( "slewing" ):
-		case _str2int( "slewsettletime" ):
-		case _str2int( "targetdeclination" ):
-		case _str2int( "targetrightascension" ):
-		case _str2int( "destinationsideofpier" ):
-		case _str2int( "findhome" ):
-		case _str2int( "moveaxis" ):
-		case _str2int( "park" ):
-		case _str2int( "pulseguide" ):
-		case _str2int( "setpark" ):
-		case _str2int( "slewtoaltaz" ):
-		case _str2int( "slewtoaltazsync" ):
-		case _str2int( "slewtocoordinates" ):
-		case _str2int( "slewtocoordinatesasync" ):
-		case _str2int( "slewtotarget" ):
-		case _str2int( "slewtotargetasync" ):
-		case _str2int( "synctotarget" ):
-		case _str2int( "unpark" ):
+		case str2int( "alignmentmode" ):
+		case str2int( "altitude" ):
+		case str2int( "aperturearea" ):
+		case str2int( "aperturediameter" ):
+		case str2int( "azimuth" ):
+		case str2int( "doesrefraction" ):
+		case str2int( "focallength" ):
+		case str2int( "guideratedeclination" ):
+		case str2int( "guideraterightascension" ):
+		case str2int( "ispulseguiding" ):
+		case str2int( "sideofpier" ):
+		case str2int( "slewing" ):
+		case str2int( "slewsettletime" ):
+		case str2int( "targetdeclination" ):
+		case str2int( "targetrightascension" ):
+		case str2int( "destinationsideofpier" ):
+		case str2int( "findhome" ):
+		case str2int( "moveaxis" ):
+		case str2int( "park" ):
+		case str2int( "pulseguide" ):
+		case str2int( "setpark" ):
+		case str2int( "slewtoaltaz" ):
+		case str2int( "slewtoaltazsync" ):
+		case str2int( "slewtocoordinates" ):
+		case str2int( "slewtocoordinatesasync" ):
+		case str2int( "slewtotarget" ):
+		case str2int( "slewtotargetasync" ):
+		case str2int( "synctotarget" ):
+		case str2int( "unpark" ):
 			not_implemented( request, NULL );
 
 		default:
@@ -974,7 +981,8 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 		return false;
 
 	server_transaction_id++;
-	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d,\"ErrorNumber\":0,\"ErrorMessage\":\"\"", client_id, client_transaction_id, server_transaction_id );
+//	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d,\"ErrorNumber\":0,\"ErrorMessage\":\"\"", client_id, client_transaction_id, server_transaction_id );
+	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d", client_id, client_transaction_id, server_transaction_id );
 	return true;
 }
 
@@ -1115,13 +1123,19 @@ void ascom_device::get_connected( AsyncWebServerRequest *request, const char *tr
 
 void ascom_device::interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%d\",%s}", _interfaceversion, transaction_details );
+	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", _interfaceversion, transaction_details );
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void ascom_device::name( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _name, transaction_details );
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
+void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, char *msg )
+{
+	snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
@@ -1172,10 +1186,9 @@ void ascom_device::return_value( AsyncWebServerRequest *request, const char *tra
 void ascom_device::supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _supportedactions, transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", _supportedactions, transaction_details );
 	else
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
-

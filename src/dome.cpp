@@ -55,6 +55,8 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 
 #endif
 
+	pinMode( GPIO_DOME_STATUS, INPUT );
+	
 	// Controlling the dome from an ISR just does not work because the wdt fires off
 	// during I2C communication with the SC16IS750
 	// Instead we just toggle a flag which is then read by a high prio task in charge of
@@ -70,10 +72,7 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 
 bool AWSDome::closed( void )
 {
-	bool	x;
-	
-	pinMode( GPIO_DOME_STATUS, INPUT );
-	x = ( digitalRead( GPIO_DOME_STATUS ) == LOW );	
+	bool x = ( digitalRead( GPIO_DOME_STATUS ) == LOW );	
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Dome status: %s\n", x ? "closed" : "open" );

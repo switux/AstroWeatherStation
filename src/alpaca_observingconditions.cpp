@@ -21,6 +21,12 @@
 
 extern AstroWeatherStation station;
 
+constexpr unsigned int str2int( const char* str, int h )
+{
+    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
+}
+
+
 alpaca_observingconditions::alpaca_observingconditions( bool _debug_mode )
 {
 	is_connected = false;
@@ -34,74 +40,7 @@ alpaca_observingconditions::alpaca_observingconditions( bool _debug_mode )
 	_interfaceversion = OBSERVINGCONDITIONS_INTERFACE_VERSION;
 }
 
-void alpaca_observingconditions::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	if ( request->hasParam( "Connected", true ) ) {
 
-		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
-
-			is_connected = true;
-			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
-
-		} else {
-
-			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
-
-				is_connected = false;
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
-
-			} else
-
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value %s\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
-		}
-		request->send( 200, "application/json", (const char*)message_str );
-		return;
-	}
-
-	request->send( 400, "text/plain", "Missing Connected parameter" );
-}
-
-void alpaca_observingconditions::get_averageperiod( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":0.0,%s}", transaction_details );
-	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
-
-	request->send( 200, "application/json", (const char*)message_str );
-}
-
-
-void alpaca_observingconditions::set_averageperiod( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	float	x;
-	
-	if ( is_connected ) {
-			if ( request->hasParam( "AveragePeriod", true ) ) {
-
-				x = atof( request->getParam( "AveragePeriod", true )->value().c_str() );
-				if ( x == 0 )
-
-					snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",%s}", transaction_details );
-
-				else {
-
-					if ( x < 0 )
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Value must be positive or 0\",%s}", 1023+InvalidValue, transaction_details );
-					else
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Only providing live data, please set to 0.\",%s}", 1023+InvalidValue, transaction_details );
-				}				
-			} else {
-				
-				request->send( 400, "text/plain", "Missing Connected parameter" );
-				return;
-			}
-	}
-	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
-
-	request->send( 200, "application/json", (const char*)message_str );
-}
 
 void alpaca_observingconditions::cloudcover( AsyncWebServerRequest *request, const char *transaction_details )
 {
@@ -117,6 +56,16 @@ void alpaca_observingconditions::dewpoint( AsyncWebServerRequest *request, const
 {
 	if ( is_connected )
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%2.1f,%s}", station.get_sensor_data()->dew_point, transaction_details );
+	else
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
+void alpaca_observingconditions::get_averageperiod( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	if ( is_connected )
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":0.0,%s}", transaction_details );
 	else
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
 
@@ -168,6 +117,145 @@ void alpaca_observingconditions::rainrate( AsyncWebServerRequest *request, const
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
+void alpaca_observingconditions::refresh( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	if ( is_connected ) {
+
+		if ( station.poll_sensors() )
+
+			snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",%s}", transaction_details );
+
+		else {
+
+			request->send( 400, "application/json", "Could not refresh sensors" );
+			return;
+			
+		}
+	} else
+
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
+void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	bool ok = false;
+	int	j;
+	char tmp[32];
+	
+	if ( is_connected ) {
+
+		for( int i = 0; i < request->params(); i++ ) {
+
+			if ( !strcasecmp( request->getParam(i)->name().c_str(), "SensorName" )) {
+
+				strncpy( tmp, request->getParam(i)->value().c_str(), 31 );
+				for( j = 0; j < strlen( tmp ); tmp[j]= tolower( tmp[j] ), j++ );
+				ok = true;
+				switch( str2int( tmp,0 )) {
+
+					case str2int("pressure",0):
+					case str2int("temperature",0):
+					case str2int("humidity",0):
+					case str2int("dewpoint",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"BME280\",%s}", transaction_details );
+						break;
+					case str2int("skybrightness",0):
+					case str2int("skyquality",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"TSL 2591\",%s}", transaction_details );
+						break;
+					case str2int("cloudcover",0):
+					case str2int("skytemperature",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"MLX 96014\",%s}", transaction_details );
+						break;
+					case str2int("rainrate",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"Hydreon RG-9\",%s}", transaction_details );
+						break;
+					case str2int("windspeed",0):
+					case str2int("windgust",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_anemometer_sensorname(), transaction_details );
+						break;
+					case str2int("winddirection",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_wind_vane_sensorname(), transaction_details );
+						break;
+					case str2int("starfwhm",0):
+						snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"No such sensor: %s\"}", transaction_details, tmp );
+						break;
+					default:
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1025,\"ErrorMessage\":\"\",\"Value\":\"No such sensor name\",%s}", station.get_wind_vane_sensorname(), transaction_details );
+				}
+			}
+		}		
+		if ( !ok ) {
+
+			request->send( 400, "application/json", "Missing SensorName parameter key" );
+			return;
+		}		
+	} else
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
+void alpaca_observingconditions::set_averageperiod( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	float	x;
+	
+	if ( is_connected ) {
+			if ( request->hasParam( "AveragePeriod", true ) ) {
+
+				x = atof( request->getParam( "AveragePeriod", true )->value().c_str() );
+				if ( x == 0 )
+
+					snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",%s}", transaction_details );
+
+				else {
+
+					if ( x < 0 )
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Value must be positive or 0\",%s}", 1023+InvalidValue, transaction_details );
+					else
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Only providing live data, please set to 0.\",%s}", 1023+InvalidValue, transaction_details );
+				}				
+			} else {
+				
+				request->send( 400, "text/plain", "Missing AveragePeriod parameter" );
+				return;
+			}
+	}
+	else
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
+void alpaca_observingconditions::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	if ( request->hasParam( "Connected", true ) ) {
+
+		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
+
+			is_connected = true;
+			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+
+		} else {
+
+			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
+
+				is_connected = false;
+				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+
+			} else
+
+				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value %s\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+		}
+		request->send( 200, "application/json", (const char*)message_str );
+		return;
+	}
+
+	request->send( 400, "text/plain", "Missing Connected parameter" );
+}
+
 void alpaca_observingconditions::skybrightness( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
@@ -208,6 +296,60 @@ void alpaca_observingconditions::temperature( AsyncWebServerRequest *request, co
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
+void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *request, const char *transaction_details )
+{
+	bool ok = false;
+	time_t now;
+	int	j;
+	char tmp[32];
+	time( &now );
+	
+	if ( is_connected ) {
+
+		for( int i = 0; i < request->params(); i++ ) {
+
+			if ( !strcasecmp( request->getParam(i)->name().c_str(), "SensorName" )) {
+
+				strncpy( tmp, request->getParam(i)->value().c_str(), 31 );
+				for( j = 0; j < strlen( tmp ); tmp[j]= tolower( tmp[j] ), j++ );
+				ok = true;
+				switch( str2int( tmp,0 )) {
+
+					case str2int("pressure",0):
+					case str2int("temperature",0):
+					case str2int("humidity",0):
+					case str2int("dewpoint",0):
+					case str2int("skybrightness",0):
+					case str2int("skyquality",0):
+					case str2int("cloudcover",0):
+					case str2int("skytemperature",0):
+					case str2int("rainrate",0):
+					case str2int("windspeed",0):
+					case str2int("windgust",0):
+					case str2int("winddirection",0):
+					case str2int("",0):
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+						break;
+					case str2int("starfwhm",0):
+						snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"No such sensor: %s\"}", transaction_details, tmp );
+						break;
+					default:
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1025,\"ErrorMessage\":\"\",\"Value\":\"No such sensor name\",%s}", transaction_details );
+				}
+			}
+		}		
+		if ( !ok ) {
+
+			request->send( 400, "application/json", "Missing SensorName parameter key" );
+			return;
+		}		
+		
+	} else
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+
+	request->send( 200, "application/json", (const char*)message_str );
+}
+
 void alpaca_observingconditions::winddirection( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	uint16_t x = station.get_sensor_data()->wind_direction;
@@ -241,50 +383,6 @@ void alpaca_observingconditions::windspeed( AsyncWebServerRequest *request, cons
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", station.get_sensor_data()->wind_speed, transaction_details );
 	else
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
-
-	request->send( 200, "application/json", (const char*)message_str );
-}
-
-void alpaca_observingconditions::refresh( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	if ( is_connected ) {
-
-		if ( station.poll_sensors() )
-
-			snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",%s}", transaction_details );
-
-		else {
-
-			request->send( 400, "application/json", "Could not refresh sensors" );
-			return;
-			
-		}
-	} else
-
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
-
-	request->send( 200, "application/json", (const char*)message_str );
-}
-
-void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":true,%s}", transaction_details );
-	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
-
-	request->send( 200, "application/json", (const char*)message_str );
-}
-
-void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	time_t now;
-	time( &now );
-	
-	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
-	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }

@@ -55,7 +55,7 @@ const char	*pwr_mode_str[3] = {
 //
 // Credits to: https://stackoverflow.com/a/16388610
 //
-constexpr unsigned int str2int( const char* str, int h = 0 )
+constexpr unsigned int str2int( const char* str, int h )
 {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
@@ -514,7 +514,11 @@ bool AWSConfig::read_config( void )
 	x = aws_json_config.containsKey( "has_bme" ) ? ( aws_json_config["has_bme"] == 1 ) : DEFAULT_HAS_BME;
 	if ( has_bme != x )
 		has_bme = x;
-	
+
+	x = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
+	if ( has_dome != x )
+		has_dome = x;
+
 	x = aws_json_config.containsKey( "has_gps" ) ? ( aws_json_config["has_gps"] == 1 ) : DEFAULT_HAS_GPS;
 	if ( has_gps != x )
 		has_gps = x;
@@ -732,6 +736,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int("has_tsl", 0):
 			case str2int("has_ws", 0):
 			case str2int("has_wv", 0):
+			case str2int("has_home",0):
 				config_items[item.key().c_str()] = ( item.value() == "on" ) ? 1 : 0;
 				break;
 			default:

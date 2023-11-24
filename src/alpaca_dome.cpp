@@ -77,7 +77,6 @@ void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 void alpaca_dome::openshutter( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		// FIXME Issue #37		
 		snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1036,\"ErrorMessage\":\"We cannot control dome closure\"}", transaction_details );
 	else
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
@@ -119,31 +118,6 @@ void alpaca_dome::set_connected( AsyncWebServerRequest *request, const char *tra
 	}
 
 	request->send( 400, "text/plain", "Missing Connected parameter" );
-}
-
-void alpaca_dome::set_slaved( AsyncWebServerRequest *request, const char *transaction_details )
-{
-	if ( request->hasParam( "Slaved", true ) ) {
-
-		if ( !strcasecmp( request->getParam( "Slaved", true )->value().c_str(), "true" )) {
-
-			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1036,\"ErrorMessage\":\"Cannot slave roll-off roof to telescope\"}", transaction_details );
-
-		} else {
-
-			if ( !strcasecmp( request->getParam( "Slaved", true )->value().c_str(), "false" )) {
-
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
-
-			} else
-
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "Slaved", true )->value().c_str() );
-		}
-		request->send( 200, "application/json", (const char*)message_str );
-		return;
-	}
-
-	request->send( 400, "text/plain", "Missing Slaved parameter" );
 }
 
 void alpaca_dome::slaved( AsyncWebServerRequest *request, const char *transaction_details )

@@ -113,6 +113,7 @@ class ascom_device {
 		void get_connected( AsyncWebServerRequest *, const char * );
 		void interfaceversion( AsyncWebServerRequest *, const char * );
 		void name( AsyncWebServerRequest *, const char * );
+		void not_implemented( AsyncWebServerRequest *, const char *, char * );
 		void return_value( AsyncWebServerRequest *, const char *, byte  );
 		void return_value( AsyncWebServerRequest *, const char *, double  );
 		void supportedactions( AsyncWebServerRequest *, const char * );
@@ -184,7 +185,6 @@ class alpaca_dome : public ascom_device
 		void closeshutter( AsyncWebServerRequest *, const char * );
 		void openshutter( AsyncWebServerRequest *, const char * );
 		void set_connected( AsyncWebServerRequest *, const char * );
-		void set_slaved( AsyncWebServerRequest *, const char * );
 		void slaved( AsyncWebServerRequest *, const char * );
 		void shutterstatus( AsyncWebServerRequest *, const char * );
 };

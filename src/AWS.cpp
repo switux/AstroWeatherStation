@@ -238,6 +238,13 @@ void AstroWeatherStation::enter_config_mode( void )
 	Serial.printf( "[ERROR] Failed to start WiFi AP, cannot enter config mode.\n ");
 }
 
+const char *AstroWeatherStation::get_anemometer_sensorname( void )
+{
+	if ( config->get_has_ws() )
+		return config->get_anemometer_model_str();
+	return "N/A";
+}
+
 uint16_t AstroWeatherStation::get_config_port( void )
 {
 	return config->get_config_port();
@@ -367,6 +374,13 @@ IPAddress *AstroWeatherStation::get_sta_gw( void )
 IPAddress *AstroWeatherStation::get_sta_ip( void )
 {
 	return &sta_ip;
+}
+
+const char	*AstroWeatherStation::get_wind_vane_sensorname( void )
+{
+	if ( config->get_has_wv() )
+		return config->get_wind_vane_model_str();
+	return "N/A";
 }
 
 void AstroWeatherStation::handle_rain_event( void )
@@ -849,6 +863,7 @@ void AstroWeatherStation::print_runtime_config( void )
 		sprintf( string, "# " );
 	}
 
+	print_config_string( "# DOME         : %s", config->get_has_dome() ? "Yes" : "No" );
 	print_config_string( "# SQM/SOL.IRR. : %s", config->get_has_tsl() ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR : %s", config->get_has_mlx() ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES : %s", config->get_has_bme() ? "Yes" : "No" );
