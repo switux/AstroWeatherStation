@@ -162,7 +162,7 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 		else {
 			now = time( NULL );
 			utc_time = gmtime( &now );
-			strftime( tmp, 63, "%FT%T%z", utc_time );
+			strftime( tmp, 63, "%FT%TZ", utc_time );
 			snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", tmp, transaction_details );
 		}		
 
@@ -235,7 +235,7 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 	if ( request->hasParam( "SiteElevation", true ) ) {
 
 		x = atof( request->getParam( "SiteElevation", true )->value().c_str() );
-		if ( x == 0 )
+		if (( x == 0 ) || ( x >10000 ) || ( x < -300 ))
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
 
 		else {
@@ -255,7 +255,7 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 	if ( request->hasParam( "SiteLatitude", true ) ) {
 
 		double x = atof( request->getParam( "SiteLatitude", true )->value().c_str() );
-		if ( x == 0 )
+		if (( x == 0 ) || ( x > 90 ) || ( x < -90 ))
 			
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
 
@@ -276,7 +276,7 @@ void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const 
 	if ( request->hasParam( "SiteLongitude", true ) ) {
 
 		double x = atof( request->getParam( "SiteLongitude", true )->value().c_str() );
-		if ( x == 0 )
+		if (( x == 0 ) || ( x > 180 ) || ( x < -180 ))
 			
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );
 
@@ -300,7 +300,7 @@ void alpaca_telescope::set_utcdate( AsyncWebServerRequest *request, const char *
 	
 	if ( request->hasParam( "UTCDate", true ) ) {
 
-		if ( !(tmp = strptime( request->getParam( "UTCDate", true )->value().c_str(), "%FT%T%z", &utc_date ))) {
+		if ( !(tmp = strptime( request->getParam( "UTCDate", true )->value().c_str(), "%FT%T.", &utc_date ))) {
 
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid datetime (%s)\"}", transaction_details, request->getParam( "UTCDate", true )->value().c_str() );
 

@@ -96,6 +96,7 @@ class AstroWeatherStation {
 
 		                AstroWeatherStation( void );
 		void            check_ota_updates( void );
+		const char		*get_anemometer_sensorname( void );
 		AWSDome			*get_dome( void );
 		sensor_data_t   *get_sensor_data( void );
 		uint16_t        get_config_port( void );
@@ -112,6 +113,7 @@ class AstroWeatherStation {
 		IPAddress       *get_sta_dns( void );
 		IPAddress       *get_sta_gw( void );
         IPAddress       *get_sta_ip( void );
+		const char		*get_wind_vane_sensorname( void );
 		void            handle_rain_event( void );
 		bool			has_gps( void );
 		bool			has_rain_sensor( void );

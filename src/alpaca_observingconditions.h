@@ -22,7 +22,7 @@
 #ifndef _ALPACA_OBSERVINGCONDITIONS_H
 #define _ALPACA_OBSERVINGCONDITIONS_H
 
-#define	OBSERVINGCONDITIONS_SUPPORTED_ACTIONS	""
+#define	OBSERVINGCONDITIONS_SUPPORTED_ACTIONS	"[]"
 #define OBSERVINGCONDITIONS_DRIVER_INFO			"OpenAstroDevices AWS Environmental and SQM sensors driver / v1.0.0"
 #define OBSERVINGCONDITIONS_DESCRIPTION			"OpenAstroDevices AWS Environmental and SQM sensors / v1.0.0"
 #define OBSERVINGCONDITIONS_NAME				"OpenAstroDevices AWS Environmental and SQM sensors driver / v1.0.0"

@@ -36,7 +36,7 @@ alpaca_safetymonitor::alpaca_safetymonitor( bool _debug_mode )
 
 void alpaca_safetymonitor::issafe( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"Value\":%d,%s}", station.is_rain_event()?0:1, transaction_details );
+	snprintf( (char *)message_str, 255, "{\"Value\":%s,%s}", station.is_rain_event()?"true":"false", transaction_details );
 	request->send( 200, "application/json", (const char*)message_str );
 }
 

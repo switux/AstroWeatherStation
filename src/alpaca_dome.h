@@ -22,7 +22,7 @@
 #ifndef _ALPACA_DOME_H
 #define _ALPACA_DOME_H
 
-#define	DOME_SUPPORTED_ACTIONS	""
+#define	DOME_SUPPORTED_ACTIONS	"[]"
 #define DOME_DRIVER_INFO		"OpenAstroDevices driver for relay driven roll-off roof / v1.0.0"
 #define	DOME_NAME				"OpenAstroDevices relay driven roll-off roof / v1.0.0"
 #define	DOME_DESCRIPTION		"OpenAstroDevices driver for relay driven roll-off roof / v1.0.0"
