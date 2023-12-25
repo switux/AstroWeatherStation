@@ -30,7 +30,7 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 	sc16is750 = _sc16is750;
 	close_dome = false;
 
-#ifdef DEFAULT_HAS_SC16IS750 && GPIO_DOME_INDIRECT
+#if defined( DEFAULT_HAS_SC16IS750 ) && defined( GPIO_DOME_INDIRECT )
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Enabling dome control through SC16IS750.\n" );

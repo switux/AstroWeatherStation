@@ -22,64 +22,39 @@
 #ifndef _AstroWeatherStation_H
 #define _AstroWeatherStation_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#define REV "3.0.0.0"
+#define BUILD_DATE "2023122101"
 
+// Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1
 
-#define REV "3.0.0.0"
-#define BUILD_DATE "20231124"
-
-// Misc
-#define GPIO_DEBUG		GPIO_NUM_34
-
-//#define	CONFIG_MODE_GUARD	5000000						// 5 seconds
-#define	CONFIG_MODE_GUARD	1000000						// 5 seconds
-#define US_SLEEP		5 * 60 * 1000000				// 5 minutes
-#define US_HIBERNATE	30 * 24 * 60 * 60 * 1000000ULL	// 30 days
-
-#define	USE_MLX				"1"
-#define	USE_BME				"1"
-#define	USE_TSL				"1"
-#define	USE_WV				"1"
-#define	USE_WS				"1"
-#define	USE_RG9				"1"
-#define	USE_GPS				"0"
-
+// ------------------------------------------------------------------------------
+//
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
-
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_       0
+//
+// ------------------------------------------------------------------------------
 
 #define	SPI_CLOCK_MHZ		18
 
 #define MLX_SENSOR			0x00000001
 #define TSL_SENSOR			0x00000002
-#define BME_SENSOR			0x00000004 // 0000 0000 0000 0000 0000 0000 0000 0100
-#define WIND_VANE_SENSOR	0x00000008 // 0000 0000 0000 0000 0000 0000 0000 1000
-#define ANEMOMETER_SENSOR	0x00000010 // 0000 0000 0000 0000 0000 0000 0001 0000
-#define RG9_SENSOR			0x00000020 // 0000 0000 0000 0000 0000 0000 0010 0000
-#define	GPS_SENSOR			0x00000040 // 0000 0000 0000 0000 0000 0000 0100 0000
-#define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RG9_SENSOR | GPS_SENSOR )
+#define BME_SENSOR			0x00000004
+#define WIND_VANE_SENSOR	0x00000008
+#define ANEMOMETER_SENSOR	0x00000010
+#define RAIN_SENSOR			0x00000020
+#define	GPS_SENSOR			0x00000040
+#define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR )
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
-#define	ASCOM_RG9_DESCRIPTION		"Hydreon RG-9 Rain sensor"
-#define	ASCOM_RG9_DRIVER_INFO		"Hydreon RG-9 Driver (c) OpenAstroDevices 2023"
-#define	ASCOM_RG9_DRIVER_VERSION	"1.0.1.0"
-#define	ASCOM_RG9_NAME				"Hydreon RG-9"
+// Only applicable for solar panel version
+#define	CONFIG_MODE_GUARD	5000000						// 5 seconds
+#define US_SLEEP		5 * 60 * 1000000				// 5 minutes
+#define US_HIBERNATE	1 * 24 * 60 * 60 * 1000000ULL	// 1 day
 
-#define	ASCOM_DOME_DESCRIPTION		"Generic roof top"
-#define	ASCOM_DOME_DRIVER_INFO		"Generic roof top driver (c) OpenAstroDevices 2023"
-#define	ASCOM_DOME_DRIVER_VERSION	"1.0.0.0"
-#define	ASCOM_DOMEffff_NAME				"Generic roof top"
+#include "AWSGPS.h"
 
 struct sensor_data_t {
-
-	char			*ota_board;
-	char			*ota_device;
-	char			*ota_config;
 
 	time_t			timestamp;
 

@@ -20,20 +20,8 @@
 
 */
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-#define ASYNCWEBSERVER_REGEX	1
-
 #include <Arduino.h>
-#include <time.h>
-#include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
-#include <TinyGPSPlus.h>
-#include <SoftwareSerial.h>
 
-#include "SC16IS750.h"
-#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
 #include "SQM.h"
 #include "AWSSensorManager.h"

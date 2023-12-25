@@ -21,9 +21,7 @@
 #ifndef _AWSConfig_H
 #define _AWSConfig_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#include <ArduinoJson.h>
 
 extern const char *_anemometer_model[3];
 extern const char *_windvane_model[3];
@@ -82,7 +80,7 @@ class AWSConfig {
 		bool			get_has_dome( void );
 		bool			get_has_gps( void );
 		bool			get_has_mlx( void );
-		bool			get_has_rg9( void );
+		bool			get_has_rain_sensor( void );
 		bool			get_has_sc16is750( void );
 		bool			get_has_tsl( void );
 		bool			get_has_ws( void );
@@ -138,7 +136,7 @@ class AWSConfig {
 					has_dome,
 					has_gps,
 					has_mlx,
-					has_rg9,
+					has_rain_sensor,
 					has_sc16is750,
 					has_tsl,
 					has_ws,

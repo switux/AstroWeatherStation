@@ -18,6 +18,8 @@
 #include "SQM.h"
 #include "AWSConfig.h"
 #include "AWSWeb.h"
+#include "Hydreon.h"
+#include "AWSWind.h"
 #include "AWSSensorManager.h"
 #include "AWS.h"
 

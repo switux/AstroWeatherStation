@@ -23,34 +23,17 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_       0
-#define ASYNCWEBSERVER_REGEX	1
 
-#include <ArduinoJson.h>
+// Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <thread>
-#include <TinyGPSPlus.h>
-#include <Ethernet.h>
-#include <SSLClient.h>
-#include <SoftwareSerial.h>
+
+#include "gpio_config.h"
+#include "AstroWeatherStation.h"
+#include "AWS.h"
 
 extern const char *_anemometer_model[3];
 extern const char *_windvane_model[3];
-
-#include "gpio_config.h"
-#include "SC16IS750.h"
-#include "AWSGPS.h"
-#include "AstroWeatherStation.h"
-#include "SQM.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
-#include "AWSSensorManager.h"
-#include "dome.h"
-#include "alpaca.h"
-#include "AWS.h"
 
 AstroWeatherStation station;
 
@@ -80,7 +63,7 @@ void setup()
 		Serial.printf( "[INFO] Entering sleep mode.\n" );
 
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
-		esp_sleep_enable_ext0_wakeup( GPIO_RG9_RAIN, LOW );
+		esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
 		esp_deep_sleep_start();
 	}
 
@@ -99,7 +82,6 @@ void loop()
 		station.send_data();
 		station.check_ota_updates();
 		delay( 1000 * 60 * 5 );
-		//delay( 1000 * 1 * 5 );
 	}
 }
 

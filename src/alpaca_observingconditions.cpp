@@ -1,27 +1,16 @@
-#include <Ethernet.h>
-#include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <TinyGPSPlus.h>
-#include <ArduinoJson.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "SC16IS750.h"
-#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
-#include "dome.h"
 #include "alpaca.h"
 #include "alpaca_observingconditions.h"
-#include "SQM.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
-#include "AWSSensorManager.h"
 #include "AWS.h"
 
 extern AstroWeatherStation station;
 
-constexpr unsigned int str2int( const char* str, int h )
+constexpr unsigned int str2int( const char* str, int h = 0 )
 {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
@@ -153,37 +142,37 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 				strncpy( tmp, request->getParam(i)->value().c_str(), 31 );
 				for( j = 0; j < strlen( tmp ); tmp[j]= tolower( tmp[j] ), j++ );
 				ok = true;
-				switch( str2int( tmp,0 )) {
+				switch( str2int( tmp )) {
 
-					case str2int("pressure",0):
-					case str2int("temperature",0):
-					case str2int("humidity",0):
-					case str2int("dewpoint",0):
+					case str2int("pressure"):
+					case str2int("temperature"):
+					case str2int("humidity"):
+					case str2int("dewpoint"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"BME280\",%s}", transaction_details );
 						break;
-					case str2int("skybrightness",0):
-					case str2int("skyquality",0):
+					case str2int("skybrightness"):
+					case str2int("skyquality"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"TSL 2591\",%s}", transaction_details );
 						break;
-					case str2int("cloudcover",0):
-					case str2int("skytemperature",0):
+					case str2int("cloudcover"):
+					case str2int("skytemperature"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"MLX 96014\",%s}", transaction_details );
 						break;
-					case str2int("rainrate",0):
+					case str2int("rainrate"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"Hydreon RG-9\",%s}", transaction_details );
 						break;
-					case str2int("windspeed",0):
-					case str2int("windgust",0):
+					case str2int("windspeed"):
+					case str2int("windgust"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_anemometer_sensorname(), transaction_details );
 						break;
-					case str2int("winddirection",0):
+					case str2int("winddirection"):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_wind_vane_sensorname(), transaction_details );
 						break;
-					case str2int("starfwhm",0):
+					case str2int("starfwhm"):
 						snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"No such sensor: %s\"}", transaction_details, tmp );
 						break;
 					default:
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1025,\"ErrorMessage\":\"\",\"Value\":\"No such sensor name\",%s}", station.get_wind_vane_sensorname(), transaction_details );
+						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1025,\"ErrorMessage\":\"\",\"Value\":\"No such sensor name\",%s}", transaction_details );
 				}
 			}
 		}		
@@ -315,22 +304,22 @@ void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *req
 				ok = true;
 				switch( str2int( tmp,0 )) {
 
-					case str2int("pressure",0):
-					case str2int("temperature",0):
-					case str2int("humidity",0):
-					case str2int("dewpoint",0):
-					case str2int("skybrightness",0):
-					case str2int("skyquality",0):
-					case str2int("cloudcover",0):
-					case str2int("skytemperature",0):
-					case str2int("rainrate",0):
-					case str2int("windspeed",0):
-					case str2int("windgust",0):
-					case str2int("winddirection",0):
-					case str2int("",0):
+					case str2int("pressure"):
+					case str2int("temperature"):
+					case str2int("humidity"):
+					case str2int("dewpoint"):
+					case str2int("skybrightness"):
+					case str2int("skyquality"):
+					case str2int("cloudcover"):
+					case str2int("skytemperature"):
+					case str2int("rainrate"):
+					case str2int("windspeed"):
+					case str2int("windgust"):
+					case str2int("winddirection"):
+					case str2int(""):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
 						break;
-					case str2int("starfwhm",0):
+					case str2int("starfwhm"):
 						snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"No such sensor: %s\"}", transaction_details, tmp );
 						break;
 					default:

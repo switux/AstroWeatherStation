@@ -22,9 +22,7 @@
 #ifndef	_SC16IS750_H_
 #define	_SC16IS750_H_
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#include <Arduino.h>
 
 #define	SC16IS750_RHR		(0x00)		// RX FIFO
 #define	SC16IS750_THR		(0X00)		// TX FIFO

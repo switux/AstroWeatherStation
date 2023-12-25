@@ -17,35 +17,20 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-#define ASYNCWEBSERVER_REGEX	1
-
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <SoftwareSerial.h>
-#include <TinyGPSPlus.h>
+#include <FS.h>
+#include <SPIFFS.h>
 
-#include "time.h"
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
-#include "FS.h"
-#include "SPIFFS.h"
-#include "SC16IS750.h"
-#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
-#include "SQM.h"
 #include "AWSConfig.h"
 #include "AWSWeb.h"
-#include "SC16IS750.h"
-#include "AWSSensorManager.h"
-#include "dome.h"
-#include "alpaca.h"
 #include "AWS.h"
 
 

@@ -2,9 +2,9 @@
 #ifndef _AWSGPS_H
 #define _AWSGPS_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#include <SoftwareSerial.h>
+#include <TinyGPSPlus.h>
+#include "SC16IS750.h"
 
 struct gps_data_t {
 

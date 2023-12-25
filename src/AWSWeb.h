@@ -21,9 +21,16 @@
 #ifndef _AWSWebServer_H
 #define _AWSWebServer_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#define _ASYNC_WEBSERVER_LOGLEVEL_		0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_	0
+#define ASYNCWEBSERVER_REGEX			1
+
+#include <AsyncTCP.h>
+#include <Ethernet.h>
+#include <SSLClient.h>
+//#include <AsyncUDP_ESP32_W5500.hpp>
+#include <ESPAsyncWebSrv.h>
+#include <ArduinoJson.h>
 
 class AWSWebServer {
 
