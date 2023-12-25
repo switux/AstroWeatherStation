@@ -284,7 +284,6 @@ void alpaca_server::dispatch_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "observingconditions" ):
-Serial.printf("DISPATCH OC\n" );
 			dispatch_observingconditions_request( request );
 			break;
 
