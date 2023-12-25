@@ -10,7 +10,7 @@
 #define	DEFAULT_HAS_ETHERNET			1
 #define	DEFAULT_HAS_GPS					0
 #define	DEFAULT_HAS_MLX					0
-#define	DEFAULT_HAS_RG9					0
+#define	DEFAULT_HAS_RAIN_SENSOR			0
 #define	DEFAULT_HAS_SC16IS750			1
 #define	DEFAULT_HAS_TSL					0
 #define	DEFAULT_HAS_WS					0

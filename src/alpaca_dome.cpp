@@ -1,22 +1,11 @@
-#include <Ethernet.h>
-#include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <TinyGPSPlus.h>
-#include <ArduinoJson.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "SC16IS750.h"
-#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
-#include "dome.h"
 #include "alpaca.h"
 #include "alpaca_dome.h"
-#include "SQM.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
-#include "AWSSensorManager.h"
 #include "AWS.h"
 
 extern AstroWeatherStation station;

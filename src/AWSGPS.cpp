@@ -17,15 +17,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-
-#include <SoftwareSerial.h>
-#include <TinyGPSPlus.h>
 #include "defaults.h"
-#include "SC16IS750.h"
-
 #include "AWSGPS.h"
 
 AWSGPS::AWSGPS( bool _debug_mode)

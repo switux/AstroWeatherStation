@@ -21,9 +21,10 @@
 #ifndef _AWS_H
 #define _AWS_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
+#include "AWSWeb.h"
+#include "AWSSensorManager.h"
+#include "dome.h"
+#include "alpaca.h"
 
 void OTA_callback( int, int );
 
@@ -38,7 +39,7 @@ class AstroWeatherStation {
 							solar_panel;
 		char				*json_sensor_data;
 		char				uptime[32];
-		uint8_t				eth_mac[6] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED },
+		uint8_t				eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF },
 							wifi_mac[6];
 
 		EthernetClient		*ethernet;
@@ -60,7 +61,7 @@ class AstroWeatherStation {
 
 		TaskHandle_t		aws_periodic_task_handle;
 		
-		AWSSensorManager 	sensor_manager;
+		AWSSensorManager 	*sensor_manager;
 		AWSConfig			*config;
 		AWSWebServer 		*server;
 		alpaca_server		*alpaca;
@@ -91,6 +92,10 @@ class AstroWeatherStation {
 		bool		startup_sanity_check( void );
 		bool		stop_hotspot( void );
 		void		wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
+		char		*ota_board;
+		char		*ota_device;
+		char		*ota_config;
+
 
 	public:
 

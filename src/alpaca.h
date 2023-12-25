@@ -22,12 +22,7 @@
 #ifndef _ALPACA_H
 #define _ALPACA_H
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-
-#define ASYNCWEBSERVER_REGEX
-
+#include <AsyncUDP_ESP32_W5500.hpp>
 #include <SiderealPlanets.h>
 
 #define	ALPACA_SERVER_PORT	8080
@@ -260,6 +255,7 @@ class alpaca_server {
 		void 			dispatch_telescope_request( AsyncWebServerRequest * );
 		bool		 	extract_transaction_details( AsyncWebServerRequest *, bool );
 		void			does_not_exist( AsyncWebServerRequest * );
+		void			does_not_exist2( AsyncWebServerRequest * );
 		void			get_config( AsyncWebServerRequest * );
 		bool			get_configured_devices( char *, size_t );
 		void			not_implemented( AsyncWebServerRequest * );

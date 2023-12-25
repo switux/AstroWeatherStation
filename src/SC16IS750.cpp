@@ -29,10 +29,6 @@
  * 
  */
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-
 #include <Arduino.h>
 #include <Wire.h>
 #include "SC16IS750.h"

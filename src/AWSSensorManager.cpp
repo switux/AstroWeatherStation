@@ -16,57 +16,51 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-#define ASYNCWEBSERVER_REGEX	1
 
 #include <esp_task_wdt.h>
 #include <ESP32Time.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
+// Keep these two to get rid of compile time errors because of incompatibilities between libraries
+#include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <time.h>
-#include <FS.h>
-#include <SPIFFS.h>
-#include <TinyGPSPlus.h>
-#include <SoftwareSerial.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
+#include "Hydreon.h"
 #include "SC16IS750.h"
 #include "AWSGPS.h"
 #include "AstroWeatherStation.h"
-#include "AWSWeb.h"
 #include "AWSConfig.h"
 #include "SQM.h"
-
+#include "AWSWind.h"
 #include "AWSSensorManager.h"
-
-const char *_anemometer_model[3] = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
-const uint64_t _anemometer_cmd[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
-const uint16_t _anemometer_speed[3] = { 4800, 9600, 4800 };
-
-const char *_windvane_model[3] = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
-const uint64_t _windvane_cmd[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
-const uint16_t _windvane_speed[3] = { 4800, 9600, 4800 };
+#include "AWS.h"
 
 SemaphoreHandle_t sensors_read_mutex = NULL;
+extern AstroWeatherStation station;
 
-AWSSensorManager::AWSSensorManager( void )
+AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode )
 {
+	debug_mode = _debug_mode;
+
 	bme = new Adafruit_BME280();
 	mlx = new Adafruit_MLX90614;
 	tsl = new Adafruit_TSL2591( 2591 );
-	rg9 = new HardwareSerial( RG9_UART );
 	sqm = new SQM( tsl, &sensor_data );
-
+	
+	wind_sensors = NULL;
 	available_sensors = 0;
-	rg9_initialised = 0;
 	sensor_data = {0};
+	solar_panel = _solar_panel;
 	polling_ms_interval = DEFAULT_SENSOR_POLLING_MS_INTERVAL;
 	
 	i2c_mutex = xSemaphoreCreateMutex();
+
+	if ( solar_panel ) {
+
+		pinMode( GPIO_BAT_ADC_EN, OUTPUT );
+		pinMode( GPIO_BAT_ADC, INPUT );
+
+	}
 }
 
 uint8_t AWSSensorManager::get_available_sensors( void )
@@ -89,34 +83,19 @@ sensor_data_t *AWSSensorManager::get_sensor_data( void )
 	return &sensor_data;
 }
 
-bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config, bool _debug_mode )
+bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config )
 {
-	char	string[64];
-	uint8_t mac[6];
-	
 	config = _config;
-	debug_mode = _debug_mode;
 
-	solar_panel = ( config->get_pwr_mode() == panel );
-	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
-	sensor_data.ota_board = strdup( string );
-
-	esp_read_mac( mac, ESP_MAC_WIFI_STA );
-	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
-	sensor_data.ota_device = strdup( string );
-
-	snprintf( string, 64, "%d-%s-%s-%s",config->get_pwr_mode(), config->get_pcb_version(), REV, BUILD_DATE );
-	sensor_data.ota_config = strdup( string );
+//FIXME	solar_panel = ( config->get_pwr_mode() == panel );
 
 	// FIXME: needed?
 	ESP32Time rtc( 0 );
 
+	initialise_sensors( sc16is750 );
+
 	if ( !solar_panel ) {
 
-		initialise_sensors( sc16is750 );
-		wind_speeds_size = ( 2*60*1000 / polling_ms_interval );
-		wind_speeds = (float *)malloc( wind_speeds_size * sizeof( float ));
-		wind_speed_index = 0;
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore( 
@@ -127,14 +106,6 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 	}
 	
 	return true;
-}
-
-void AWSSensorManager::initialise_anemometer( void )
-{
-	anemometer.device = new SoftwareSerial( GPIO_ANEMOMETER_RX, GPIO_ANEMOMETER_TX );
-	anemometer.device->begin( _anemometer_speed[ config->get_anemometer_model() ] );
-	uint64_t_to_uint8_t_array( _anemometer_cmd[ config->get_anemometer_model() ], anemometer.request_cmd );
-	pinMode( GPIO_ANEMOMETER_CTRL, OUTPUT );
 }
 
 void AWSSensorManager::initialise_BME( void )
@@ -185,108 +156,18 @@ void AWSSensorManager::initialise_MLX( void )
 	}
 }
 
-bool AWSSensorManager::initialise_RG9( void )
-{
-	const int	bps[ RG9_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
-	char		str[ 128 ],
-				status;
-	uint8_t		l;
-	
-	for ( uint8_t i = 0; i < RG9_PROBE_RETRIES; i++ ) {
-
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] Probing RG9, attempt #%d: ...", i );
-			
-		for ( uint8_t j = 0; j < RG9_SERIAL_SPEEDS; j++ ) {
-
-			esp_task_wdt_reset();
-			rg9->begin( bps[j], SERIAL_8N1, GPIO_RG9_RX, GPIO_RG9_TX );
-			rg9->println();
-			rg9->println();
-
-			if ( debug_mode ) {
-
-				Serial.printf( " @ %dbps: got [", bps[j] );
-				Serial.flush();
-			}
-
-			rg9->println( "B" );
-			l = RG9_read_string( str, 128 );
-
-			if ( debug_mode )
-				Serial.printf( "%s] ", str );
-
-			if ( !strncmp( str, "Baud ", 5 )) {
-
-				char bitrate[8];
-				strncpy( bitrate, str+5, l-5 );
-				Serial.printf( "%s[INFO] Found RG9 @ %s bps\n", debug_mode?"\n":"", bitrate );
-				available_sensors |= RG9_SENSOR;
-				status = RG9_OK;
-				goto handle_status;
-			}
-			
-			if ( !strncmp( str, "Reset " , 6 )) {
-
-				char reset_cause = str[6];
-				Serial.printf( "%s[INFO] Found RG9 @ %dbps after it was reset because of '%s'\n[INFO] RG9 boot message:\n", debug_mode?"\n":"", bps[j], RG9_reset_cause( reset_cause ));
-
-				while (( l = RG9_read_string(  str, 128 )))
-					Serial.println( str );
-
-				available_sensors |= RG9_SENSOR;
-				status = reset_cause;
-				goto handle_status;
-			}
-
-			rg9->end();
-		}
-		if ( debug_mode )
-			printf( "\n" );
-	}
-
-	Serial.printf( "[ERROR] Could not find RG9, resetting sensor.\n" );
-
-	pinMode( GPIO_RG9_MCLR, OUTPUT );
-	digitalWrite( GPIO_RG9_MCLR, LOW );
-	delay( 500 );
-	digitalWrite( GPIO_RG9_MCLR, HIGH );
-
-	status = RG9_FAIL;
-
-handle_status:
-
-	// FIXME: restore alarms
-	switch( status ) {
-	
-		case RG9_OK:
-			rg9_initialised = true;
-			break;
-		case RG9_FAIL:
-			rg9_initialised = false;
-			break;
-		case 'B':
-			rg9_initialised = true;
-//			send_alarm( runtime_config, "RG9 low voltage", "", debug_mode );
-			break;
-		case 'O':
-			rg9_initialised = true;
-	//		send_alarm( runtime_config, "RG9 problem", "Reset because of stack overflow, report problem to support.", debug_mode );
-			break;
-		case 'U':
-			rg9_initialised = true;
-		//	send_alarm( runtime_config, "RG9 problem", "Reset because of stack underflow, report problem to support.", debug_mode );
-			break;
-		default:
-			Serial.printf( "[INFO] Unhandled RG9 reset code: %d. Report to support.\n", status );
-			rg9_initialised = false;
-			break;
-	}
-	return rg9_initialised;
-}
-
 void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 {
+	if ( solar_panel ) {
+
+		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
+		pinMode( GPIO_ENABLE_12V, OUTPUT );
+		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
+		digitalWrite( GPIO_ENABLE_12V, HIGH );
+
+		delay( 500 );		// MLX96014 seems to take some time to properly initialise
+	}
+		
 	if ( config->get_has_bme() )
 		initialise_BME();
 		
@@ -300,18 +181,54 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		sqm->set_debug_mode( debug_mode );
 	}
 	
-	if ( config->get_has_ws() )
-		initialise_anemometer();
+	if ( config->get_has_ws() ) {
+
+		wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
+		if ( !wind_sensors->initialise_anemometer( config->get_anemometer_model() )) {
+
+			if ( config->get_anemometer_model() == 0x02 ) 
+				available_sensors &= ~WIND_VANE_SENSOR;
+			available_sensors &= ~ANEMOMETER_SENSOR;
+
+		} else {
+
+			if ( config->get_anemometer_model() == 0x02 ) 
+				available_sensors |= WIND_VANE_SENSOR;
+			available_sensors |= ANEMOMETER_SENSOR;
+		}
+	}
 		
 	// Model 0x02 (VMS-3003-CFSFX-N01) is a 2-in-1 device
-	if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	
-		initialise_wind_vane();
+	if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	{
+
+		if ( !wind_sensors )
+			wind_sensors = new AWSWindSensor( polling_ms_interval,  debug_mode );
+
+		if ( !wind_sensors->initialise_wind_vane( config->get_wind_vane_model() )) {
+
+			if ( config->get_wind_vane_model() == 0x02 ) 
+				available_sensors &= ~ANEMOMETER_SENSOR;
+			available_sensors &= ~WIND_VANE_SENSOR;
+
+		} else {
+
+			if ( config->get_anemometer_model() == 0x02 ) 
+				available_sensors |= ANEMOMETER_SENSOR;
+			available_sensors |= WIND_VANE_SENSOR;
+		}
+	}
 		
-	if ( config->get_has_rg9() )
-		initialise_RG9();
+	if ( config->get_has_rain_sensor() && initialise_rain_sensor())
+		available_sensors |= RAIN_SENSOR;
 
 	if ( config->get_has_gps() )
 		initialise_GPS( _sc16is750 );
+}
+
+bool AWSSensorManager::initialise_rain_sensor( void )
+{
+	rain_sensor = new Hydreon( RAIN_SENSOR_UART, GPIO_RAIN_SENSOR_TX, GPIO_RAIN_SENSOR_RX, GPIO_RAIN_SENSOR_MCLR, debug_mode );
+	return rain_sensor->initialise();
 }
 
 void AWSSensorManager::initialise_TSL( void )
@@ -332,97 +249,18 @@ void AWSSensorManager::initialise_TSL( void )
 	}
 }
 
-void AWSSensorManager::initialise_wind_vane( void )
-{
-	wind_vane.device = new SoftwareSerial( GPIO_WIND_VANE_RX, GPIO_WIND_VANE_TX );
-	wind_vane.device->begin( _windvane_speed[ config->get_wind_vane_model() ] );
-	pinMode( GPIO_WIND_VANE_CTRL, OUTPUT );
-	uint64_t_to_uint8_t_array( _windvane_cmd[ config->get_wind_vane_model() ], wind_vane.request_cmd );
-}
-
-void AWSSensorManager::read_anemometer( void )
-{
-	uint8_t		answer[7] = {0},
-				i = 0,
-				j;
-
-	if ( debug_mode ) {
-		
-		Serial.printf( "[DEBUG] Sending command to the anemometer:" );
-		for ( j = 0; j < 8; Serial.printf( " %02x", anemometer.request_cmd[ j++ ] ));
-		Serial.printf( "\n" );
-	}
-
-	while ( answer[1] != 0x03 ) {
-
-		digitalWrite( GPIO_ANEMOMETER_CTRL, SEND );
-		anemometer.device->write( anemometer.request_cmd, 8 );
-		anemometer.device->flush();
-
-		digitalWrite( GPIO_ANEMOMETER_CTRL, RECV );
-		anemometer.device->readBytes( answer, 7 );
-
-		if ( debug_mode ) {
-
-			Serial.print( "[DEBUG] Anemometer answer: " );
-			for ( j = 0; j < 7; j++ )
-				Serial.printf( "%02x ", answer[j] );
-
-		}
-
-		if ( answer[1] == 0x03 ) {
-
-			if ( config->get_anemometer_model() != 0x02 ) 
-
-				sensor_data.wind_speed = static_cast<float>(answer[4]) / 10.F;
-
-			else {
-
-				sensor_data.wind_speed = static_cast<float>( (answer[3]<< 8) + answer[4] ) / 100.F;
-				sensor_data.wind_direction = ( answer[5] << 8 ) + answer[6];
-
-				if ( debug_mode )
-					Serial.printf( "\n[DEBUG] Wind direction: %d°", sensor_data.wind_direction );
-			}
-			
-			if ( debug_mode )
-				Serial.printf( "\n[DEBUG] Wind speed: %02.2f m/s\n", sensor_data.wind_speed );
-
-		} else {
-
-			if ( debug_mode )
-				Serial.println( "(Error)." );
-			delay( 500 );
-		}
-
-		if ( ++i == ANEMOMETER_MAX_TRIES ) {
-
-			if ( config->get_anemometer_model() == 0x02 ) 
-				available_sensors &= ~WIND_VANE_SENSOR;
-
-			available_sensors &= ~ANEMOMETER_SENSOR;
-			sensor_data.wind_speed = -1.F;
-			return;
-		}
-	}
-
-	if ( config->get_anemometer_model() == 0x02 ) 
-		available_sensors |= WIND_VANE_SENSOR;
-
-	available_sensors |= ANEMOMETER_SENSOR;
-}
-
 void AWSSensorManager::read_battery_level( void )
 {
 	int		adc_value = 0;
 	float	adc_v_in,
 			bat_v;
-	
+
 	if ( debug_mode )
 		Serial.print( "[DEBUG] Battery level: " );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
 	delay( 500 );
+	
 	for( uint8_t i = 0; i < 5; i++ ) {
 
 		adc_value += analogRead( GPIO_BAT_ADC );
@@ -515,73 +353,41 @@ void AWSSensorManager::read_MLX( void )
 	sensor_data.sky_temperature = -99.F;
 }
 
-
-void AWSSensorManager::read_RG9( void  )
+void AWSSensorManager::read_rain_sensor( void )
 {
-	char	msg[128];
-
-	if (( !rg9_initialised ) && ( !initialise_RG9() )) {
-
-		Serial.printf( "[INFO] Not returning rain data.\n" );
-		return;
-	}
-		
-	rg9->println( "R" );
-	memset( msg, 0, 128 );
-	RG9_read_string( msg, 128 );
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] RG9 STATUS = [%s]\n", msg );
-
-	sensor_data.rain_intensity = static_cast<short>( msg[2] - '0' );
+	sensor_data.rain_intensity = rain_sensor->rain_intensity();
+	if ( sensor_data.rain_intensity == 0 )
+		sensor_data.rain_event = rain_event = false;
 }
 
 void AWSSensorManager::read_sensors( void )
 {
 	char	string[64];
 	
-	// TODO: handle gps time
-//	if ( ntp_synced = sync_time() )
-//		gettimeofday( &sensor_data.ntp_time, NULL );
 
-	
 	if ( solar_panel ) {
-
-		pinMode( GPIO_BAT_ADC_EN, OUTPUT );
-		delay( 100 );
-
-		time( &sensor_data.timestamp );
-		read_battery_level();
-
-		pinMode( GPIO_ENABLE_3_3V, OUTPUT );
-		pinMode( GPIO_ENABLE_12V, OUTPUT );
-		digitalWrite( GPIO_ENABLE_3_3V, HIGH );
-		digitalWrite( GPIO_ENABLE_12V, HIGH );
-
-		delay( 500 );		// MLX96014 seems to take some time to properly initialise
-		initialise_sensors( NULL );
-
+		
 		retrieve_sensor_data();
 
 		digitalWrite( GPIO_ENABLE_3_3V, LOW );
 		digitalWrite( GPIO_ENABLE_12V, LOW );
 
+		if ( sensor_data.battery_level <= BAT_LEVEL_MIN ) {
+
+			memset( string, 0, 64 );
+			snprintf( string, 64, "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
+
+			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
+/*			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
+				send_alarm( runtime_config, "Low battery", string, debug_mode );
+*/
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] %s", string );
+		}
+
 	} else
 		sensor_data.battery_level = 100.0L;		// When running on 12V, convention is to report 100%
 
-	if ( sensor_data.battery_level <= BAT_LEVEL_MIN ) {
-
-		memset( string, 0, 64 );
-		snprintf( string, 64, "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
-
-		// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-/*		if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
-			send_alarm( runtime_config, "Low battery", string, debug_mode );
-*/
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] %s", string );
-
-	}
 /*	
 	if ( prev_available_sensors != available_sensors ) {
 
@@ -614,69 +420,6 @@ void AWSSensorManager::read_TSL( void )
 	sensor_data.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
 }
 
-void AWSSensorManager::read_wind_vane( void )
-{
-	uint8_t		answer[7],
-				i = 0,
-				j;
-
-	answer[1] = 0;
-
-	if ( debug_mode ) {
-		
-		Serial.printf( "[DEBUG] Sending command to the wind vane:" );
-		for ( j = 0; j < 8; Serial.printf( " %02x", wind_vane.request_cmd[ j++ ] ));
-		Serial.printf( "\n" );
-	}
-
-	while ( answer[1] != 0x03 ) {
-
-		if ( config->get_wind_vane_model() == 0x02 )
-			digitalWrite( GPIO_ANEMOMETER_CTRL, SEND ); //FIXME: make it a struct item
-		else
-			digitalWrite( GPIO_WIND_VANE_CTRL, SEND );
-		
-		wind_vane.device->write( wind_vane.request_cmd, 8 );
-		wind_vane.device->flush();
-
-		if ( config->get_wind_vane_model() == 0x02 )
-			digitalWrite( GPIO_ANEMOMETER_CTRL, RECV );
-		else
-			digitalWrite( GPIO_WIND_VANE_CTRL, RECV );
-
-		wind_vane.device->readBytes( answer, 7 );
-
-		if ( debug_mode ) {
-
-			Serial.print( "[DEBUG] Wind vane answer : " );
-			for ( j = 0; j < 6; j++ )
-				Serial.printf( "%02x ", answer[j] );
-		}
-
-		if ( answer[1] == 0x03 ) {
-
-			sensor_data.wind_direction = ( answer[5] << 8 ) + answer[6];
-
-			if ( debug_mode )
-				Serial.printf( "\n[DEBUG] Wind direction: %d°\n", sensor_data.wind_direction );
-
-		} else {
-
-			if ( debug_mode )
-				Serial.println( "(Error)." );
-			delay( 500 );
-		}
-
-		if ( ++i == WIND_VANE_MAX_TRIES ) {
-
-			available_sensors &= ~WIND_VANE_SENSOR;
-			sensor_data.wind_direction = -1;
-			return;
-		}
-	}
-	available_sensors |= WIND_VANE_SENSOR;
-
-}
 
 void AWSSensorManager::reset_rain_event( void )
 {
@@ -726,42 +469,12 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		
 		xSemaphoreGive( i2c_mutex );
 
-		if ( config->get_has_rg9() )
-			read_RG9();
+		if ( config->get_has_rain_sensor() )
+			sensor_data.rain_intensity = rain_sensor->rain_intensity();
 
 		if ( config->get_has_gps() )
 			read_GPS();
 
-	}
-}
-
-uint8_t AWSSensorManager::RG9_read_string( char *str, uint8_t len )
-{
-	uint8_t i;
-	
-	delay( 500 );
-
-	if ( rg9->available() > 0 ) {
-
-		i = rg9->readBytes( str, len );
-		if ( i >= 2 )
-			str[ i-2 ] = 0;	// trim trailing \n
-		return i-1;
-	}
-	return 0;
-}
-
-const char *AWSSensorManager::RG9_reset_cause( char code )
-{
-	switch ( code ) {
-		case 'N': return "Normal power up";
-		case 'M': return "MCLR";
-		case 'W': return "Watchdog timer reset";
-		case 'O': return "Start overflow";
-		case 'U': return "Start underflow";
-		case 'B': return "Low voltage";
-		case 'D': return "Other";
-		default: return "Unknown";
 	}
 }
 
@@ -771,10 +484,7 @@ bool AWSSensorManager::poll_sensors( void )
 
 		retrieve_sensor_data();
 		xSemaphoreGive( sensors_read_mutex );
-		if ( wind_speed_index == wind_speeds_size )
-			wind_speed_index = 0;
-		wind_speeds[ wind_speed_index++ ] = sensor_data.wind_speed;
-		sensor_data.wind_gust = *std::max_element( wind_speeds, wind_speeds + wind_speeds_size );
+		sensor_data.wind_gust = wind_sensors->get_wind_gust();
 		return true;
 	}
 	return false;
@@ -788,18 +498,38 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
-			if ( wind_speed_index == wind_speeds_size )
-				wind_speed_index = 0;
-			wind_speeds[ wind_speed_index++ ] = sensor_data.wind_speed;
-			sensor_data.wind_gust = *std::max_element( wind_speeds, wind_speeds + wind_speeds_size );
+			if ( config->get_has_ws() )
+				sensor_data.wind_gust = wind_sensors->get_wind_gust();
+			else
+				sensor_data.wind_gust = -1.0F;
+			
 		}
 		delay( polling_ms_interval );
 	}
 }
 
-void AWSSensorManager::uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array )
+void AWSSensorManager::read_anemometer( void )
 {
-	uint8_t i = 0;
-    for ( i = 0; i < 8; i++ )
-		cmd_array[ i ] = (uint8_t)( ( cmd >> (56-(8*i))) & 0xff );
+	float	x;
+	
+	if ( !wind_sensors->anemometer_initialised() )
+		return;
+
+	if ( ( x = wind_sensors->read_anemometer() ) == -1 )
+		return;
+
+	sensor_data.wind_speed = x;
+}
+
+void AWSSensorManager::read_wind_vane( void )
+{
+	int16_t	x;
+	
+	if ( !wind_sensors->wind_vane_initialised() )
+		return;
+
+	if ( ( x = wind_sensors->read_wind_vane() ) == -1 )
+		return;
+
+	sensor_data.wind_direction = x;
 }

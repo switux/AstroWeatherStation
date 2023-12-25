@@ -18,11 +18,9 @@
 
  */
 
-#undef CONFIG_DISABLE_HAL_LOCKS
-#define _ASYNC_WEBSERVER_LOGLEVEL_       0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_      0
-
-#define ASYNCWEBSERVER_REGEX	1
+#define _ASYNC_WEBSERVER_LOGLEVEL_		0
+#define _ETHERNET_WEBSERVER_LOGLEVEL_	0
+#define ASYNCWEBSERVER_REGEX			1
 
 #include <Arduino.h>
 #include <AsyncTCP.h>
@@ -31,15 +29,8 @@
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 #include <SPIFFS.h>
-#include <TinyGPSPlus.h>
-#include <SoftwareSerial.h>
 
-#include "SC16IS750.h"
-#include "AWSGPS.h"
 #include "AstroWeatherStation.h"
-#include "SQM.h"
-#include "AWSSensorManager.h"
-#include "AWSWeb.h"
 #include "dome.h"
 #include "alpaca_dome.h"
 #include "alpaca_observingconditions.h"
@@ -50,7 +41,7 @@
 
 extern AstroWeatherStation station;
 
-constexpr unsigned int str2int(const char* str, int h=0 )
+constexpr unsigned int str2int(const char* str, int h = 0 )
 {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
@@ -373,7 +364,7 @@ void alpaca_server::dispatch_safetymonitor_request( AsyncWebServerRequest *reque
 
 void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest *request )
 {
-	Serial.printf("URL: [%s]\n", request->pathArg(1).c_str() );
+	Serial.printf("OC URL: [%s]\n", request->pathArg(1).c_str() );
 	
 	switch( str2int( request->pathArg(1).c_str() )) {
 
@@ -887,6 +878,20 @@ void alpaca_server::does_not_exist( AsyncWebServerRequest *request )
 	request->send( 400, "application/json", "Endpoint does not exist" );
 }
 
+void alpaca_server::does_not_exist2( AsyncWebServerRequest *request )
+{
+	int params = request->params();
+
+	server_transaction_id++;
+	if ( debug_mode ) {
+
+		Serial.printf( "\n[DEBUG] ALPACA: [2] unimplemented endpoint: %x %s, with parameters: ", request->method(), request->url().c_str());
+		for( int i = 0; i < params; i++ )
+			  Serial.printf( "(%s=%s) ", request->getParam(i)->name().c_str(), request->getParam(i)->value().c_str() );
+		  Serial.printf("\n");
+  	}
+	request->send( 400, "application/json", "Endpoint does not exist" );
+}
 
 void alpaca_server::get_config( AsyncWebServerRequest *request )
 {
@@ -1081,7 +1086,7 @@ bool alpaca_server::start( IPAddress address )
 
 	server->on( "^\\/api\\/v1\\/([a-zA-Z]+)\\/([0-9]+)\\/.+$", HTTP_GET, std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	
-	server->onNotFound( std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
+	server->onNotFound( std::bind( &alpaca_server::does_not_exist2, this, std::placeholders::_1 ));
 	server->begin();
 
 	return true;
