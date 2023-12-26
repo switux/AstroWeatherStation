@@ -23,7 +23,6 @@
 
 #define _ASYNC_WEBSERVER_LOGLEVEL_		0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_	0
-#define ASYNCWEBSERVER_REGEX			1
 
 #include <AsyncTCP.h>
 #include <Ethernet.h>

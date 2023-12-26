@@ -255,6 +255,8 @@ void AWSSensorManager::read_battery_level( void )
 	float	adc_v_in,
 			bat_v;
 
+	WiFi.mode ( WIFI_OFF );
+	
 	if ( debug_mode )
 		Serial.print( "[DEBUG] Battery level: " );
 

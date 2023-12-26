@@ -142,7 +142,6 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 				strncpy( tmp, request->getParam(i)->value().c_str(), 31 );
 				for( j = 0; j < strlen( tmp ); tmp[j]= tolower( tmp[j] ), j++ );
 				ok = true;
-
 				switch( str2int( tmp )) {
 
 					case str2int("pressure"):

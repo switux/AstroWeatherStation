@@ -20,7 +20,10 @@
 
 #define _ASYNC_WEBSERVER_LOGLEVEL_		0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_	0
-#define ASYNCWEBSERVER_REGEX			1
+
+#ifndef ASYNCWEBSERVER_REGEX
+#error "ASYNCWEBSERVER_REGEX not defined, please read build instructions!"
+#endif
 
 #include <Arduino.h>
 #include <AsyncTCP.h>
@@ -1068,7 +1071,7 @@ bool alpaca_server::start( IPAddress address )
 
 	server->on( "^\\/api\\/v1\\/([a-zA-Z]+)\\/([0-9]+)\\/.+$", HTTP_GET, std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	
-	server->onNotFound( std::bind( &alpaca_server::does_not_exist2, this, std::placeholders::_1 ));
+	server->onNotFound( std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	server->begin();
 
 	return true;

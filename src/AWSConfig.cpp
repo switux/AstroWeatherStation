@@ -40,7 +40,7 @@ RTC_DATA_ATTR char can_rollback = 0;
 //
 // Credits to: https://stackoverflow.com/a/16388610
 //
-constexpr unsigned int str2int( const char* str, int h )
+constexpr unsigned int str2int( const char* str, int h = 0 )
 {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
