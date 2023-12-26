@@ -33,7 +33,6 @@
 #define	DOME_UUID			"e3a90ace-7cff-11ee-b0f6-73db65e0b158"
 #define	TELESCOPE_UUID		"17e70650-8733-11ee-aa35-8f2796da5b48"
 
-
 #include "alpaca_dome.h"
 #include "alpaca_safetymonitor.h"
 #include "alpaca_observingconditions.h"
@@ -108,7 +107,7 @@ class ascom_device {
 		void get_connected( AsyncWebServerRequest *, const char * );
 		void interfaceversion( AsyncWebServerRequest *, const char * );
 		void name( AsyncWebServerRequest *, const char * );
-		void not_implemented( AsyncWebServerRequest *, const char *, char * );
+		void not_implemented( AsyncWebServerRequest *, const char *, const char * );
 		void return_value( AsyncWebServerRequest *, const char *, byte  );
 		void return_value( AsyncWebServerRequest *, const char *, double  );
 		void supportedactions( AsyncWebServerRequest *, const char * );
@@ -259,7 +258,7 @@ class alpaca_server {
 		void			get_config( AsyncWebServerRequest * );
 		bool			get_configured_devices( char *, size_t );
 		void			not_implemented( AsyncWebServerRequest * );
-		void			not_implemented( AsyncWebServerRequest *, char * );
+		void			not_implemented( AsyncWebServerRequest *, const char * );
 		void			on_packet( AsyncUDPPacket  );
 		void			send_file( AsyncWebServerRequest * );
 };

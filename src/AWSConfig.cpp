@@ -35,6 +35,8 @@ const char	*pwr_mode_str[3] = {
 	"POE"	
 };
 
+RTC_DATA_ATTR char can_rollback = 0;
+
 //
 // Credits to: https://stackoverflow.com/a/16388610
 //
@@ -585,6 +587,14 @@ bool AWSConfig::rollback()
 	uint8_t	buf[ 4096 ];
 	size_t	i;
 
+	if ( !can_rollback ) {
+		
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Skipping configuration rollback because conditions are not met.\n");
+		return false;
+
+	}
+
 	Serial.printf( "[INFO] Rolling back last submitted configuration.\n" );
   
 	if ( !SPIFFS.begin( true )) {
@@ -605,6 +615,7 @@ bool AWSConfig::rollback()
 	filebak.close();
 	SPIFFS.remove( "/aws.conf.bak" );
 	Serial.printf( "[INFO] Rollback successful.\n" );
+	can_rollback = 0;
 	return true;
 }
 
@@ -637,6 +648,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	serializeJson( json_config, file );
 	file.close();
 	Serial.printf( "[INFO] Save successful.\n" );
+	can_rollback = 1;
 	return true;
 }
 

@@ -63,7 +63,9 @@ void setup()
 		Serial.printf( "[INFO] Entering sleep mode.\n" );
 
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
-		esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
+		if ( station.has_rain_sensor() )
+			esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
+
 		esp_deep_sleep_start();
 	}
 

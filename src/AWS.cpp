@@ -884,6 +884,7 @@ void AstroWeatherStation::print_runtime_config( void )
 	}
 
 	print_config_string( "# DOME         : %s", config->get_has_dome() ? "Yes" : "No" );
+	print_config_string( "# GPS          : %s", config->get_has_gps() ? "Yes" : "No" );
 	print_config_string( "# SQM/SOL.IRR. : %s", config->get_has_tsl() ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR : %s", config->get_has_mlx() ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES : %s", config->get_has_bme() ? "Yes" : "No" );

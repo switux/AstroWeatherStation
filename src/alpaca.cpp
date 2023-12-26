@@ -364,8 +364,6 @@ void alpaca_server::dispatch_safetymonitor_request( AsyncWebServerRequest *reque
 
 void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest *request )
 {
-	Serial.printf("OC URL: [%s]\n", request->pathArg(1).c_str() );
-	
 	switch( str2int( request->pathArg(1).c_str() )) {
 
 		case str2int( "averageperiod" ):
@@ -878,21 +876,6 @@ void alpaca_server::does_not_exist( AsyncWebServerRequest *request )
 	request->send( 400, "application/json", "Endpoint does not exist" );
 }
 
-void alpaca_server::does_not_exist2( AsyncWebServerRequest *request )
-{
-	int params = request->params();
-
-	server_transaction_id++;
-	if ( debug_mode ) {
-
-		Serial.printf( "\n[DEBUG] ALPACA: [2] unimplemented endpoint: %x %s, with parameters: ", request->method(), request->url().c_str());
-		for( int i = 0; i < params; i++ )
-			  Serial.printf( "(%s=%s) ", request->getParam(i)->name().c_str(), request->getParam(i)->value().c_str() );
-		  Serial.printf("\n");
-  	}
-	request->send( 400, "application/json", "Endpoint does not exist" );
-}
-
 void alpaca_server::get_config( AsyncWebServerRequest *request )
 {
 	char *json_string = station.get_json_string_config();
@@ -986,12 +969,11 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 		return false;
 
 	server_transaction_id++;
-//	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d,\"ErrorNumber\":0,\"ErrorMessage\":\"\"", client_id, client_transaction_id, server_transaction_id );
 	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d", client_id, client_transaction_id, server_transaction_id );
 	return true;
 }
 
-void alpaca_server::not_implemented( AsyncWebServerRequest *request, char *msg )
+void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char *msg )
 {
 	unsigned char str[256];
 	server_transaction_id++;
@@ -1138,7 +1120,7 @@ void ascom_device::name( AsyncWebServerRequest *request, const char *transaction
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
-void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, char *msg )
+void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, const char *msg )
 {
 	snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
 	request->send( 200, "application/json", (const char*)message_str );
@@ -1152,7 +1134,6 @@ void ascom_device::device_error( AsyncWebServerRequest *request, const char *tra
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
 	
 	request->send( 200, "application/json", (const char*)message_str );
-
 }
 
 void ascom_device::default_bool( AsyncWebServerRequest *request, const char *transaction_details, bool truefalse )
