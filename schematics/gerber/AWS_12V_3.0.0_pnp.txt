@@ -4,7 +4,7 @@
 *eMail=
 *
 *Project=AWS_12V_3.0.0
-*Date=20:33:16
+*Date=17:31:38
 *CreatedBy=Fritzing 0.9.6b..
 *
 *
@@ -13,91 +13,83 @@
 *Rotation in degree (0-360, math. pos.)
 *
 *No;Value;Package;X;Y;Rotation;Side;Name
-1;;;88.7603;-5.4002;0;Bottom;Copper Fill365
-2;;THT;93.406;-61.0335;0;Bottom;UART-Right header
-3;;;32.512;-52.2632;0;Bottom;Copper Fill324
-4;;;79.4512;-53.1268;0;Bottom;Copper Fill366
-5;;;3.15486;-76.8446;0;Bottom;Hole4
-6;;;74.9666;-29.4312;90;Bottom;RG-9
-7;;THT;99.7534;-48.1551;90;Bottom;12V IN
-8;;;42.8117;-30.1271;0;Bottom;Copper Fill342
-9;;THT;113.366;-42.1229;180;Bottom;12V PWR
-10;10k;THT;32.0123;-68.456;-90;Bottom;R2
-11;;;50.771;-40.565;0;Bottom;TXT4
-12;;THT;88.7874;-12.58;180;Bottom;ETH Right header
-13;10k;THT;40.1831;-68.6657;-90;Bottom;R3
-14;;THT;30.4578;-8.10773;-90;Bottom;12V WIND
-15;;THT;67.7703;-54.62;0;Bottom;DOME
-16;;;54.3052;-4.9684;0;Bottom;Copper Fill388
-17;;;34.0592;-6.21771;0;Bottom;TXT5
-18;;THT;25.3594;-16.7101;90;Bottom;ANEMOMETER PWR
-19;;;28.2575;-8.1561;0;Bottom;Copper Fill396
-20;;;116.834;-76.8751;0;Bottom;Hole3
-21;;;30.0228;-16.754;0;Bottom;Copper Fill373
-22;;;77.47;-31.9686;0;Bottom;Copper Fill334
-23;;THT;10.4705;-16.7536;90;Bottom;WINDVANE PWR
-24;;THT;60.9492;-44.2955;180;Bottom;ESP32-Right header
-25;;;42.8117;-31.8289;0;Bottom;Copper Fill341
-26;;;99.8474;-52.6188;0;Bottom;Copper Fill319
-27;;THT;65.5961;-73.4134;0;Bottom;3.3V Relay
-28;10k;THT;24.2599;-73.545;0;Bottom;R1
-29;;;67.0917;-34.8723;0;Bottom;Via8
-30;;;26.7462;-58.4608;0;Bottom;Copper Fill322
-31;;;113.589;-74.2342;0;Bottom;Copper Fill369
-32;;THT;35.8411;-44.2916;180;Bottom;ESP32-Left header
-33;;;59.9948;-40.0204;0;Bottom;Copper Fill332
-34;;;67.183;-58.918;0;Bottom;Copper Fill321
-35;;THT;40.6563;-13.7511;-90;Bottom;DOME STATUS
-36;;THT;111.43;-48.3336;-90;Bottom;GND IN
-37;;;91.2368;-35.0674;0;Bottom;Copper Fill333
-38;;;37.2697;-13.9061;0;Bottom;TXT5
-39;10k;THT;43.7994;-68.6696;-90;Bottom;R4
-40;;;21.2598;-50.7138;0;Bottom;Copper Fill325
-41;;;46.4665;-77.6412;0;Bottom;TXT3
-42;;;113.333;-44.9328;0;Bottom;TXT5
-43;;;87.4522;-25.5678;0;Bottom;Copper Fill331
-44;;;6.4262;-70.5131;0;Bottom;Copper Fill386
-45;;;16.7259;-67.808;0;Bottom;Copper Fill392
-46;;;17.3906;-16.6927;0;Bottom;TXT5
-47;;;81.9364;-23.009;0;Bottom;Via10
-48;;THT;6.44197;-72.6325;180;Bottom;RBT_CON
-49;;;77.6732;-33.5434;0;Bottom;Copper Fill320
-50;;;109.271;-74.2342;0;Bottom;Copper Fill368
-51;;;65.6844;-42.535;0;Bottom;Copper Fill329
-52;;;94.3102;-56.2256;0;Bottom;Copper Fill317
-53;;THT;100.024;-74.2638;90;Bottom;3.3V OUT
-54;1µF;100 mil [THT, electrolytic];16.7454;-69.8727;-90;Bottom;C1
-55;;THT;10.4605;-57.3658;90;Bottom;WINDVANE DATA
-56;;THT;68.5041;-12.58;180;Bottom;ETH Left header
-57;;;43.8502;-13.6901;0;Bottom;TXT5
-58;;THT;104.836;-36.4963;-90;Bottom;GPS
-59;;;59.9372;-2.18724;0;Bottom;TXT5
-60;;;113.347;-40.0204;0;Bottom;Copper Fill378
-61;;;66.04;-44.4908;0;Bottom;Copper Fill328
-62;;;69.342;-43.5002;0;Bottom;Copper Fill327
-63;;;6.4262;-66.8555;0;Bottom;Copper Fill377
-64;;;79.3242;-58.4608;0;Bottom;Copper Fill318
-65;;;3.03059;-3.07584;0;Bottom;Hole2
-66;;;70.612;-54.6508;0;Bottom;Copper Fill326
-67;;;83.0579;-65.9644;0;Bottom;TXT4
-68;;THT;56.5137;-4.91504;-90;Bottom;12V RG-9
-69;;;78.0158;-7.21395;0;Bottom;TXT4
-70;;;32.3423;-16.5663;0;Bottom;TXT5
-71;;;109.487;-36.5279;0;Bottom;Copper Fill387
-72;;;40.6988;-59.2046;0;Bottom;Via6
-73;;;116.824;-3.15759;0;Bottom;Hole1
-74;;;105.239;-61.9922;0;Bottom;TXT4
-75;;;65.5153;-76.2735;0;Bottom;TXT5
-76;;;59.9948;-40.0204;0;Bottom;Copper Fill367
-77;;;33.655;-55.1842;0;Bottom;Copper Fill323
-78;;THT;25.5247;-57.3703;90;Bottom;ANEMOMETER DATA
-79;10k;THT;42.8363;-25.8363;90;Bottom;R5
-80;;THT;111.475;-74.2192;-90;Bottom;GND OUT
-81;;THT;84.1719;-42.5877;90;Bottom;I2C
-82;;;47.1159;-76.1635;0;Bottom;TXT3
-83;;;15.1384;-16.7921;0;Bottom;Copper Fill379
-84;;THT;6.44198;-64.6555;0;Bottom;DBG_CON
-85;;;43.6372;-30.9653;0;Bottom;Copper Fill343
-86;;;65.8876;-40.0204;0;Bottom;Copper Fill330
-87;;THT;73.4427;-60.9889;0;Bottom;UART-Left header
-88;;;90.8558;-13.1726;0;Bottom;Copper Fill335
+1;;THT;85.2502;-48.1551;90;Bottom;12V IN
+2;;;49.4262;-76.6297;0;Bottom;TXT5
+3;;;51.2572;-42.4629;0;Bottom;Copper Fill476
+4;;;3.01113;-76.8445;0;Bottom;Hole4
+5;;THT;16.1766;-8.13942;-90;Bottom;12V WIND
+6;10k;THT;17.5091;-68.5971;-90;Bottom;R2
+7;;THT;85.5203;-74.2638;90;Bottom;3.3V OUT
+8;;;28.3083;-31.8076;0;Bottom;Copper Fill487
+9;;;29.347;-13.6901;0;Bottom;TXT5
+10;;;52.705;-58.9222;0;Bottom;Copper Fill470
+11;;;91.5258;-67.2115;0;Bottom;TXT4
+12;;;62.9411;-31.9727;0;Bottom;Copper Fill481
+13;;;64.9477;-53.131;0;Bottom;Copper Fill505
+14;;;2.88686;-3.07581;0;Bottom;Hole2
+15;;;72.9487;-25.5465;0;Bottom;Copper Fill478
+16;;;6.0198;-65.704;0;Bottom;Copper Fill514
+17;;;68.3823;-66.0674;0;Bottom;TXT4
+18;;;44.9139;-2.86321;0;Bottom;TXT5
+19;;;98.8186;-39.9991;0;Bottom;Copper Fill515
+20;;;54.864;-43.4789;0;Bottom;Copper Fill474
+21;;;76.3523;-13.1767;0;Bottom;Copper Fill482
+22;;;39.7891;-4.94714;0;Bottom;Copper Fill524
+23;;;94.7419;-74.2384;0;Bottom;Copper Fill507
+24;;;94.9832;-36.5193;0;Bottom;Copper Fill522
+25;;THT;53.267;-54.6199;0;Bottom;DOME
+26;10k;THT;12.4783;-76.1307;0;Bottom;R1
+27;;;35.4615;-40.7746;0;Bottom;TXT4
+28;;;29.1211;-30.944;0;Bottom;Copper Fill489
+29;;THT;46.4459;-44.2955;180;Bottom;ESP32-Right header
+30;10k;THT;25.6798;-68.5971;-90;Bottom;R3
+31;;;64.8207;-58.4396;0;Bottom;Copper Fill468
+32;;THT;11.0375;-16.7555;-90;Bottom;WIND SENSOR BUS PWR
+33;;;51.4096;-40.0245;0;Bottom;Copper Fill477
+34;;;16.764;-53.3596;0;Bottom;Copper Fill472
+35;;;52.7304;-39.796;0;Bottom;Copper Fill479
+36;;THT;26.1531;-13.751;-90;Bottom;DOME STATUS
+37;;;28.3083;-30.1058;0;Bottom;Copper Fill488
+38;;THT;21.3379;-44.2915;180;Bottom;ESP32-Left header
+39;;;30.7196;-76.226;0;Bottom;TXT3
+40;;THT;58.9395;-60.9889;0;Bottom;UART-Left header
+41;;;102.32;-3.15756;0;Bottom;Hole1
+42;;;52.5885;-34.8722;0;Bottom;Via8
+43;1µF;100 mil [THT, electrolytic];12.5845;-68.4438;-90;Bottom;C1
+44;;THT;5.99459;-71.4675;180;Bottom;RBT_CON
+45;;;102.33;-76.875;0;Bottom;Hole3
+46;;;52.7304;-39.796;0;Bottom;Copper Fill506
+47;;THT;98.8626;-42.1229;180;Bottom;12V PWR
+48;;;19.4623;-5.72122;0;Bottom;TXT5
+49;;;77.0127;-34.7667;0;Bottom;Copper Fill480
+50;;THT;42.0105;-4.915;-90;Bottom;12V Rain
+51;;;30.569;-77.7037;0;Bottom;TXT3
+52;;;63.7146;-7.31697;0;Bottom;TXT4
+53;;;63.1952;-33.5476;0;Bottom;Copper Fill469
+54;;;79.8067;-56.2298;0;Bottom;Copper Fill466
+55;;THT;74.2842;-12.58;180;Bottom;ETH Right header
+56;;;99.1625;-45.0758;0;Bottom;TXT5
+57;;;12.5603;-66.3644;0;Bottom;Copper Fill531
+58;;THT;96.9269;-48.3335;-90;Bottom;GND
+59;;;56.1085;-54.6296;0;Bottom;Copper Fill473
+60;;;67.4331;-23.009;0;Bottom;Via10
+61;;THT;69.6687;-42.5877;90;Bottom;I2C
+62;;THT;54.0009;-12.58;180;Bottom;ETH Left header
+63;;;99.0599;-74.2384;0;Bottom;Copper Fill508
+64;;;22.7665;-13.906;0;Bottom;TXT5
+65;10k;THT;29.2962;-68.5971;-90;Bottom;R4
+66;;;5.9817;-69.3616;0;Bottom;Copper Fill523
+67;;THT;78.9027;-61.0335;0;Bottom;UART-Right header
+68;;THT;11.0215;-57.3703;-90;Bottom;WIND SENSOR DATA
+69;;THT;51.0928;-73.4134;0;Bottom;3.3V Relay
+70;;;14.224;-52.0388;0;Bottom;Copper Fill471
+71;;;85.3185;-52.6484;0;Bottom;Copper Fill467
+72;;THT;6.03804;-63.4933;0;Bottom;DBG_CON
+73;;THT;90.3327;-36.4962;-90;Bottom;GPS
+74;;THT;96.9714;-74.2192;-90;Bottom;GND
+75;;;17.7557;-16.6592;0;Bottom;TXT5
+76;10k;THT;28.3331;-25.8363;90;Bottom;R5
+77;;;51.6636;-44.3679;0;Bottom;Copper Fill475
+78;;;3.66216;-16.6601;0;Bottom;TXT5
+79;;;60.4633;-29.4312;90;Bottom;Rain
+80;;;26.2981;-59.3925;0;Bottom;Via14

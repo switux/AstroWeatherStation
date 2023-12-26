@@ -1,0 +1,100 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=8x12_AWS_3.0.0_PANEL
+*Date=17:32:06
+*CreatedBy=Fritzing 0.9.6b..
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;82k;THT;66.6972;-15.3462;90;Bottom;R5
+2;;;56.4896;-60.188;0;Bottom;Copper Fill89
+3;;;49.7078;-44.5924;0;Bottom;Copper Fill88
+4;;;89.6761;-4.692;0;Bottom;TXT3
+5;;;52.762;-19.6826;90;Bottom;Rain
+6;;;82.2845;-4.88187;-90;Bottom;TXT4
+7;;;96.9772;-78.2982;0;Bottom;Copper Fill132
+8;;THT;61.1099;-5.41484;180;Bottom;12V RAIN
+9;;;51.4858;-18.5066;0;Bottom;Copper Fill103
+10;;THT;7.2164;-63.3313;0;Bottom;DBG_CON
+11;;THT;66.2223;-62.9004;180;Bottom;OUT+
+12;;;2.77702;-2.72569;0;Bottom;Hole1
+13;;THT;89.6806;-24.8646;180;Bottom;BAT2
+14;;;48.9458;-18.5066;0;Bottom;Copper Fill102
+15;;THT;56.4605;-56.0664;-90;Bottom;I2C 2
+16;;THT;66.2209;-74.3448;180;Bottom;OUT-
+17;;;13.3604;-54.3968;0;Bottom;Copper Fill93
+18;;;87.0458;-53.0379;0;Bottom;Copper Fill175
+19;;;79.3834;-68.5063;0;Bottom;TXT4
+20;;THT;89.4621;-9.59797;0;Bottom;PANEL
+21;;;55.9816;-35.2325;0;Bottom;Copper Fill180
+22;;;7.9248;-14.976;0;Bottom;Copper Fill105
+23;;;79.1464;-53.5459;0;Bottom;Copper Fill141
+24;;;56.2864;-21.7324;0;Bottom;Copper Fill100
+25;10k;THT;30.0277;-68.6919;-90;Bottom;R2
+26;;;95.9175;-2.84026;0;Bottom;Hole2
+27;;;73.3806;-54.6508;0;Bottom;Copper Fill95
+28;;;79.6617;-20.4831;-90;Bottom;TXT4
+29;;THT;75.7803;-53.5216;90;Bottom;N-3.3V-M2
+30;;;92.0369;-76.4948;0;Bottom;Copper Fill140
+31;;THT;46.6629;-49.2807;180;Bottom;ESP32-Right header
+32;;;54.1274;-18.5066;0;Bottom;Copper Fill104
+33;;;92.0369;-72.1768;0;Bottom;Copper Fill149
+34;;THT;56.5107;-64.3152;-90;Bottom;I2C
+35;;THT;21.6851;-49.3775;180;Bottom;ESP32-Left header
+36;;;59.0296;-60.188;0;Bottom;Copper Fill90
+37;;;48.895;-45.1766;0;Bottom;Copper Fill97
+38;;;53.9496;-60.188;0;Bottom;Copper Fill91
+39;;;66.1797;-72.2276;0;Bottom;Copper Fill138
+40;;;72.9234;-35.2325;0;Bottom;Copper Fill146
+41;;;7.1374;-68.1636;0;Bottom;Copper Fill162
+42;;THT;16.9726;-5.55287;0;Bottom;WIND PWR
+43;;THT;54.1541;-11.2835;180;Bottom;N-12V-M3
+44;;;70.3453;-10.4167;0;Bottom;Copper Fill178
+45;;THT;82.3299;-21.0415;180;Bottom;Header DD04CVSA
+46;10k;THT;36.092;-68.5784;-90;Bottom;R3
+47;;;72.0217;-10.4167;0;Bottom;Copper Fill179
+48;;THT;83.9637;-41.2837;90;Bottom;LM7805
+49;;DIP (Dual Inline) [THT];64.5099;-39.0099;-90;Bottom;SN74AHCT125
+50;300k;THT;71.2312;-15.4494;-90;Bottom;R4
+51;;;49.3522;-40.0204;0;Bottom;Copper Fill98
+52;;THT;92.2426;-62.6701;180;Bottom;IN+
+53;;;16.002;-55.743;0;Bottom;Copper Fill94
+54;;;53.4162;-25.0852;0;Bottom;Copper Fill99
+55;;THT;9.00351;-57.0449;-90;Bottom;WIND SENSOR DATA
+56;;;7.2009;-65.5347;0;Bottom;Copper Fill152
+57;;;89.5848;-20.0438;0;Bottom;TXT3
+58;;;96.9772;-1.7426;0;Bottom;Copper Fill106
+59;;;71.1835;-9.6039;0;Bottom;Copper Fill177
+60;10µF;100 mil [THT, electrolytic];90.8818;-46.6903;0;Bottom;C3
+61;;THT;92.095;-74.3002;180;Bottom;IN-
+62;;THT;9.02516;-16.4006;-90;Bottom;WIND SENSOR BUS PWR
+63;;THT;89.5497;-17.2463;180;Bottom;BAT1
+64;;;56.896;-33.6704;0;Bottom;Copper Fill96
+65;;THT;69.2506;-26.4932;-90;Bottom;N-BAT-M1
+66;;;18.2208;-77.7287;0;Bottom;TXT4
+67;;THT;7.15213;-70.2882;180;Bottom;RBT_CON
+68;;;2.54789;-77.3068;0;Bottom;Hole4
+69;;;89.408;-11.8264;0;Bottom;Copper Fill145
+70;;;96.9772;-78.2982;0;Bottom;Copper Fill86
+71;;;30.9118;-44.3892;0;Bottom;Copper Fill92
+72;;;95.9175;-77.1923;0;Bottom;Hole3
+73;10k;THT;26.5122;-69.6233;-90;Bottom;R1
+74;1µF;100 mil [THT, electrolytic];15.5654;-65.8742;-90;Bottom;C1
+75;;;96.9772;-1.7426;0;Bottom;Copper Fill135
+76;;;12.2682;-65.5982;0;Bottom;Copper Fill87
+77;;;71.1835;-11.2803;0;Bottom;Copper Fill176
+78;;;11.3036;-76.1612;0;Bottom;TXT4
+79;;;66.1797;-76.5456;0;Bottom;Copper Fill136
+80;;;89.5688;-28.0052;0;Bottom;TXT3
+81;;;53.5686;-62.9566;0;Bottom;Copper Fill133
+82;;;49.3522;-40.0204;0;Bottom;Copper Fill134
+83;;;34.0448;-38.8133;0;Bottom;TXT4
+84;1µF;100 mil [THT, electrolytic];84.9797;-53.0077;180;Bottom;C2
+85;;;45.3644;-19.7766;0;Bottom;Copper Fill101
