@@ -1068,7 +1068,7 @@ bool alpaca_server::start( IPAddress address )
 
 	server->on( "^\\/api\\/v1\\/([a-zA-Z]+)\\/([0-9]+)\\/.+$", HTTP_GET, std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	
-	server->onNotFound( std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
+	server->onNotFound( std::bind( &alpaca_server::does_not_exist2, this, std::placeholders::_1 ));
 	server->begin();
 
 	return true;

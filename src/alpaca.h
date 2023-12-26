@@ -254,6 +254,7 @@ class alpaca_server {
 		void 			dispatch_telescope_request( AsyncWebServerRequest * );
 		bool		 	extract_transaction_details( AsyncWebServerRequest *, bool );
 		void			does_not_exist( AsyncWebServerRequest * );
+		void			does_not_exist2( AsyncWebServerRequest * );
 		void			get_config( AsyncWebServerRequest * );
 		bool			get_configured_devices( char *, size_t );
 		void			not_implemented( AsyncWebServerRequest * );

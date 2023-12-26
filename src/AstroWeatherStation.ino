@@ -65,6 +65,7 @@ void setup()
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
 		if ( station.has_rain_sensor() )
 			esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
+
 		esp_deep_sleep_start();
 	}
 
