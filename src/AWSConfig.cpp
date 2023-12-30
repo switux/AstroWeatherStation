@@ -595,7 +595,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 
 	if ( ( x = nvs.getChar( "has_ethernet", 255 )) == 255 ) {
 
-		if ( hasSerial.printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
+		printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}

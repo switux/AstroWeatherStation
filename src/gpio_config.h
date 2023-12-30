@@ -53,13 +53,11 @@
 #define GPIO_BAT_ADC_EN			GPIO_NUM_12
 
 // Ethernet W5500
-#if DEFAULT_HAS_ETHERNET == 1
 #define	GPIO_SPI_MOSI			GPIO_NUM_23
 #define	GPIO_SPI_MISO			GPIO_NUM_19
 #define	GPIO_SPI_SCK			GPIO_NUM_18
 #define	GPIO_SPI_CS_ETH			GPIO_NUM_5
 #define	GPIO_SPI_INT			GPIO_NUM_4
-#endif
 
 // SDCard reader
 #define	GPIO_SPI_CS_SD			GPIO_NUM_2
