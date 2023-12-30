@@ -86,7 +86,7 @@ class AWSSensorManager {
     bool				get_debug_mode( void );
     SemaphoreHandle_t	get_i2c_mutex( void );
     sensor_data_t		*get_sensor_data( void );
-    bool				initialise( I2C_SC16IS750 *, AWSConfig * );
+    bool				initialise( I2C_SC16IS750 *, AWSConfig *, bool );
     bool				initialise_rain_sensor( void );
     void				initialise_sensors( I2C_SC16IS750 * );
     bool				poll_sensors( void );

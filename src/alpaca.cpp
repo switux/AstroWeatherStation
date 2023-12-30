@@ -1,5 +1,5 @@
 /*
-	AWSAlpaca.cpp
+	alpaca.cpp
 
 	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
 
@@ -1177,7 +1177,7 @@ void ascom_device::supportedactions( AsyncWebServerRequest *request, const char 
 	if ( is_connected )
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", _supportedactions, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }

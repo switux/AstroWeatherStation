@@ -1,3 +1,22 @@
+/*	
+  	defaults.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _defaults_H
 #define _defaults_H
@@ -7,7 +26,6 @@
 #define	DEFAULT_ETH_IP_MODE				dhcp
 #define	DEFAULT_HAS_BME					0
 #define	DEFAULT_HAS_DOME				0
-#define	DEFAULT_HAS_ETHERNET			1
 #define	DEFAULT_HAS_GPS					0
 #define	DEFAULT_HAS_MLX					0
 #define	DEFAULT_HAS_RAIN_SENSOR			0

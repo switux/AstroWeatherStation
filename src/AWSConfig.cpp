@@ -409,7 +409,9 @@ bool AWSConfig::read_config( void )
 	bool			x;
 	uint8_t			y;
 	uint16_t		z;
-		
+
+	read_hw_info_from_nvs();
+
 	if ( !read_file( "/aws.conf", aws_json_config ) ) {
 		
 		if ( !read_file( "/aws.conf.dfl", aws_json_config )) {
@@ -420,15 +422,6 @@ bool AWSConfig::read_config( void )
 		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
 	}
 
-	if ( (!aws_json_config.containsKey( "pwr_mode" )) || (!aws_json_config.containsKey( "pcb_version" )) ) {
-
-		Serial.printf( "[PANIC] Could not find 'pwr_mode' or 'pcb_version' in configuration file!\n" );
-		return false;
-	}
-
-	pcb_version = strdup( aws_json_config["pcb_version"] );
-	pwr_mode = aws_json_config["pwr_mode"];
-	
 	u = aws_json_config.containsKey( "pref_iface" ) ? aws_json_config["pref_iface"] : wifi_ap;
 	if ( pref_iface != u )
 		pref_iface = u;
@@ -465,8 +458,6 @@ bool AWSConfig::read_config( void )
 	alpaca_iface = aws_json_config["alpaca_iface"];
 	config_iface = aws_json_config["config_iface"];
 	
-	has_ethernet = aws_json_config.containsKey( "has_ethernet" ) ? ( aws_json_config["has_ethernet"] == 1 ) : DEFAULT_HAS_ETHERNET;
-
 	y = aws_json_config.containsKey( "windvane_model" ) ? aws_json_config["windvane_model"] : 0;
 	if ( wind_vane_model != y )
 		wind_vane_model = y;
@@ -582,6 +573,37 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 	return false;
 }
 
+bool AWSConfig::read_hw_info_from_nvs( void )
+{
+	Preferences nvs;
+	char	x;
+	
+	Serial.printf( "[INFO] Reading NVS values.\n" );
+	nvs.begin( "aws", false );
+	if ( !nvs.getString( "pcb_version", pcb_version, 8 )) {
+
+		Serial.printf( "[PANIC] Could not get PCB version from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+	if ( ( pwr_mode = (aws_pwr_src_t) nvs.getChar( "pwr_mode", 255 )) == 255 ) {
+
+		Serial.printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+
+	if ( ( x = nvs.getChar( "has_ethernet", 255 )) == 255 ) {
+
+		if ( hasSerial.printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+	has_ethernet = ( x == 0 ) ? false : true;
+	nvs.end();
+	return true;
+}
+
 bool AWSConfig::rollback()
 {
 	uint8_t	buf[ 4096 ];
@@ -590,8 +612,8 @@ bool AWSConfig::rollback()
 	if ( !can_rollback ) {
 		
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Skipping configuration rollback because conditions are not met.\n");
-		return false;
+			Serial.printf( "[DEBUG] No configuration to rollback.\n");
+		return true;
 
 	}
 

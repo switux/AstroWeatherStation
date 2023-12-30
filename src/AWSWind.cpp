@@ -1,3 +1,22 @@
+/*	
+  	AWSWind.cpp
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <SoftwareSerial.h>
 
 #include "defaults.h"
@@ -54,11 +73,11 @@ bool AWSWindSensor::initialise_anemometer( byte model )
 			
 		} else
 
-			return ( _anemometer_initialised = ( read_anemometer() >= 0 ));
+			return ( _anemometer_initialised = ( read_anemometer( false ) >= 0 ));
 	}
 
 	sensor_bus->begin( bps );
-	return ( _anemometer_initialised = ( read_anemometer() >= 0 ));
+	return ( _anemometer_initialised = ( read_anemometer( false ) >= 0 ));
 }
 
 bool AWSWindSensor::initialise_wind_vane( byte model )
@@ -79,14 +98,14 @@ bool AWSWindSensor::initialise_wind_vane( byte model )
 			
 		} else
 
-			return ( _wind_vane_initialised = ( read_wind_vane() >= 0 ));
+			return ( _wind_vane_initialised = ( read_wind_vane( false ) >= 0 ));
 	}
 
 	sensor_bus->begin( bps );
-	return ( _wind_vane_initialised = ( read_wind_vane() >= 0 ));
+	return ( _wind_vane_initialised = ( read_wind_vane( false ) >= 0 ));
 }
 
-float AWSWindSensor::read_anemometer( void )
+float AWSWindSensor::read_anemometer( bool verbose )
 {
 	byte	i = 0,
 			j;
@@ -95,9 +114,15 @@ float AWSWindSensor::read_anemometer( void )
 	
 	if ( debug_mode ) {
 		
-		Serial.printf( "[DEBUG] Sending command to the anemometer:" );
-		for ( j = 0; j < 8; Serial.printf( " %02x", anemometer_cmd[ j++ ] ));
-		Serial.printf( "\n" );
+		if ( verbose ) {
+
+			Serial.printf( "[DEBUG] Sending command to the anemometer:" );
+			for ( j = 0; j < 8; Serial.printf( " %02x", anemometer_cmd[ j++ ] ));
+			Serial.printf( "\n" );
+
+		} else
+
+			Serial.printf( "[DEBUG] Probing anemometer.\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -109,7 +134,7 @@ float AWSWindSensor::read_anemometer( void )
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
 		sensor_bus->readBytes( answer, 7 );
 
-		if ( debug_mode ) {
+		if ( debug_mode && verbose ) {
 
 			Serial.print( "[DEBUG] Anemometer answer: " );
 			for ( j = 0; j < 7; j++ )
@@ -128,16 +153,16 @@ float AWSWindSensor::read_anemometer( void )
 				wind_speed = static_cast<float>( (answer[3]<< 8) + answer[4] ) / 100.F;
 				wind_direction = ( answer[5] << 8 ) + answer[6];
 
-				if ( debug_mode )
+				if ( debug_mode && verbose )
 					Serial.printf( "\n[DEBUG] Wind direction: %d°", wind_direction );
 			}
 			
-			if ( debug_mode )
+			if ( debug_mode && verbose )
 				Serial.printf( "\n[DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
 
 		} else {
 
-			if ( debug_mode )
+			if ( debug_mode && verbose )
 				Serial.println( "(Error)." );
 			delay( 500 );
 		}
@@ -163,7 +188,7 @@ float AWSWindSensor::get_wind_gust( void )
 	return ( wind_gust = *std::max_element( wind_speeds, wind_speeds + wind_speeds_size ));
 }
 
-int16_t AWSWindSensor::read_wind_vane( void )
+int16_t AWSWindSensor::read_wind_vane( bool verbose  )
 {
 	byte	i = 0,
 			j;
@@ -172,9 +197,15 @@ int16_t AWSWindSensor::read_wind_vane( void )
 
 	if ( debug_mode ) {
 		
-		Serial.printf( "[DEBUG] Sending command to the wind vane:" );
-		for ( j = 0; j < 8; Serial.printf( " %02x", wind_vane_cmd[ j++ ] ));
-		Serial.printf( "\n" );
+		if ( verbose ) {
+			
+			Serial.printf( "[DEBUG] Sending command to the wind vane:" );
+			for ( j = 0; j < 8; Serial.printf( " %02x", wind_vane_cmd[ j++ ] ));
+			Serial.printf( "\n" );
+
+		} else
+
+			Serial.printf( "[DEBUG] Probing wind vane.\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -187,7 +218,7 @@ int16_t AWSWindSensor::read_wind_vane( void )
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
 		sensor_bus->readBytes( answer, 7 );
 
-		if ( debug_mode ) {
+		if ( debug_mode && verbose ) {
 
 			Serial.print( "[DEBUG] Wind vane answer : " );
 			for ( j = 0; j < 7; j++ )
@@ -198,12 +229,12 @@ int16_t AWSWindSensor::read_wind_vane( void )
 
 			wind_direction = ( answer[5] << 8 ) + answer[6];
 
-			if ( debug_mode )
+			if ( debug_mode && verbose )
 				Serial.printf( "\n[DEBUG] Wind direction: %d°\n", wind_direction );
 
 		} else {
 
-			if ( debug_mode )
+			if ( debug_mode && verbose )
 				Serial.println( "(Error)." );
 			delay( 500 );
 		}
