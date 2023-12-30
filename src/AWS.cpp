@@ -18,6 +18,7 @@
 */
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include <time.h>
 #include <thread>
 #include <Ethernet.h>
@@ -438,11 +439,8 @@ bool AstroWeatherStation::initialise( void )
 	if ( solar_panel )
 		sensor_manager->read_battery_level();
 		
-	if ( !initialise_network()) {
-
-		config->rollback();
-		return false;
-	}
+	if ( !initialise_network() )
+		return config->rollback();
 	
 	if ( config->get_has_sc16is750() ) {
 
@@ -457,7 +455,7 @@ bool AstroWeatherStation::initialise( void )
 		if ( config->get_has_rain_sensor() ) {
 
 			if ( debug_mode )
-				Serial.printf( "[DEBUG] Now monitoring rain event pin from RG-9\n" );
+				Serial.printf( "[DEBUG] Now monitoring rain event pin from rain sensor\n" );
 
 			pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
 			attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
@@ -465,7 +463,7 @@ bool AstroWeatherStation::initialise( void )
 	}
 
 	if ( solar_panel ) {
-
+		
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
@@ -475,10 +473,6 @@ bool AstroWeatherStation::initialise( void )
 	} else {
 
 		start_config_server();
-	}
-
-	if ( !solar_panel ) {
-		
 		alpaca = new alpaca_server( debug_mode );
 		switch ( config->get_alpaca_iface() ) {
 
@@ -515,8 +509,7 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( rain_event ) {
 
-		Serial.printf("RAIN EVENT\n");
-		sensor_manager->initialise( sc16is750, config );
+		sensor_manager->initialise( sc16is750, config, rain_event );
 		sensor_manager->initialise_rain_sensor();
 		sensor_manager->read_rain_sensor();
 		rain_intensity = sensor_manager->get_sensor_data()->rain_intensity;
@@ -527,7 +520,7 @@ bool AstroWeatherStation::initialise( void )
 		return true;
 	}
 
-	if ( !sensor_manager->initialise( sc16is750, config ))
+	if ( !sensor_manager->initialise( sc16is750, config, false ))
 		return false;
 
 	if ( !solar_panel ) {

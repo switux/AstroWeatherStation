@@ -1,3 +1,22 @@
+/*	
+  	gpio_config.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _GPIO_CONFIG_H
 #define _GPIO_CONFIG_H
@@ -34,13 +53,11 @@
 #define GPIO_BAT_ADC_EN			GPIO_NUM_12
 
 // Ethernet W5500
-#if DEFAULT_HAS_ETHERNET == 1
 #define	GPIO_SPI_MOSI			GPIO_NUM_23
 #define	GPIO_SPI_MISO			GPIO_NUM_19
 #define	GPIO_SPI_SCK			GPIO_NUM_18
 #define	GPIO_SPI_CS_ETH			GPIO_NUM_5
 #define	GPIO_SPI_INT			GPIO_NUM_4
-#endif
 
 // SDCard reader
 #define	GPIO_SPI_CS_SD			GPIO_NUM_2

@@ -1,3 +1,22 @@
+/*	
+  	alpaca_observingconditions.cpp
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 
@@ -28,8 +47,6 @@ alpaca_observingconditions::alpaca_observingconditions( bool _debug_mode )
 	_driverversion = OBSERVINGCONDITIONS_DRIVER_VERSION;
 	_interfaceversion = OBSERVINGCONDITIONS_INTERFACE_VERSION;
 }
-
-
 
 void alpaca_observingconditions::cloudcover( AsyncWebServerRequest *request, const char *transaction_details )
 {
@@ -142,7 +159,6 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 				strncpy( tmp, request->getParam(i)->value().c_str(), 31 );
 				for( j = 0; j < strlen( tmp ); tmp[j]= tolower( tmp[j] ), j++ );
 				ok = true;
-
 				switch( str2int( tmp )) {
 
 					case str2int("pressure"):

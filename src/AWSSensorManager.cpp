@@ -83,15 +83,14 @@ sensor_data_t *AWSSensorManager::get_sensor_data( void )
 	return &sensor_data;
 }
 
-bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config )
+bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config, bool _rain_event )
 {
 	config = _config;
-
-//FIXME	solar_panel = ( config->get_pwr_mode() == panel );
 
 	// FIXME: needed?
 	ESP32Time rtc( 0 );
 
+	rain_event = _rain_event;
 	initialise_sensors( sc16is750 );
 
 	if ( !solar_panel ) {
@@ -168,20 +167,20 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
 	}
 		
-	if ( config->get_has_bme() )
+	if ( !rain_event && config->get_has_bme() )
 		initialise_BME();
 		
-	if ( config->get_has_mlx() )
+	if ( !rain_event && config->get_has_mlx() )
 		initialise_MLX();
 		
-	if ( config->get_has_tsl() ) {
+	if ( !rain_event && config->get_has_tsl() ) {
 		
 		initialise_TSL();
 		sqm->set_msas_calibration_offset( config->get_msas_calibration_offset() );
 		sqm->set_debug_mode( debug_mode );
 	}
 	
-	if ( config->get_has_ws() ) {
+	if ( !rain_event &&  config->get_has_ws() ) {
 
 		wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
 		if ( !wind_sensors->initialise_anemometer( config->get_anemometer_model() )) {
@@ -192,28 +191,32 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 		} else {
 
-			if ( config->get_anemometer_model() == 0x02 ) 
+			if ( config->get_anemometer_model() == 0x02 ) {
+
+				Serial.printf( "[INFO] Found 2-in-1 wind vane and anemometer.\n" );
 				available_sensors |= WIND_VANE_SENSOR;
+
+			} else
+
+				Serial.printf( "[INFO] Found anemometer.\n" );
+
 			available_sensors |= ANEMOMETER_SENSOR;
 		}
 	}
 		
 	// Model 0x02 (VMS-3003-CFSFX-N01) is a 2-in-1 device
-	if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	{
+	if ( !rain_event && config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	{
 
 		if ( !wind_sensors )
-			wind_sensors = new AWSWindSensor( polling_ms_interval,  debug_mode );
+			wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
 
-		if ( !wind_sensors->initialise_wind_vane( config->get_wind_vane_model() )) {
+		if ( !wind_sensors->initialise_wind_vane( config->get_wind_vane_model() ))
 
-			if ( config->get_wind_vane_model() == 0x02 ) 
-				available_sensors &= ~ANEMOMETER_SENSOR;
 			available_sensors &= ~WIND_VANE_SENSOR;
 
-		} else {
+		else {
 
-			if ( config->get_anemometer_model() == 0x02 ) 
-				available_sensors |= ANEMOMETER_SENSOR;
+			Serial.printf( "[INFO] Found wind vane.\n" );
 			available_sensors |= WIND_VANE_SENSOR;
 		}
 	}
@@ -221,7 +224,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 	if ( config->get_has_rain_sensor() && initialise_rain_sensor())
 		available_sensors |= RAIN_SENSOR;
 
-	if ( config->get_has_gps() )
+	if ( !rain_event && config->get_has_gps() )
 		initialise_GPS( _sc16is750 );
 }
 
@@ -249,12 +252,57 @@ void AWSSensorManager::initialise_TSL( void )
 	}
 }
 
+bool AWSSensorManager::poll_sensors( void )
+{
+	if ( xSemaphoreTake( sensors_read_mutex, 2000 / portTICK_PERIOD_MS ) == pdTRUE ) {
+
+		retrieve_sensor_data();
+		xSemaphoreGive( sensors_read_mutex );
+		sensor_data.wind_gust = wind_sensors->get_wind_gust();
+		return true;
+	}
+	return false;
+}
+
+void AWSSensorManager::poll_sensors_task( void *dummy )
+{
+	while( true ) {
+
+		if ( xSemaphoreTake( sensors_read_mutex, 5000 / portTICK_PERIOD_MS ) == pdTRUE ) {
+
+			retrieve_sensor_data();
+			xSemaphoreGive( sensors_read_mutex );
+			if ( config->get_has_ws() )
+				sensor_data.wind_gust = wind_sensors->get_wind_gust();
+			else
+				sensor_data.wind_gust = 0.F;
+			
+		}
+		delay( polling_ms_interval );
+	}
+}
+
+void AWSSensorManager::read_anemometer( void )
+{
+	float	x;
+	
+	if ( !wind_sensors->anemometer_initialised() )
+		return;
+
+	if ( ( x = wind_sensors->read_anemometer( true ) ) == -1 )
+		return;
+
+	sensor_data.wind_speed = x;
+}
+
 void AWSSensorManager::read_battery_level( void )
 {
 	int		adc_value = 0;
 	float	adc_v_in,
 			bat_v;
 
+	WiFi.mode ( WIFI_OFF );
+	
 	if ( debug_mode )
 		Serial.print( "[DEBUG] Battery level: " );
 
@@ -264,10 +312,8 @@ void AWSSensorManager::read_battery_level( void )
 	for( uint8_t i = 0; i < 5; i++ ) {
 
 		adc_value += analogRead( GPIO_BAT_ADC );
-		delay( 100 );
 	}
 	adc_value = static_cast<int>( adc_value / 5 );
-	
 	sensor_data.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 
 	if ( debug_mode ) {
@@ -309,7 +355,7 @@ void AWSSensorManager::read_BME( void  )
 
 	sensor_data.temperature = -99.F;
 	sensor_data.pressure = 0.F;
-	sensor_data.rh = -1.F;
+	sensor_data.rh = 0.F;
 	sensor_data.dew_point = -99.F;
 }
 
@@ -420,15 +466,22 @@ void AWSSensorManager::read_TSL( void )
 	sensor_data.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
 }
 
+void AWSSensorManager::read_wind_vane( void )
+{
+	int16_t	x;
+	
+	if ( !wind_sensors->wind_vane_initialised() )
+		return;
+
+	if ( ( x = wind_sensors->read_wind_vane( true ) ) == -1 )
+		return;
+
+	sensor_data.wind_direction = x;
+}
 
 void AWSSensorManager::reset_rain_event( void )
 {
 	rain_event = false;
-}
-
-void AWSSensorManager::set_rain_event( void )
-{
-	rain_event = true;
 }
 
 void AWSSensorManager::retrieve_sensor_data( void )
@@ -478,58 +531,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 	}
 }
 
-bool AWSSensorManager::poll_sensors( void )
+void AWSSensorManager::set_rain_event( void )
 {
-	if ( xSemaphoreTake( sensors_read_mutex, 2000 / portTICK_PERIOD_MS ) == pdTRUE ) {
-
-		retrieve_sensor_data();
-		xSemaphoreGive( sensors_read_mutex );
-		sensor_data.wind_gust = wind_sensors->get_wind_gust();
-		return true;
-	}
-	return false;
-}
-
-void AWSSensorManager::poll_sensors_task( void *dummy )
-{
-	while( true ) {
-
-		if ( xSemaphoreTake( sensors_read_mutex, 5000 / portTICK_PERIOD_MS ) == pdTRUE ) {
-
-			retrieve_sensor_data();
-			xSemaphoreGive( sensors_read_mutex );
-			if ( config->get_has_ws() )
-				sensor_data.wind_gust = wind_sensors->get_wind_gust();
-			else
-				sensor_data.wind_gust = -1.0F;
-			
-		}
-		delay( polling_ms_interval );
-	}
-}
-
-void AWSSensorManager::read_anemometer( void )
-{
-	float	x;
-	
-	if ( !wind_sensors->anemometer_initialised() )
-		return;
-
-	if ( ( x = wind_sensors->read_anemometer() ) == -1 )
-		return;
-
-	sensor_data.wind_speed = x;
-}
-
-void AWSSensorManager::read_wind_vane( void )
-{
-	int16_t	x;
-	
-	if ( !wind_sensors->wind_vane_initialised() )
-		return;
-
-	if ( ( x = wind_sensors->read_wind_vane() ) == -1 )
-		return;
-
-	sensor_data.wind_direction = x;
+	rain_event = true;
 }

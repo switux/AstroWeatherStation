@@ -1,3 +1,22 @@
+/*	
+  	AWSWind.h
+  	
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #pragma once
 #ifndef _AWS_WIND_H
 #define	_AWS_WIND_H
@@ -18,8 +37,8 @@ class AWSWindSensor {
 		float	get_wind_gust( void );
 		bool	initialise_anemometer( byte );
 		bool	initialise_wind_vane( byte );
-		float	read_anemometer( void );
-		int16_t	read_wind_vane( void );
+		float	read_anemometer( bool );
+		int16_t	read_wind_vane( bool );
 		bool	wind_vane_initialised( void );
 		
 	private:

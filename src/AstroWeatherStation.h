@@ -23,8 +23,7 @@
 #define _AstroWeatherStation_H
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "2023122101"
-
+#define BUILD_DATE "2023122901"
 
 // Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1
@@ -49,9 +48,9 @@
 #define FORMAT_SPIFFS_IF_FAILED true
 
 // Only applicable for solar panel version
-#define	CONFIG_MODE_GUARD	5000000						// 5 seconds
-#define US_SLEEP		5 * 60 * 1000000				// 5 minutes
-#define US_HIBERNATE	1 * 24 * 60 * 60 * 1000000ULL	// 1 day
+#define	CONFIG_MODE_GUARD	5000000							// 5 seconds
+#define US_SLEEP			5 * 60 * 1000000				// 5 minutes
+#define US_HIBERNATE		1 * 24 * 60 * 60 * 1000000ULL	// 1 day
 
 #include "AWSGPS.h"
 

@@ -145,7 +145,7 @@ class AWSConfig {
 					
 		float		msas_calibration_offset;
 		
-		char  		*pcb_version,
+		char  		pcb_version[8],
 					*remote_server,
 					*root_ca,
 					*sta_ssid,
@@ -175,9 +175,9 @@ class AWSConfig {
 				
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );
+		bool 	read_hw_info_from_nvs( void );
 		bool	set_parameter( JsonDocument &, const char *, char **, const char * );
 		bool	verify_entries( JsonVariant & );
-
 		
 };
 
