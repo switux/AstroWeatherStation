@@ -25,6 +25,7 @@
 #define REV "3.0.0.0"
 #define BUILD_DATE "2024010101"
 
+
 // Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1
 
