@@ -35,7 +35,7 @@ const char	*pwr_mode_str[3] = {
 	"POE"	
 };
 
-RTC_DATA_ATTR char can_rollback = 0;
+RTC_DATA_ATTR char _can_rollback = 0;
 
 //
 // Credits to: https://stackoverflow.com/a/16388610
@@ -52,6 +52,11 @@ AWSConfig::AWSConfig( void )
 	rain_event_guard_time = 60;
 	sta_ssid = wifi_sta_password = remote_server = url_path = root_ca = tzname = eth_dns = eth_ip = eth_gw = wifi_sta_dns = wifi_sta_ip = wifi_sta_gw = wifi_ap_dns = wifi_ap_ip = wifi_ap_gw = NULL;
 	wifi_mode = ap;
+}
+
+bool AWSConfig::can_rollback( void )
+{
+	return _can_rollback;
 }
 
 aws_iface_t	AWSConfig::get_alpaca_iface( void )
@@ -609,7 +614,8 @@ bool AWSConfig::rollback()
 	uint8_t	buf[ 4096 ];
 	size_t	i;
 
-	if ( !can_rollback ) {
+
+	if ( !_can_rollback ) {
 		
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] No configuration to rollback.\n");
@@ -637,7 +643,7 @@ bool AWSConfig::rollback()
 	filebak.close();
 	SPIFFS.remove( "/aws.conf.bak" );
 	Serial.printf( "[INFO] Rollback successful.\n" );
-	can_rollback = 0;
+	_can_rollback = 0;
 	return true;
 }
 
@@ -670,7 +676,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	serializeJson( json_config, file );
 	file.close();
 	Serial.printf( "[INFO] Save successful.\n" );
-	can_rollback = 1;
+	_can_rollback = 1;
 	return true;
 }
 

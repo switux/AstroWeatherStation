@@ -40,6 +40,7 @@ AstroWeatherStation station;
 void setup()
 {
 	Serial.begin( 115200 );
+
 	delay( 500 );	// TODO: not sure we really need it, except maybe after a firmware update via USB, to give some time to the serial monitor
 
 	if ( !station.initialise()) {
@@ -65,10 +66,6 @@ void setup()
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
 		if ( station.has_rain_sensor() )
 			esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
-<<<<<<< HEAD
-=======
-
->>>>>>> main
 		esp_deep_sleep_start();
 	}
 

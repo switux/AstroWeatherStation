@@ -1,7 +1,7 @@
 /*	
   	AWS.h
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -26,6 +26,8 @@
 #include "dome.h"
 #include "alpaca.h"
 
+#define	DATA_JSON_STRING_MAXLEN	1024
+
 void OTA_callback( int, int );
 
 class AstroWeatherStation {
@@ -37,8 +39,8 @@ class AstroWeatherStation {
 							rain_event,
 							catch_rain_event,
 							solar_panel;
-		char				*json_sensor_data;
-		char				uptime[32];
+		char				*json_sensor_data,
+							uptime[32];
 		uint8_t				eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF },
 							wifi_mac[6];
 
@@ -80,17 +82,19 @@ class AstroWeatherStation {
 		byte		mask_to_cidr( uint32_t );
 		const char	*OTA_message( int );
 		void		periodic_tasks( void * );
-		void		post_content( const char *, const char * );
+		bool		post_content( const char *, const char * );
 		void		print_config_string( const char *, ... );
 		void		print_runtime_config( void );
 		void		report_unavailable_sensors( void );
 		void		send_alarm( const char *, const char * );
+		void		send_backlog_data( void );
 		void		send_rain_event_alarm( uint8_t );
 		bool		shutdown_wifi( void );
 		bool		start_config_server( void );
 		bool		start_hotspot( void );
 		bool		startup_sanity_check( void );
 		bool		stop_hotspot( void );
+		bool		store_unsent_data( char * );
 		void		wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 		char		*ota_board;
 		char		*ota_device;

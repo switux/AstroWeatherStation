@@ -104,8 +104,8 @@ bool Hydreon::initialise( void )
 					break;
 			}
 			
-			if ( debug_mode )
-				printf( "\n" );
+//			if ( debug_mode )
+//				printf( "\n" );
 
 			if ( status != RAIN_SENSOR_FAIL )
 				break;

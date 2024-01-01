@@ -62,6 +62,7 @@ class AWSConfig {
 	public:
 
 						AWSConfig( void );
+		bool			can_rollback( void );
 		aws_iface_t		get_alpaca_iface( void );
 		uint8_t *		get_anemometer_cmd( void );
 		uint16_t		get_anemometer_com_speed( void );
