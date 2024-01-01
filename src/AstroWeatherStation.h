@@ -1,7 +1,7 @@
 /*
 	AstroWeatherStation.h
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 #define _AstroWeatherStation_H
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "2023122901"
+#define BUILD_DATE "2024010101"
 
 // Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1

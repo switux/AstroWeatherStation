@@ -1,7 +1,7 @@
 /*	
   	AWS.cpp
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -31,6 +31,8 @@
 #include <ESPping.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <FS.h>
+#include <SPIFFS.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
@@ -48,6 +50,9 @@ extern char *pwr_mode_str[3];
 extern SemaphoreHandle_t sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
 RTC_DATA_ATTR time_t rain_event_timestamp = 0;
+RTC_DATA_ATTR time_t boot_timestamp = 0;
+RTC_DATA_ATTR time_t last_ntp_time = 0;
+RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
 
 AstroWeatherStation::AstroWeatherStation( void )
 {
@@ -57,7 +62,7 @@ AstroWeatherStation::AstroWeatherStation( void )
 	ntp_synced = false;
 	catch_rain_event = true;
 	config = new AWSConfig();
-	json_sensor_data = (char *)malloc( 1024 );
+	json_sensor_data = (char *)malloc( DATA_JSON_STRING_MAXLEN );
 	sc16is750 = NULL;
 }
 
@@ -315,7 +320,7 @@ char *AstroWeatherStation::get_json_sensor_data( void )
 	json_data["gps_time_usec"] = sensor_data->gps.time.tv_usec;
 	json_data["uptime"] = get_uptime();
 
-	serializeJson( json_data, json_sensor_data, 1024 );
+	serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
 	return json_sensor_data;
 }
 
@@ -336,7 +341,26 @@ sensor_data_t *AstroWeatherStation::get_sensor_data( void )
 
 char *AstroWeatherStation::get_uptime( void )
 {
-	int64_t uptime_s = round( esp_timer_get_time() / 1000000 );
+	int64_t uptime_s;
+	
+	if ( !on_solar_panel() )
+
+		uptime_s = round( esp_timer_get_time() / 1000000 );
+
+ 	else {
+
+		time_t now;
+		time( &now );
+		if ( !boot_timestamp ) {
+			
+			uptime_s = round( esp_timer_get_time() / 1000000 );
+			boot_timestamp = now - uptime_s;
+
+		} else
+
+			uptime_s = now - boot_timestamp;
+	}
+
 	int days = floor( uptime_s / ( 3600 * 24 ));
 	int hours = floor( fmod( uptime_s, 3600 * 24 ) / 3600 );
 	int minutes = floor( fmod( uptime_s, 3600 ) / 60 );
@@ -417,7 +441,7 @@ bool AstroWeatherStation::initialise( void )
 
 	config_mode = ( guard > CONFIG_MODE_GUARD );
 
-	Serial.printf( "\n\n[INFO] AstroWeatherStation is booting...\n" );
+	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV, BUILD_DATE );
 
 	if ( !config->load( debug_mode ) )
 		return false;
@@ -425,6 +449,9 @@ bool AstroWeatherStation::initialise( void )
 	solar_panel = ( config->get_pwr_mode() == panel );
 	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota_board = strdup( string );
+
+	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
+		boot_timestamp = 0;
 
 	esp_read_mac( mac, ESP_MAC_WIFI_STA );
 	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
@@ -438,10 +465,11 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel )
 		sensor_manager->read_battery_level();
-		
-	if ( !initialise_network() )
+
+	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
+	if ( !initialise_network() && config->can_rollback() )
 		return config->rollback();
-	
+
 	if ( config->get_has_sc16is750() ) {
 
 		if ( debug_mode )
@@ -464,6 +492,7 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel ) {
 		
+//FIXME: we already get this to cater for station uptime
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
@@ -491,11 +520,8 @@ bool AstroWeatherStation::initialise( void )
 		}
 	}
 	
-	if ( !startup_sanity_check() ) {
-
-		config->rollback();
-		return false;
-	}
+	if ( !startup_sanity_check() && config->can_rollback() )
+		return config->rollback();
   
 	if ( debug_mode )
 		display_banner();
@@ -744,12 +770,13 @@ bool AstroWeatherStation::poll_sensors( void )
 	return sensor_manager->poll_sensors();
 }
 
-void AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
+bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
 {
 	const char	*server = config->get_remote_server(),
 				*url_path = config->get_url_path();
 	char		*url;
-
+	bool		sent = false;
+	
 	WiFiClientSecure wifi_client;
 	HTTPClient http;
 
@@ -785,7 +812,9 @@ void AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 				Serial.println( status );
 			}
 			http.end();
-
+			if ( status== 200 )
+				sent = true;
+				
 		} else
 			if ( debug_mode )
 				Serial.printf( "NOK.\n" );
@@ -813,11 +842,15 @@ void AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 			Serial.print( "[DEBUG] HTTP response: " );
 			Serial.println( status );
 		}
+		if ( status== 200 )
+			sent = true;
+
 		http.end();
     	wifi_client.stop();
 	}
 
 	free( final_endpoint );
+	return sent;
 }
 
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
@@ -940,6 +973,65 @@ void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 	post_content( "alarm.php", jsonString );
 }
 
+void AstroWeatherStation::send_backlog_data( void )
+{
+	char	line[1024];
+	int		i;
+	bool	empty = true;
+	
+	SPIFFS.begin( FORMAT_SPIFFS_IF_FAILED );
+	
+	File backlog = SPIFFS.open( "/unsent.txt", FILE_READ );
+
+	if ( !backlog ) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] No backlog data to send.\n" );
+		return;
+	}
+
+	File new_backlog = SPIFFS.open( "/unsent.new", FILE_WRITE );
+	
+	while ( backlog.available() ) {
+
+		i = backlog.readBytesUntil( '\n', line, DATA_JSON_STRING_MAXLEN - 1 );
+		line[i] = '\0';
+		if ( !post_content( "newData.php",  line )) {
+
+			empty = false;
+			if ( new_backlog.printf( "%s\n", line ) == ( 1 + strlen( line )) ) {
+
+				if ( debug_mode )
+					Serial.printf( "[DEBUG] Data saved in backlog.\n" );
+
+			} else
+
+				Serial.printf( "[ERROR] Could not write data into the backlog.\n" );
+
+		} else
+		
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Sucessfully sent backlog data: %s\n", line );
+			
+	}
+	new_backlog.close();
+	backlog.close();
+
+	if ( !empty ) {
+
+		SPIFFS.rename( "/unsent.new", "/unsent.txt" );
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Data backlog is not empty.\n" );
+
+	} else {
+
+		SPIFFS.remove( "/unsent.txt" );
+		SPIFFS.remove( "/unsent.new" );
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Data backlog is empty.\n");
+	}
+}
+
 void AstroWeatherStation::send_data( void )
 {
 	if ( !solar_panel ) {
@@ -956,7 +1048,10 @@ void AstroWeatherStation::send_data( void )
 	if ( debug_mode )
     	Serial.printf( "[DEBUG] Sensor data: %s\n", json_sensor_data );
 
-	post_content( "newData.php",  json_sensor_data );
+	if ( post_content( "newData.php",  json_sensor_data ))
+		send_backlog_data();
+	else
+		store_unsent_data( json_sensor_data );
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
@@ -1025,6 +1120,7 @@ bool AstroWeatherStation::start_hotspot()
 
 bool AstroWeatherStation::startup_sanity_check( void )
 {
+Serial.printf("sanity check\n");
 	switch ( config->get_pref_iface() ) {
 
 		case wifi_sta:
@@ -1044,6 +1140,34 @@ bool AstroWeatherStation::stop_hotspot( void )
 	return WiFi.softAPdisconnect();
 }
 
+bool AstroWeatherStation::store_unsent_data( char *data )
+{
+	bool ok = false;
+	int	i;
+	
+	SPIFFS.begin( FORMAT_SPIFFS_IF_FAILED );
+
+	File backlog = SPIFFS.open( "/unsent.txt", FILE_APPEND );
+
+	if ( !backlog ) {
+
+		Serial.printf( "[ERROR] Cannot store data until server is available.\n" );
+		return false;
+	}
+	
+	if (( ok = ( backlog.printf( "%s\n", data ) == ( strlen( data ) + 1 )) )) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Ok, data secured for when server is available. data=%s\n", data );
+
+	} else
+
+		Serial.printf( "[ERROR] Could not write data.\n" );
+
+	backlog.close();
+	return ok;
+}
+
 bool AstroWeatherStation::sync_time( void )
 {
 	const char	*ntp_server = "pool.ntp.org";
@@ -1053,24 +1177,39 @@ bool AstroWeatherStation::sync_time( void )
 	if ( config->get_has_gps() && sensor_manager->get_sensor_data()->gps.fix )
 		return true;
 
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Connecting to NTP server " );
+		
 	configTzTime( config->get_tzname(), ntp_server );
 
 	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
 
+		if ( debug_mode )
+			Serial.printf( "." );
 		delay( 1000 );
 		configTzTime( config->get_tzname(), ntp_server );
 	}
 	if ( debug_mode ) {
 
-		Serial.printf( "[DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
+		Serial.printf( "\n[DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
 		Serial.print( "Time and date: " );
-		Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );
+		Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );		
 	}
 
 	if ( ntp_synced ) {
 
 		time( &sensor_manager->get_sensor_data()->timestamp );
 		sensor_manager->get_sensor_data()->ntp_time.tv_sec = sensor_manager->get_sensor_data()->timestamp;
+		if ( ntp_time_misses )
+			ntp_time_misses = 0;
+		last_ntp_time = sensor_manager->get_sensor_data()->timestamp;
+
+	} else {
+
+		// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
+		ntp_time_misses++;
+		sensor_manager->get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+		
 	}
 	return ntp_synced;
 }

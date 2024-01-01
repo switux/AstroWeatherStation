@@ -489,7 +489,8 @@ void AWSSensorManager::retrieve_sensor_data( void )
 	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
 		sensor_data.rain_event = rain_event;
-		time( &sensor_data.timestamp );
+		if ( station.is_ntp_synced() )
+			time( &sensor_data.timestamp );
 		
 		if ( config->get_has_bme() )
 			read_BME();
