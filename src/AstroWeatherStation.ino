@@ -34,6 +34,7 @@
 
 extern const char *_anemometer_model[3];
 extern const char *_windvane_model[3];
+extern char catch_rain_event;
 
 AstroWeatherStation station;
 
@@ -61,11 +62,23 @@ void setup()
 		
 			station.handle_rain_event();
 
-		Serial.printf( "[INFO] Entering sleep mode.\n" );
-
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
-		if ( station.has_rain_sensor() )
-			esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
+
+		if ( station.has_rain_sensor() ) {
+
+			if ( catch_rain_event ) {
+
+			//	if ( debug_mode )
+					Serial.printf( "[DEBUG] Monitoring rain sensor.\n" );
+				esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
+
+			 } else {
+
+		//		if ( debug_mode )
+					Serial.printf( "[DEBUG] Not monitoring rain sensor.\n" );
+			 }
+		}
+		Serial.printf( "[INFO] Entering sleep mode.\n" );
 		esp_deep_sleep_start();
 	}
 

@@ -42,6 +42,9 @@
 #include "alpaca.h"
 #include "AWS.h"
 
+// Keep this, as otherwise it will be the value defined in http_parser.h that will be taken ( = 4 ) and not the one expected by ESPAsyncWebSrv
+#define	HTTP_PUT	8
+
 extern AstroWeatherStation station;
 
 constexpr unsigned int str2int(const char* str, int h = 0 )
@@ -1066,8 +1069,7 @@ bool alpaca_server::start( IPAddress address )
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &alpaca_server::send_file, this, std::placeholders::_1 ));
 
 	server->on( "^\\/api\\/v1\\/(dome|safetymonitor|telescope|observingconditions)\\/0\\/([a-z]+)$", HTTP_GET, std::bind( &alpaca_server::dispatch_request, this, std::placeholders::_1 ));
-	// FIXME: replace 8 by HTTP_PUT
-	server->on( "^\\/api\\/v1\\/(dome|safetymonitor|telescope|observingconditions)\\/0\\/([a-z]+)$", 8, std::bind( &alpaca_server::dispatch_request, this, std::placeholders::_1 ));
+	server->on( "^\\/api\\/v1\\/(dome|safetymonitor|telescope|observingconditions)\\/0\\/([a-z]+)$", HTTP_PUT, std::bind( &alpaca_server::dispatch_request, this, std::placeholders::_1 ));
 
 	server->on( "^\\/api\\/v1\\/([a-zA-Z]+)\\/([0-9]+)\\/.+$", HTTP_GET, std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	

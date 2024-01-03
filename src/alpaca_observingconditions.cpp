@@ -50,20 +50,20 @@ alpaca_observingconditions::alpaca_observingconditions( bool _debug_mode )
 
 void alpaca_observingconditions::cloudcover( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( MLX_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", station.get_sensor_data()->cloud_cover, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::dewpoint( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( BME_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%2.1f,%s}", station.get_sensor_data()->dew_point, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -73,27 +73,27 @@ void alpaca_observingconditions::get_averageperiod( AsyncWebServerRequest *reque
 	if ( is_connected )
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":0.0,%s}", transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::humidity( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( BME_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", station.get_sensor_data()->rh, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::pressure( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( BME_SENSOR ))
 		sprintf( (char *)message_str, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%4.1f,%s}", station.get_sensor_data()->pressure, transaction_details );
 	else
-		sprintf( (char *)message_str, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		sprintf( (char *)message_str, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -102,18 +102,18 @@ void alpaca_observingconditions::rainrate( AsyncWebServerRequest *request, const
 {
 	if ( !station.has_rain_sensor() )
 
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"The station has no rain sensor\",%s}", PropertyOrMethodNotImplemented, transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"The station has no rain sensor\",%s}", 1023 + PropertyOrMethodNotImplemented, transaction_details );
 
 	else {
 
-		if ( is_connected ) {
+		if ( is_connected && station.is_sensor_initialised( RAIN_SENSOR )) {
 
 			short x = station.get_sensor_data()->rain_intensity;
 
 			if ( x >= 0 )
 				snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", rain_rate[ x ], transaction_details );
 			else
-				snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Rain sensor data is temporarily unavailable\",%s}", PropertyOrMethodNotImplemented, transaction_details );
+				snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"Rain sensor data is temporarily unavailable\",%s}", 1023 + PropertyOrMethodNotImplemented, transaction_details );
 		
 		} else
 
@@ -165,25 +165,43 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 					case str2int("temperature"):
 					case str2int("humidity"):
 					case str2int("dewpoint"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"BME280\",%s}", transaction_details );
+						if ( station.is_sensor_initialised( BME_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"BME280\",%s}", transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("skybrightness"):
 					case str2int("skyquality"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"TSL 2591\",%s}", transaction_details );
+						if ( station.is_sensor_initialised( TSL_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"TSL 2591\",%s}", transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("cloudcover"):
 					case str2int("skytemperature"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"MLX 96014\",%s}", transaction_details );
+						if ( station.is_sensor_initialised( MLX_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"MLX 96014\",%s}", transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("rainrate"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"Hydreon RG-9\",%s}", transaction_details );
+						if ( station.is_sensor_initialised( RAIN_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"Hydreon RG-9\",%s}", transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("windspeed"):
 					case str2int("windgust"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_anemometer_sensorname(), transaction_details );
+						if ( station.is_sensor_initialised( ANEMOMETER_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_anemometer_sensorname(), transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("winddirection"):
-						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_wind_vane_sensorname(), transaction_details );
+						if ( station.is_sensor_initialised( WIND_VANE_SENSOR ))
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", station.get_wind_vane_sensorname(), transaction_details );
+						else
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
 						break;
 					case str2int("starfwhm"):
 						snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"No such sensor: %s\"}", transaction_details, tmp );
@@ -199,7 +217,7 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 			return;
 		}		
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"ObservingConditions device is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -264,40 +282,40 @@ void alpaca_observingconditions::set_connected( AsyncWebServerRequest *request, 
 
 void alpaca_observingconditions::skybrightness( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( TSL_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%6.4f,%s}", (double)station.get_sensor_data()->lux, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::skyquality( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( TSL_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%2.2f,%s}", station.get_sensor_data()->msas, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::skytemperature( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( MLX_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%2.2f,%s}", station.get_sensor_data()->sky_temperature, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::temperature( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( BME_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%2.2f,%s}", station.get_sensor_data()->temperature, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -325,14 +343,38 @@ void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *req
 					case str2int("temperature"):
 					case str2int("humidity"):
 					case str2int("dewpoint"):
+						if ( !station.is_sensor_initialised( BME_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int("skybrightness"):
 					case str2int("skyquality"):
+						if ( !station.is_sensor_initialised( TSL_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int("cloudcover"):
 					case str2int("skytemperature"):
+						if ( !station.is_sensor_initialised( MLX_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int("rainrate"):
+						if ( !station.is_sensor_initialised( RAIN_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int("windspeed"):
 					case str2int("windgust"):
+						if ( !station.is_sensor_initialised( ANEMOMETER_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int("winddirection"):
+						if ( !station.is_sensor_initialised( WIND_VANE_SENSOR )) {
+							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"%s sensor is not available\",%s}", request->getParam(i)->value().c_str(), transaction_details );
+							break;
+						}						
 					case str2int(""):
 						snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
 						break;
@@ -351,7 +393,7 @@ void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *req
 		}		
 		
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Device is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -365,30 +407,30 @@ void alpaca_observingconditions::winddirection( AsyncWebServerRequest *request, 
 	else
 		x = 0;
 
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( WIND_VANE_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)x, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::windgust( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( ANEMOMETER_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", station.get_sensor_data()->wind_gust, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
 
 void alpaca_observingconditions::windspeed( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( is_connected )
+	if ( is_connected && station.is_sensor_initialised( ANEMOMETER_SENSOR ))
 		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", station.get_sensor_data()->wind_speed, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Sensor is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1024,\"ErrorMessage\":\"Sensor is not available\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
