@@ -37,7 +37,7 @@ class AstroWeatherStation {
 							config_mode,
 							ntp_synced,
 							rain_event,
-							catch_rain_event,
+							_catch_rain_event,
 							solar_panel;
 		char				*json_sensor_data,
 							uptime[32];
@@ -100,10 +100,9 @@ class AstroWeatherStation {
 		char		*ota_device;
 		char		*ota_config;
 
-
 	public:
 
-		                AstroWeatherStation( void );
+						AstroWeatherStation( void );
 		void            check_ota_updates( void );
 		const char		*get_anemometer_sensorname( void );
 		AWSDome			*get_dome( void );
@@ -127,6 +126,7 @@ class AstroWeatherStation {
 		bool			has_gps( void );
 		bool			has_rain_sensor( void );
 		bool            initialise( void );
+		bool			is_sensor_initialised( uint8_t );
 		bool            is_rain_event( void );
 		bool			issafe( void );
 		bool			is_ntp_synced( void );

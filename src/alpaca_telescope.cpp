@@ -97,7 +97,7 @@ void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char 
 		}
 	} else
 
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 	
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -119,7 +119,7 @@ void alpaca_telescope::siteelevation( AsyncWebServerRequest *request, const char
 				snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", station.get_sensor_data()->gps.altitude, transaction_details );
 		}
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -141,7 +141,7 @@ void alpaca_telescope::sitelatitude( AsyncWebServerRequest *request, const char 
 				snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", station.get_sensor_data()->gps.latitude, transaction_details );
 		}
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -164,7 +164,7 @@ void alpaca_telescope::sitelongitude( AsyncWebServerRequest *request, const char
 
 		}
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -188,7 +188,7 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 		}		
 
 	} else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -208,7 +208,7 @@ void alpaca_telescope::trackingrates( AsyncWebServerRequest *request, const char
 	if ( is_connected )
 		snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":[0]}", transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
 
 	request->send( 200, "application/json", (const char*)message_str );
 }
@@ -251,12 +251,15 @@ void alpaca_telescope::set_connected( AsyncWebServerRequest *request, const char
 
 void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	double x;
+	double	x;
+	char	*s = NULL,
+			*e;
 	
 	if ( request->hasParam( "SiteElevation", true ) ) {
 
-		x = atof( request->getParam( "SiteElevation", true )->value().c_str() );
-		if (( x == 0 ) || ( x >10000 ) || ( x < -300 ))
+		s = strdup( request->getParam( "SiteElevation", true )->value().c_str() );
+		x = strtof( s, &e );
+		if (( *e != '\0' ) || ( x >10000 ) || ( x < -300 ))
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
 
 		else {
@@ -265,6 +268,8 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
 		}
 		request->send( 200, "application/json", (const char*)message_str );
+		if ( s )
+			free( s );
 		return;
 	}
 
@@ -273,10 +278,15 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 
 void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	double	x;
+	char	*s = NULL,
+			*e;
+
 	if ( request->hasParam( "SiteLatitude", true ) ) {
 
-		double x = atof( request->getParam( "SiteLatitude", true )->value().c_str() );
-		if (( x == 0 ) || ( x > 90 ) || ( x < -90 ))
+		s = strdup( request->getParam( "SiteLatitude", true )->value().c_str() );
+		x = strtof( s, &e );
+		if (( *e != '\0' ) || ( x > 90 ) || ( x < -90 ))
 			
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
 
@@ -286,6 +296,8 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
 		}
 		request->send( 200, "application/json", (const char*)message_str );
+		if ( s )
+			free( s );
 		return;
 	}
 
@@ -294,10 +306,15 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 
 void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	double	x;
+	char	*s = NULL,
+			*e;
+
 	if ( request->hasParam( "SiteLongitude", true ) ) {
 
-		double x = atof( request->getParam( "SiteLongitude", true )->value().c_str() );
-		if (( x == 0 ) || ( x > 180 ) || ( x < -180 ))
+		s = strdup( request->getParam( "SiteLongitude", true )->value().c_str() );
+		x = strtof( s, &e );
+		if (( *e != '\0' ) || ( x > 180 ) || ( x < -180 ))
 			
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );
 
@@ -307,6 +324,8 @@ void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const 
 			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
 		}
 		request->send( 200, "application/json", (const char*)message_str );
+		if ( s )
+			free( s );
 		return;
 	}
 

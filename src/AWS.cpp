@@ -53,6 +53,7 @@ RTC_DATA_ATTR time_t rain_event_timestamp = 0;
 RTC_DATA_ATTR time_t boot_timestamp = 0;
 RTC_DATA_ATTR time_t last_ntp_time = 0;
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
+RTC_DATA_ATTR bool catch_rain_event = false;
 
 AstroWeatherStation::AstroWeatherStation( void )
 {
@@ -60,7 +61,6 @@ AstroWeatherStation::AstroWeatherStation( void )
 	config_mode = false;
 	debug_mode = false;
 	ntp_synced = false;
-	catch_rain_event = true;
 	config = new AWSConfig();
 	json_sensor_data = (char *)malloc( DATA_JSON_STRING_MAXLEN );
 	sc16is750 = NULL;
@@ -86,10 +86,17 @@ void AstroWeatherStation::check_ota_updates( void )
 
 void AstroWeatherStation::check_rain_event_guard_time( void )
 {
+	time_t now;
+	
 	if ( catch_rain_event )
 		return;
 		
-	if ( ( time( NULL) - rain_event_timestamp ) <= config->get_rain_event_guard_time() )
+	if ( ntp_synced )
+		time( &now );
+	else
+		now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+		
+	if ( ( now - rain_event_timestamp ) <= config->get_rain_event_guard_time() )
 		return;
 
 	if ( config->get_has_rain_sensor() ) {
@@ -98,7 +105,8 @@ void AstroWeatherStation::check_rain_event_guard_time( void )
 			Serial.printf( "\n[DEBUG] Now monitoring rain event pin from rain sensor\n" );
 
 		pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
-		attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
+		if ( !solar_panel )
+			attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
 		catch_rain_event = true;
 	}
 }
@@ -399,10 +407,15 @@ const char	*AstroWeatherStation::get_wind_vane_sensorname( void )
 
 void AstroWeatherStation::handle_rain_event( void )
 {
-	detachInterrupt( GPIO_RAIN_SENSOR_RAIN );
+	int	rain_intensity;
+
+	if ( solar_panel )
+		send_rain_event_alarm( rain_intensity );
+	else
+		detachInterrupt( GPIO_RAIN_SENSOR_RAIN );
 
 	if ( debug_mode )
-		Serial.printf( "[DEBUG] Rain event.\n" );
+		Serial.printf( "[DEBUG] Rain event. Setting guard time to %d seconds.\n", solar_panel ? config->get_rain_event_guard_time() : US_SLEEP / 100000 );
 
 	time( &rain_event_timestamp );
 	sensor_manager->set_rain_event();
@@ -426,7 +439,6 @@ bool AstroWeatherStation::initialise( void )
 {
 	unsigned long	start = micros(),
 					guard;
-	int				rain_intensity;
 	char			string[64];
 	uint8_t			mac[6];
 
@@ -530,19 +542,17 @@ bool AstroWeatherStation::initialise( void )
 	if ( config->get_has_dome() )
 		dome = new AWSDome( sc16is750, sensor_manager->get_i2c_mutex(), debug_mode );
 
-	if ( solar_panel )
-		sync_time();
+	if ( solar_panel ) {
 
+		sync_time();
+		check_rain_event_guard_time();
+	}
+	
 	if ( rain_event ) {
 
 		sensor_manager->initialise( sc16is750, config, rain_event );
 		sensor_manager->initialise_rain_sensor();
-		sensor_manager->read_rain_sensor();
-		rain_intensity = sensor_manager->get_sensor_data()->rain_intensity;
-		if ( rain_intensity > 0 )	// Avoid false positives
-			send_rain_event_alarm( rain_intensity );
-		else
-			Serial.println( "[INFO] Rain event false positive, back to bed." );
+		handle_rain_event();
 		return true;
 	}
 
@@ -621,9 +631,11 @@ bool AstroWeatherStation::initialise_network( void )
 
 		case wifi_ap:
 		case wifi_sta:
+			Serial.printf("WIFI\n");
 			return initialise_wifi();
 
 		case eth:
+		Serial.printf("ETHERNET\n");
 			return initialise_ethernet();
 
 		default:
@@ -675,6 +687,11 @@ bool AstroWeatherStation::is_ntp_synced( void )
 bool AstroWeatherStation::is_rain_event( void )
 {
 	return rain_event;
+}
+
+bool AstroWeatherStation::is_sensor_initialised( uint8_t sensor_id )
+{
+	return ( sensor_manager->get_available_sensors() & sensor_id );
 }
 
 byte AstroWeatherStation::mask_to_cidr( uint32_t subnet )
@@ -1124,10 +1141,10 @@ Serial.printf("sanity check\n");
 	switch ( config->get_pref_iface() ) {
 
 		case wifi_sta:
-			return Ping.ping( WiFi.gatewayIP() );
+			return Ping.ping( WiFi.gatewayIP(), 3 );
 
 		case eth:
-			return Ping.ping( ETH.gatewayIP() );
+			return Ping.ping( ETH.gatewayIP(), 3 );
 
 		case wifi_ap:
 			return true;

@@ -35,8 +35,6 @@
 //
 // ------------------------------------------------------------------------------
 
-#define	SPI_CLOCK_MHZ		18
-
 #define MLX_SENSOR			0x00000001
 #define TSL_SENSOR			0x00000002
 #define BME_SENSOR			0x00000004

@@ -258,7 +258,10 @@ bool AWSSensorManager::poll_sensors( void )
 
 		retrieve_sensor_data();
 		xSemaphoreGive( sensors_read_mutex );
-		sensor_data.wind_gust = wind_sensors->get_wind_gust();
+		if ( wind_sensors )
+			sensor_data.wind_gust = wind_sensors->get_wind_gust();
+		else
+			sensor_data.wind_gust = 0.F;
 		return true;
 	}
 	return false;
