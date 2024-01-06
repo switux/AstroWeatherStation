@@ -381,6 +381,7 @@ void alpaca_observingconditions::timesincelastupdate( AsyncWebServerRequest *req
 						else
 							snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.1f,%s}", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
 						break;					
+
 					case str2int(""):
 						if ( station.is_sensor_initialised( WIND_VANE_SENSOR ) ||
 							station.is_sensor_initialised( ANEMOMETER_SENSOR ) ||

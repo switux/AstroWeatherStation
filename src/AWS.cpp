@@ -633,9 +633,11 @@ bool AstroWeatherStation::initialise_network( void )
 
 		case wifi_ap:
 		case wifi_sta:
+			Serial.printf("WIFI\n");
 			return initialise_wifi();
 
 		case eth:
+		Serial.printf("ETHERNET\n");
 			return initialise_ethernet();
 
 		default:
