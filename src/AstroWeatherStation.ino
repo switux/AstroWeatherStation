@@ -1,7 +1,7 @@
 /*	
   	AstroWeatherStation.ino
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	1.0.x - Initial version.
 	1.1.x - Refactored to remove unnecessary global variables
@@ -24,6 +24,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
@@ -32,9 +33,9 @@
 #include "AstroWeatherStation.h"
 #include "AWS.h"
 
-extern const char *_anemometer_model[3];
-extern const char *_windvane_model[3];
-extern char catch_rain_event;
+extern const char	*_anemometer_model[3];
+extern const char	*_windvane_model[3];
+extern char			catch_rain_event;
 
 AstroWeatherStation station;
 
@@ -68,13 +69,13 @@ void setup()
 
 			if ( catch_rain_event ) {
 
-			//	if ( debug_mode )
+				if ( station.get_debug_mode() )
 					Serial.printf( "[DEBUG] Monitoring rain sensor.\n" );
 				esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
 
 			 } else {
 
-		//		if ( debug_mode )
+				if ( station.get_debug_mode() )
 					Serial.printf( "[DEBUG] Not monitoring rain sensor.\n" );
 			 }
 		}
@@ -102,6 +103,7 @@ void loop()
 
 void IRAM_ATTR _handle_rain_event( void )
 {
-	Serial.printf( "\n[INFO] ## RAIN EVENT INTERRUPT ##\n");
+	Serial.printf( "[INFO] RAIN EVENT.\n" );
+	esp_task_wdt_reset();	// Serial.printf() may starve wdt
 	station.handle_rain_event();
 }

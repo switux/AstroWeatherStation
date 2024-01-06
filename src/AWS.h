@@ -85,10 +85,8 @@ class AstroWeatherStation {
 		bool		post_content( const char *, const char * );
 		void		print_config_string( const char *, ... );
 		void		print_runtime_config( void );
-		void		report_unavailable_sensors( void );
-		void		send_alarm( const char *, const char * );
 		void		send_backlog_data( void );
-		void		send_rain_event_alarm( uint8_t );
+		void		send_rain_event_alarm( const char * );
 		bool		shutdown_wifi( void );
 		bool		start_config_server( void );
 		bool		start_hotspot( void );
@@ -105,6 +103,7 @@ class AstroWeatherStation {
 						AstroWeatherStation( void );
 		void            check_ota_updates( void );
 		const char		*get_anemometer_sensorname( void );
+		bool			get_debug_mode( void );
 		AWSDome			*get_dome( void );
 		sensor_data_t   *get_sensor_data( void );
 		uint16_t        get_config_port( void );
@@ -135,6 +134,9 @@ class AstroWeatherStation {
 		bool			rain_sensor_available( void );
 		void            reboot( void );
 		void            read_sensors( void );
+		void			report_unavailable_sensors( void );
+
+		void			send_alarm( const char *, const char * );
 		void            send_data( void );
 		bool			sync_time( void );
 		void            initialise_sensors( void );

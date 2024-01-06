@@ -90,6 +90,7 @@ class AWSSensorManager {
     bool				initialise_rain_sensor( void );
     void				initialise_sensors( I2C_SC16IS750 * );
     bool				poll_sensors( void );
+    const char 			*rain_intensity_str( void );
     bool				rain_sensor_available( void );
     void 				read_battery_level( void );
     void				read_rain_sensor( void );

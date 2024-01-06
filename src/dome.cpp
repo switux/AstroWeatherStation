@@ -30,6 +30,7 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 	sc16is750 = _sc16is750;
 	close_dome = false;
 
+// FIXME: this condition is braindead, use station's hw config instead
 #if defined( DEFAULT_HAS_SC16IS750 ) && defined( GPIO_DOME_INDIRECT )
 
 	if ( debug_mode )
@@ -88,8 +89,9 @@ void AWSDome::trigger_close( void )
 void AWSDome::close( void *dummy )
 {
 	while( true ) {
-	
-#ifdef DEFAULT_HAS_SC16IS750 && GPIO_DOME_INDIRECT
+
+// FIXME: this condition is braindead, use station's hw config instead
+#if defined( DEFAULT_HAS_SC16IS750 ) && defined( GPIO_DOME_INDIRECT )
 
 		if ( close_dome ) {
 		

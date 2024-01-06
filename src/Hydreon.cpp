@@ -35,13 +35,12 @@ Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool 
 	reset_pin = reset;
 	debug_mode = _debug_mode;
 	status = ' ';
+	memset( str, 128, 0 );
+	rg9_read_mutex = xSemaphoreCreateMutex();
 }
 
 void Hydreon::probe( uint16_t baudrate )
 {
-	int l;
-	char bitrate[18]={0};
-	
 	status = RAIN_SENSOR_FAIL;
 	
 	sensor->begin( baudrate, SERIAL_8N1, rx_pin, tx_pin );
@@ -55,7 +54,7 @@ void Hydreon::probe( uint16_t baudrate )
 	}
 
 	sensor->println( "B" );
-	l = read_string();
+	read_string();
 
 	if ( debug_mode )
 		Serial.printf( "%s] ", str );
@@ -71,7 +70,7 @@ void Hydreon::probe( uint16_t baudrate )
 		status = str[6];
 		Serial.printf( "%s[INFO] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO] Rain sensor boot message:\n", debug_mode?"\n":"", baudrate, reset_cause() );
 
-		while (( l = read_string()))
+		while ( read_string() )
 			Serial.println( str );
 
 		baud = baudrate;
@@ -104,9 +103,6 @@ bool Hydreon::initialise( void )
 					break;
 			}
 			
-//			if ( debug_mode )
-//				printf( "\n" );
-
 			if ( status != RAIN_SENSOR_FAIL )
 				break;
 		}
@@ -149,38 +145,58 @@ bool Hydreon::initialise( void )
 	return initialised;
 }
 
-byte Hydreon::rain_intensity( void  )
+byte Hydreon::rain_intensity( void )
 {
-	if (( !initialised ) && ( !initialise() )) {
+	if ( !initialised && !initialise() ) {
 
 		Serial.printf( "[ERROR] Cannot initialise rain sensor. Not returning rain data.\n" );
 		return -1;
 	}
 		
 	sensor->println( "R" );
-	memset( str, 0, 128 );
 	read_string();
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Rain sensor status string = [%s]\n", str );
 
-	return static_cast<byte>( str[2] - '0' );
+	intensity = static_cast<byte>( str[2] - '0' );
+	return intensity;
 }
 
-uint8_t Hydreon::read_string( void )
+const char *Hydreon::rain_intensity_str( void )
+{
+	// As described in RG-9 protocol
+	switch( intensity ) {
+
+		case 0: return "No rain";
+		case 1: return "Rain drops";
+		case 2: return "Very light";
+		case 3: return "Medium light";
+		case 4: return "Medium";
+		case 5: return "Medium heavy";
+		case 6: return "Heavy";
+		case 7: return "Violent";
+	}
+	return "Unknown";
+}
+
+byte Hydreon::read_string( void )
 {
 	uint8_t i;
 	
+	memset( str, 128, 0 );
 	//FIXME: check if really needed
 	delay( 500 );
-
+	
 	if ( sensor->available() > 0 ) {
 
 		i = sensor->readBytes( str, 128 );
 		if ( i >= 2 )
 			str[ i-2 ] = 0;	// trim trailing \n
+
 		return i-1;
 	}
+
 	return 0;
 }
 

@@ -18,6 +18,7 @@
 */
 
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include <Preferences.h>
 #include <time.h>
 #include <thread>
@@ -45,9 +46,9 @@
 #include "alpaca.h"
 #include "AWS.h"
 
-extern void IRAM_ATTR _handle_rain_event( void );
-extern char *pwr_mode_str[3];
-extern SemaphoreHandle_t sensors_read_mutex;		// FIXME: hide this within the sensor manager
+extern void IRAM_ATTR		_handle_rain_event( void );
+extern char 				*pwr_mode_str[3];
+extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
 RTC_DATA_ATTR time_t rain_event_timestamp = 0;
 RTC_DATA_ATTR time_t boot_timestamp = 0;
@@ -102,7 +103,7 @@ void AstroWeatherStation::check_rain_event_guard_time( void )
 	if ( config->get_has_rain_sensor() ) {
 
 		if ( debug_mode )
-			Serial.printf( "\n[DEBUG] Now monitoring rain event pin from rain sensor\n" );
+			Serial.printf( "\n[DEBUG] Rain event guard time elapsed.\n" );
 
 		pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
 		if ( !solar_panel )
@@ -250,6 +251,11 @@ const char *AstroWeatherStation::get_anemometer_sensorname( void )
 uint16_t AstroWeatherStation::get_config_port( void )
 {
 	return config->get_config_port();
+}
+
+bool AstroWeatherStation::get_debug_mode( void )
+{
+	return debug_mode;
 }
 
 AWSDome	*AstroWeatherStation::get_dome( void )
@@ -407,21 +413,19 @@ const char	*AstroWeatherStation::get_wind_vane_sensorname( void )
 
 void AstroWeatherStation::handle_rain_event( void )
 {
-	int	rain_intensity;
+	if ( solar_panel ) {
 
-	if ( solar_panel )
-		send_rain_event_alarm( rain_intensity );
-	else
+		sensor_manager->read_rain_sensor();
+		send_rain_event_alarm( sensor_manager->rain_intensity_str() );
+
+	} else
+
 		detachInterrupt( GPIO_RAIN_SENSOR_RAIN );
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Rain event. Setting guard time to %d seconds.\n", solar_panel ? config->get_rain_event_guard_time() : US_SLEEP / 100000 );
 
 	time( &rain_event_timestamp );
 	sensor_manager->set_rain_event();
 	if ( config->get_has_dome() && config->get_close_dome_on_rain() )
 		dome->trigger_close();
-
 	catch_rain_event = false;
 }
 
@@ -490,18 +494,6 @@ bool AstroWeatherStation::initialise( void )
 		sc16is750 = new I2C_SC16IS750( DEFAULT_SC16IS750_ADDR );
 	}
 	
-	if ( !solar_panel ) {
-
-		if ( config->get_has_rain_sensor() ) {
-
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Now monitoring rain event pin from rain sensor\n" );
-
-			pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
-			attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
-		}
-	}
-
 	if ( solar_panel ) {
 		
 //FIXME: we already get this to cater for station uptime
@@ -511,26 +503,9 @@ bool AstroWeatherStation::initialise( void )
 		if ( config_mode )
 			enter_config_mode();
 
-	} else {
+	} else
 
 		start_config_server();
-		alpaca = new alpaca_server( debug_mode );
-		switch ( config->get_alpaca_iface() ) {
-
-			case sta:
-				alpaca->start( WiFi.localIP() );
-				break;
-
-			case ap:
-				alpaca->start( WiFi.softAPIP() );
-				break;
-
-			case eth:
-				alpaca->start( Ethernet.localIP() );
-				break;
-
-		}
-	}
 	
 	if ( !startup_sanity_check() && config->can_rollback() )
 		return config->rollback();
@@ -551,7 +526,6 @@ bool AstroWeatherStation::initialise( void )
 	if ( rain_event ) {
 
 		sensor_manager->initialise( sc16is750, config, rain_event );
-		sensor_manager->initialise_rain_sensor();
 		handle_rain_event();
 		return true;
 	}
@@ -561,13 +535,41 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( !solar_panel ) {
 		
+		alpaca = new alpaca_server( debug_mode );
+		switch ( config->get_alpaca_iface() ) {
+
+			case sta:
+				alpaca->start( WiFi.localIP() );
+				break;
+
+			case ap:
+				alpaca->start( WiFi.softAPIP() );
+				break;
+
+			case eth:
+				alpaca->start( Ethernet.localIP() );
+				break;
+
+		}
+	}
+	
+	if ( !solar_panel ) {
+		
+		if ( config->get_has_rain_sensor() ) {
+
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Now monitoring rain event pin from rain sensor\n" );
+
+			pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
+			attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
+		}
+
 		std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore( 
 			[](void *param) {
 				std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );
 				(*periodic_tasks_proxy)( NULL );
 			}, "GPSFeed", 2000, &_feed, 5, &aws_periodic_task_handle, 1 );
-
 	}
 
 	return true;
@@ -1074,12 +1076,11 @@ void AstroWeatherStation::send_data( void )
 		xSemaphoreGive( sensors_read_mutex );
 }
 
-void AstroWeatherStation::send_rain_event_alarm( uint8_t rain_intensity )
+void AstroWeatherStation::send_rain_event_alarm( const char *str )
 {
-	const char	intensity_str[7][13] = { "Rain drops", "Very light", "Medium light", "Medium", "Medium heavy", "Heavy", "Violent" };  // As described in RG-9 protocol
 	char		msg[32];
 
-	snprintf( msg, 32, "RAIN! Level = %s", intensity_str[ rain_intensity ] );
+	snprintf( msg, 32, "RAIN! Level = %s", str );
 	send_alarm( "Rain event", msg );
 }
 
@@ -1137,7 +1138,6 @@ bool AstroWeatherStation::start_hotspot()
 
 bool AstroWeatherStation::startup_sanity_check( void )
 {
-Serial.printf("sanity check\n");
 	switch ( config->get_pref_iface() ) {
 
 		case wifi_sta:
@@ -1160,7 +1160,6 @@ bool AstroWeatherStation::stop_hotspot( void )
 bool AstroWeatherStation::store_unsent_data( char *data )
 {
 	bool ok = false;
-	int	i;
 	
 	SPIFFS.begin( FORMAT_SPIFFS_IF_FAILED );
 
