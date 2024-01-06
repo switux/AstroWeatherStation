@@ -133,7 +133,7 @@ bool AWSGPS::start( void )
 		[](void *param) {
             std::function<void(void*)>* feed_proxy = static_cast<std::function<void(void*)>*>( param );
             (*feed_proxy)( NULL );
-		}, "GPSFeed", 2000, &_feed, 10, &gps_task_handle, 1 );
+		}, "GPSFeed", 2000, &_feed, 4, &gps_task_handle, 1 );
 
 	return true;
 }

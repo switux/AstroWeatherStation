@@ -23,8 +23,7 @@
 #define _AstroWeatherStation_H
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "2024010101"
-
+#define BUILD_DATE "2024010601"
 
 // Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1
@@ -69,7 +68,7 @@ struct sensor_data_t {
 	float			dew_point;
 
 	bool			rain_event;
-	short			rain_intensity;
+	byte			rain_intensity;
 
 	float			ambient_temperature;
 	float			sky_temperature;

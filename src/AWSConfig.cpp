@@ -775,9 +775,9 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	}
 
 	// MUST NOT BE CHANGED AS IT IS HARDWARE MODEL DEPENDENT
-	config_items["pcb_version"] = pcb_version;
-	config_items["pwr_mode"] = pwr_mode;
-	config_items["has_ethernet"] = has_ethernet;
+//	config_items["pcb_version"] = pcb_version;
+//	config_items["pwr_mode"] = pwr_mode;
+//	config_items["has_ethernet"] = has_ethernet;
 	config_items["has_sc16is750"] = has_sc16is750;
 
 	return true;	

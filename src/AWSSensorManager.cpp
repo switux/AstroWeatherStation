@@ -35,6 +35,10 @@
 #include "AWSSensorManager.h"
 #include "AWS.h"
 
+RTC_DATA_ATTR uint16_t low_battery_event_count = 0;
+//RTC_DATA_ATTR byte	prev_available_sensors = 0;
+//RTC_DATA_ATTR byte	available_sensors = 0;
+
 SemaphoreHandle_t sensors_read_mutex = NULL;
 extern AstroWeatherStation station;
 
@@ -101,7 +105,7 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 			[](void *param) {
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
-			}, "SensorsTask", 3000, &_poll_sensors_task, 10, &sensors_task_handle, 1 );
+			}, "SensorsTask", 3000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
 	}
 	
 	return true;
@@ -136,6 +140,7 @@ void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
 		delay( 1000 );						// Wait a little to get a fix
 
 	} else
+
 		Serial.printf( "[ERROR] GPS initialisation failed.\n" );
 
 }
@@ -220,7 +225,6 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 			available_sensors |= WIND_VANE_SENSOR;
 		}
 	}
-		
 	if ( config->get_has_rain_sensor() && initialise_rain_sensor())
 		available_sensors |= RAIN_SENSOR;
 
@@ -283,6 +287,11 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 		}
 		delay( polling_ms_interval );
 	}
+}
+
+const char *AWSSensorManager::rain_intensity_str( void )
+{
+	return rain_sensor->rain_intensity_str();	
 }
 
 void AWSSensorManager::read_anemometer( void )
@@ -405,8 +414,6 @@ void AWSSensorManager::read_MLX( void )
 void AWSSensorManager::read_rain_sensor( void )
 {
 	sensor_data.rain_intensity = rain_sensor->rain_intensity();
-	if ( sensor_data.rain_intensity == 0 )
-		sensor_data.rain_event = rain_event = false;
 }
 
 void AWSSensorManager::read_sensors( void )
@@ -427,21 +434,20 @@ void AWSSensorManager::read_sensors( void )
 			snprintf( string, 64, "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
 
 			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-/*			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
-				send_alarm( runtime_config, "Low battery", string, debug_mode );
-*/
+			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
+				station.send_alarm( "Low battery", string );
+
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] %s", string );
 		}
 
 	} else
 		sensor_data.battery_level = 100.0L;		// When running on 12V, convention is to report 100%
-
-/*	
-	if ( prev_available_sensors != available_sensors ) {
+	
+/*	if ( prev_available_sensors != available_sensors ) {
 
 		prev_available_sensors = available_sensors;
-		report_unavailable_sensors( runtime_config, available_sensors, debug_mode );
+		station.report_unavailable_sensors( available_sensors );
 	}
 */
 }

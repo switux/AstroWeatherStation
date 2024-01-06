@@ -32,29 +32,31 @@
 
 class Hydreon {
 
-
 	private:
 
 		bool			debug_mode,
 						initialised;
 		uint8_t			uart_nr,
+						intensity,
 						reset_pin,
 						rx_pin,
 						tx_pin;
-		char			status,
-						str[128];
-		
+		char			str[128],
+						status;
+				
 		HardwareSerial	*sensor;
+		SemaphoreHandle_t rg9_read_mutex;
 
 		void			probe( uint16_t );
-		uint8_t			read_string( void );
+		byte			read_string( void );
 
 	public:
 
 					Hydreon( uint8_t, uint8_t, uint8_t, uint8_t, bool );
 		bool 		initialise( void );
 		byte		rain_intensity( void  );
-		const char *reset_cause( void );
+		const char	*rain_intensity_str( void );
+		const char	*reset_cause( void );
 
 };
 

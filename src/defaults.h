@@ -46,6 +46,9 @@
 
 #define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
 
+#define	LOW_BATTERY_COUNT_MIN	5
+#define	LOW_BATTERY_COUNT_MAX	10
+
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_STA_SSID[]			= "AstroWeatherStation";
 static const char DEFAULT_WIFI_STA_PASSWORD[]	= "AWS2023!";
