@@ -70,7 +70,7 @@ void AWSDome::close( void *dummy )
 		if ( close_dome ) {
 
 			Serial.printf( "[INFO] Closing dome.\n" );
-			if ( sc_16is750 ) {
+			if ( sc16is750 ) {
 		
 				while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 	
