@@ -776,5 +776,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 		config_items.remove("eth_gw");
 		config_items.remove("eth_dns");
 	}
+
 	return true;	
 }
