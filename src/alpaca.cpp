@@ -1,7 +1,7 @@
 /*
 	alpaca.cpp
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -233,7 +233,7 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 			if ( request->method() == HTTP_GET )
 				not_implemented( request, NULL );
 			else
-				dome->closeshutter( request, transaction_details );
+				dome->openshutter( request, transaction_details );
 			break;
 
 		case str2int( "shutterstatus" ):
