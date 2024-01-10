@@ -1,7 +1,7 @@
 /*	
   	dome.h
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -34,11 +34,13 @@ class AWSDome {
 
 	public:
 
+		AWSDome( bool );
 		AWSDome( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
 		void close( void * );
-		void trigger_close( void );
 		bool closed( void );
 		bool get_connected( void );
+		void start_control_task( void );
+		void trigger_close( void );
 };
 
 #endif
