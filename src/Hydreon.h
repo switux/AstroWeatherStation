@@ -26,7 +26,7 @@
 
 #define RAIN_SENSOR_OK			0
 #define RAIN_SENSOR_FAIL		127
-#define RAIN_SENSOR_UART		2
+#define RAIN_SENSOR_UART		1
 
 #include <Arduino.h>
 

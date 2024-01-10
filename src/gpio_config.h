@@ -64,10 +64,20 @@
 
 // Dome control
 #define	GPIO_DOME_INDIRECT		1	// Set to 1 if via SC16IS750
+
+#if GPIO_DOME_INDIRECT == 1
 #define	GPIO_DOME_1				0
 #define	GPIO_DOME_2				1
+#else
+#define	GPIO_DOME_1				12
+#define	GPIO_DOME_2				14
+#endif
 
 #define	GPIO_DOME_STATUS		GPIO_NUM_39
 #define	GPIO_DOME_OPENING		GPIO_NUM_36
+
+// Direct connection between GPS and ESP32 (not through SC16IS750)
+#define	GPS_RX					GPIO_NUM_27
+#define	GPS_TX					GPIO_NUM_26
 
 #endif

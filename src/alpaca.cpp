@@ -965,7 +965,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 	if ( debug_mode ) {
 
-		Serial.printf( "\n[DEBUG] Alpaca client request parameters: " );
+		Serial.printf( "\n[DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
 		for( int i = 0; i < request->params(); i++ )
 			Serial.printf( "(%s=%s)", request->getParam(i)->name().c_str(),request->getParam(i)->value().c_str() );
 		Serial.printf( "\n" );
@@ -1047,16 +1047,16 @@ bool alpaca_server::start( IPAddress address )
 {
 	if ( !server_up ) {
 		server = new AsyncWebServer( ALPACA_SERVER_PORT );
-		if (server)
-			Serial.printf("ALPACA: started server\n" );
+		if ( server )
+			Serial.printf("[INFO] Started ALPACA server.\n" );
 		else
-			Serial.printf("ALPACA: NOT started server\n" );
+			Serial.printf("[ERROR] Failed to start ALPACA server.\n" );
 
 	}
 	if ( !ascom_discovery.listen( 32227 ))
 	
 	if ( debug_mode )
-		Serial.printf( "[INFO] ALPACA Discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
+		Serial.printf( "[INFO] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
 	
 	ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
 	

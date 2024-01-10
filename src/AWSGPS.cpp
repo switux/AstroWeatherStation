@@ -18,38 +18,58 @@
 */
 
 #include "defaults.h"
+#include "gpio_config.h"
 #include "AWSGPS.h"
 
 AWSGPS::AWSGPS( bool _debug_mode)
 {
 	debug_mode = _debug_mode;
 	update_rtc = false;
+	sc16is750 = NULL;
 	gps_task_handle = NULL;
+}
+
+void AWSGPS::read_GPS( void )
+{
+	unsigned long start = millis();
+
+	if ( sc16is750 ) {
+
+		do {
+			while( sc16is750->available() )
+				gps.encode( sc16is750->read() );
+			delay( 5 );
+		} while( ( millis() - start ) < 1000 );
+
+	} else {
+
+		do {
+			while( gps_serial->available() )
+				gps.encode( gps_serial->read() );
+			delay( 5 );
+		} while( ( millis() - start ) < 1000 );		
+	}
 }
 
 void AWSGPS::feed( void *dummy )
 {
-	unsigned long start;
-
 	while( true ) {
 
-#ifdef DEFAULT_HAS_SC16IS750
-		if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
-#endif
-			start = millis();
-			do {
-				while( gps_serial->available() )
-					gps.encode( gps_serial->read() );
-				delay( 5 );
-			} while( ( millis() - start ) < 1000 );
+		if ( sc16is750 ) {
 
-			xSemaphoreGive( i2c_mutex );
-			update_data();
-			delay( 5000 );
-#ifdef DEFAULT_HAS_SC16IS750
+			if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
+
+				read_GPS();
+				xSemaphoreGive( i2c_mutex );
+
+			} else
+				delay( 5000 );
+			
 		} else
-			delay( 5000 );
-#endif
+			read_GPS();
+
+		update_data();
+		delay( 5000 );
 	}
 }
 
@@ -88,31 +108,31 @@ void AWSGPS::update_data( void )
 	}
 }
 
-bool AWSGPS::initialise( gps_data_t *_gps_data, I2C_SC16IS750 *sc16is750, SemaphoreHandle_t _i2c_mutex )
+bool AWSGPS::initialise( gps_data_t *_gps_data, I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex )
 {
 	gps_data = _gps_data;
 
-#ifdef DEFAULT_HAS_SC16IS750
-
 	i2c_mutex = _i2c_mutex;
 	while ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) != pdTRUE );
-	
-	gps_serial = sc16is750;
-	if ( !gps_serial->begin( GPS_SPEED )) {
+	sc16is750 = _sc16is750;
+
+	if ( !sc16is750->begin( GPS_SPEED )) {
 
 		Serial.printf( "[ERROR] Could not find I2C UART. GPS disabled!\n" );
 		xSemaphoreGive( i2c_mutex );
 		return false;
 	}
 	xSemaphoreGive( i2c_mutex );
-
-#else
-
-	gps_serial = new SoftwareSerial( GPS_RX, GPS_TX );
-	gps_serial->begin( GPS_SPEED );
-
-#endif
 	return true;
+}
+
+bool AWSGPS::initialise( gps_data_t *_gps_data )
+{
+	gps_data = _gps_data;
+
+	gps_serial = new HardwareSerial(2);
+	gps_serial->begin( GPS_SPEED, SERIAL_8N1, GPS_RX, GPS_TX );
+	return ( gps_serial->availableForWrite() > 0 );
 }
 
 void AWSGPS::pilot_rtc( bool _update_rtc )

@@ -23,7 +23,7 @@
 #define _AstroWeatherStation_H
 
 #define REV "3.0.0.0"
-#define BUILD_DATE "2024010601"
+#define BUILD_DATE "2024010701"
 
 // Force DEBUG output even if not activated by external button
 #define DEBUG_MODE 1
