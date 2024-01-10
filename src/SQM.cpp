@@ -128,7 +128,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 		return false;
 
 	if ( debug_mode )
-		Serial.printf( "[DEBUG] SQM: gain=0x%02x (%dx) integ=0x%02x (%dms)/ temp=%f / ir=%d full=%d vis=%d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir_luminosity, full_luminosity, visible_luminosity );
+		Serial.printf( "[DEBUG] SQM: gain=0x%02x (%dx) time=0x%02x (%dms)/ temp=%2.2f° / Infrared=%05d Full=%05d Visible=%05d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir_luminosity, full_luminosity, visible_luminosity );
 
 	// Auto gain and integration time, increase time before gain to avoid increasing noise if we can help it, decrease gain first for the same reason
 	if ( visible_luminosity < 128 ) {
@@ -208,7 +208,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 	*ch0 = full_luminosity;
 	*ch1 = ir_luminosity;
 	if ( debug_mode )
-		Serial.printf("[DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] iter=[%d] VIS=[%d] IR=[%d] MPSAS=[%f] NELM=[%f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, *msas, *nelm );
+		Serial.printf("[DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, *msas, *nelm );
 
 	return true;
 }

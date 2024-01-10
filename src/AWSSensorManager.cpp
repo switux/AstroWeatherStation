@@ -132,16 +132,16 @@ void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
 		Serial.printf( "[DEBUG] Initialising GPS.\n" );
 
 	gps = new AWSGPS( debug_mode );
-	if ( gps->initialise( &sensor_data.gps, sc16is750, i2c_mutex )) {
 
-		gps->start();
-		gps->pilot_rtc( true );
-		available_sensors |= GPS_SENSOR;
-		delay( 1000 );						// Wait a little to get a fix
+	if ( ( config->get_has_sc16is750() && !gps->initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps->initialise( &sensor_data.gps )) {
 
-	} else
-
-		Serial.printf( "[ERROR] GPS initialisation failed.\n" );
+			Serial.printf( "[ERROR] GPS initialisation failed.\n" );
+			return;
+	}
+	gps->start();
+	gps->pilot_rtc( true );
+	available_sensors |= GPS_SENSOR;
+	delay( 1000 );						// Wait a little to get a fix
 
 }
 
@@ -467,7 +467,7 @@ void AWSSensorManager::read_TSL( void )
 		lux = tsl->calculateLux( full, ir );
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] IR=%d FULL=%d VIS=%d Lux = %05d\n", ir, full, full - ir, lux );
+			Serial.printf( "[DEBUG] Infrared=%05d Full=%05d Visible=%05d Lux = %05d\n", ir, full, full - ir, lux );
 	}
 	
 	// Avoid aberrant readings

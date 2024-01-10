@@ -516,10 +516,6 @@ bool AWSConfig::read_config( void )
 	if ( rain_event_guard_time != z )
 		rain_event_guard_time = z;
 		
-	x = aws_json_config.containsKey( "has_sc16is750" ) ? ( aws_json_config["has_sc16is750"] == 1 ) : DEFAULT_HAS_SC16IS750;
-	if ( has_sc16is750 != x )
-		has_sc16is750 = x;
-
 	x = aws_json_config.containsKey( "has_tsl" ) ? ( aws_json_config["has_tsl"] == 1 ) : DEFAULT_HAS_TSL;
 	if ( has_tsl != x )
 		has_tsl = x;
@@ -597,6 +593,13 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
+	if ( ( x = nvs.getChar( "has_sc16is750", 255 )) == 255 ) {
+
+		Serial.printf( "[PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
+		nvs.end();
+		return false;
+	}
+	has_sc16is750 = ( x == 0 ) ? false : true;
 
 	if ( ( x = nvs.getChar( "has_ethernet", 255 )) == 255 ) {
 
@@ -773,12 +776,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 		config_items.remove("eth_gw");
 		config_items.remove("eth_dns");
 	}
-
-	// MUST NOT BE CHANGED AS IT IS HARDWARE MODEL DEPENDENT
-//	config_items["pcb_version"] = pcb_version;
-//	config_items["pwr_mode"] = pwr_mode;
-//	config_items["has_ethernet"] = has_ethernet;
-	config_items["has_sc16is750"] = has_sc16is750;
 
 	return true;	
 }

@@ -50,11 +50,11 @@ extern void IRAM_ATTR		_handle_rain_event( void );
 extern char 				*pwr_mode_str[3];
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
-RTC_DATA_ATTR time_t rain_event_timestamp = 0;
-RTC_DATA_ATTR time_t boot_timestamp = 0;
-RTC_DATA_ATTR time_t last_ntp_time = 0;
+RTC_DATA_ATTR time_t 	rain_event_timestamp = 0;
+RTC_DATA_ATTR time_t 	boot_timestamp = 0;
+RTC_DATA_ATTR time_t 	last_ntp_time = 0;
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
-RTC_DATA_ATTR bool catch_rain_event = false;
+RTC_DATA_ATTR bool		catch_rain_event = false;
 
 AstroWeatherStation::AstroWeatherStation( void )
 {
@@ -199,15 +199,16 @@ void AstroWeatherStation::display_banner()
 	Serial.println( "# AstroWeatherStation                                                                        #" );
 	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                                                #" );
 	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.println( "# HARDWARE SETUP                                                                             #" );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
 
-	print_config_string( "# MCU              : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
-	print_config_string( "# WIFI Mac         : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	print_config_string( "# Power Mode       : %s", pwr_mode_str[ config->get_pwr_mode() ] );
-	print_config_string( "# PCB version      : %s", config->get_pcb_version() );
-	print_config_string( "# Anemometer model : %s", config->get_anemometer_model_str() );
-	print_config_string( "# Windvane model   : %s", config->get_wind_vane_model_str() );
-	print_config_string( "# Ethernet present : %s", config->get_has_ethernet() ? "Yes" : "No" );
-	print_config_string( "# Firmware         : %s-%s", REV, BUILD_DATE );
+	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
+	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
+	print_config_string( "# Power Mode        : %s", pwr_mode_str[ config->get_pwr_mode() ] );
+	print_config_string( "# PCB version       : %s", config->get_pcb_version() );
+	print_config_string( "# Ethernet present  : %s", config->get_has_ethernet() ? "Yes" : "No" );
+	print_config_string( "# GPIO ext. present : %s", config->get_has_sc16is750() ? "Yes" : "No" );
+	print_config_string( "# Firmware          : %s-%s", REV, BUILD_DATE );
 
 	Serial.println( "#--------------------------------------------------------------------------------------------#" );
 	Serial.println( "# GPIO PIN CONFIGURATION                                                                     #" );
@@ -514,8 +515,12 @@ bool AstroWeatherStation::initialise( void )
 		display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
-	if ( config->get_has_dome() )
-		dome = new AWSDome( sc16is750, sensor_manager->get_i2c_mutex(), debug_mode );
+	if ( config->get_has_dome() ) {
+		if ( config->get_has_sc16is750() )
+			dome = new AWSDome( sc16is750, sensor_manager->get_i2c_mutex(), debug_mode );
+		else
+			dome = new AWSDome( debug_mode );
+	}
 
 	if ( solar_panel ) {
 
@@ -633,11 +638,9 @@ bool AstroWeatherStation::initialise_network( void )
 
 		case wifi_ap:
 		case wifi_sta:
-			Serial.printf("WIFI\n");
 			return initialise_wifi();
 
 		case eth:
-		Serial.printf("ETHERNET\n");
 			return initialise_ethernet();
 
 		default:
@@ -928,14 +931,20 @@ void AstroWeatherStation::print_runtime_config( void )
 		sprintf( string, "# " );
 	}
 
-	print_config_string( "# DOME         : %s", config->get_has_dome() ? "Yes" : "No" );
-	print_config_string( "# GPS          : %s", config->get_has_gps() ? "Yes" : "No" );
-	print_config_string( "# SQM/SOL.IRR. : %s", config->get_has_tsl() ? "Yes" : "No" );
-	print_config_string( "# CLOUD SENSOR : %s", config->get_has_mlx() ? "Yes" : "No" );
-	print_config_string( "# RH/TEMP/PRES : %s", config->get_has_bme() ? "Yes" : "No" );
-	print_config_string( "# WINDVANE     : %s", config->get_has_wv() ? "Yes" : "No" );
-	print_config_string( "# ANEMOMETER   : %s", config->get_has_ws() ? "Yes" : "No" );
-	print_config_string( "# RAIN SENSOR  : %s", config->get_has_rain_sensor() ? "Yes" : "No" );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.println( "# SENSORS & CONTROLS                                                                         #" );
+	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+
+	print_config_string( "# DOME             : %s", config->get_has_dome() ? "Yes" : "No" );
+	print_config_string( "# GPS              : %s", config->get_has_gps() ? "Yes" : "No" );
+	print_config_string( "# SQM/IRRANDIANCE  : %s", config->get_has_tsl() ? "Yes" : "No" );
+	print_config_string( "# CLOUD SENSOR     : %s", config->get_has_mlx() ? "Yes" : "No" );
+	print_config_string( "# RH/TEMP/PRES.    : %s", config->get_has_bme() ? "Yes" : "No" );
+	print_config_string( "# WINDVANE         : %s", config->get_has_wv() ? "Yes" : "No" );
+	print_config_string( "# WINDVANE MODEL   : %s", config->get_wind_vane_model_str() );
+	print_config_string( "# ANEMOMETER       : %s", config->get_has_ws() ? "Yes" : "No" );
+	print_config_string( "# ANEMOMETER MODEL : %s", config->get_anemometer_model_str() );
+	print_config_string( "# RAIN SENSOR      : %s", config->get_has_rain_sensor() ? "Yes" : "No" );
 
 }
 
@@ -1014,6 +1023,8 @@ void AstroWeatherStation::send_backlog_data( void )
 	while ( backlog.available() ) {
 
 		i = backlog.readBytesUntil( '\n', line, DATA_JSON_STRING_MAXLEN - 1 );
+		if ( !i )
+			break;
 		line[i] = '\0';
 		if ( !post_content( "newData.php",  line )) {
 
