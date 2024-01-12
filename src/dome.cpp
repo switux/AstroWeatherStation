@@ -76,7 +76,7 @@ void AWSDome::close( void *dummy )
 			if ( sc16is750 ) {
 		
 				while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
-	
+
 				sc16is750->digitalWrite( GPIO_DOME_1, HIGH );
 				sc16is750->digitalWrite( GPIO_DOME_2, HIGH );
 				delay( 2000 );
