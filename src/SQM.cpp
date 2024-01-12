@@ -51,11 +51,15 @@ void SQM::set_msas_calibration_offset( float _msas_calibration_offset )
 
 float SQM::ch0_temperature_factor( float temp )
 {
+	if ( temp < 0 )
+		return 1.F;
 	return 0.9759F + 0.00192947F*pow( temp, 0.783129F );
 }
 
 float SQM::ch1_temperature_factor( float temp )
 {
+	if ( temp < 0 )
+		return 1.F;
 	return 1.05118F - 0.0023342F*pow( temp, 0.958056F );
 }
 

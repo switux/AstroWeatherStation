@@ -249,7 +249,7 @@ void AWSSensorManager::initialise_TSL( void )
 
 		if ( debug_mode )
 			Serial.println( "[INFO] Found TSL2591" );
-
+ 
 		tsl->setGain( TSL2591_GAIN_LOW );
 		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		available_sensors |= TSL_SENSOR;

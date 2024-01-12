@@ -56,6 +56,9 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 		xSemaphoreGive( i2c_mutex );
 		return;
 	}
+	
+	sc16is750->pinMode( GPIO_DOME_1, OUTPUT );
+	sc16is750->pinMode( GPIO_DOME_2, OUTPUT );
 	xSemaphoreGive( i2c_mutex );
 
 	pinMode( GPIO_DOME_STATUS, INPUT );
@@ -74,8 +77,6 @@ void AWSDome::close( void *dummy )
 		
 				while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 	
-				sc16is750->pinMode( GPIO_DOME_1, OUTPUT );
-				sc16is750->pinMode( GPIO_DOME_2, OUTPUT );
 				sc16is750->digitalWrite( GPIO_DOME_1, HIGH );
 				sc16is750->digitalWrite( GPIO_DOME_2, HIGH );
 				delay( 2000 );
@@ -88,6 +89,10 @@ void AWSDome::close( void *dummy )
 		
 				digitalWrite( GPIO_DOME_1, HIGH );
 				digitalWrite( GPIO_DOME_2, HIGH );
+				delay( 2000 );
+				digitalWrite( GPIO_DOME_1, LOW );
+				digitalWrite( GPIO_DOME_2, LOW );
+
 			}
 			close_dome = false;
 		}
@@ -124,4 +129,3 @@ void AWSDome::trigger_close( void )
 {
 	close_dome = true;
 }
-
