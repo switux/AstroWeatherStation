@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSConfig.h
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -23,7 +23,9 @@
 
 #include <ArduinoJson.h>
 
+// flawfinder: ignore
 extern const char *_anemometer_model[3];
+// flawfinder: ignore
 extern const char *_windvane_model[3];
 
 typedef enum {
@@ -54,7 +56,7 @@ typedef enum {
 
 	dhcp,
 	fixed
-	
+
 } aws_ip_mode_t;
 
 class AWSConfig {
@@ -145,7 +147,8 @@ class AWSConfig {
 					initialised;
 					
 		float		msas_calibration_offset;
-		
+
+		// flawfinder: ignore
 		char  		pcb_version[8],
 					*remote_server,
 					*root_ca,

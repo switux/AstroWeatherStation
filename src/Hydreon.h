@@ -41,9 +41,10 @@ class Hydreon {
 						reset_pin,
 						rx_pin,
 						tx_pin;
+		// flawfinder: ignore
 		char			str[128],
 						status;
-				
+
 		HardwareSerial	*sensor;
 		SemaphoreHandle_t rg9_read_mutex;
 

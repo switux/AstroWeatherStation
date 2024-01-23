@@ -1,6 +1,6 @@
-/*	
+/*
   	AWS.h
-  	
+
 	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -37,9 +37,12 @@ class AstroWeatherStation {
 							config_mode,
 							ntp_synced,
 							rain_event,
-							_catch_rain_event,
 							solar_panel;
 		char				*json_sensor_data,
+							*ota_board,
+							*ota_device,
+							*ota_config,
+							// flawfinder: ignore
 							uptime[32];
 		uint8_t				eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF },
 							wifi_mac[6];
@@ -62,7 +65,7 @@ class AstroWeatherStation {
 		aws_iface_t			current_pref_iface;
 
 		TaskHandle_t		aws_periodic_task_handle;
-		
+
 		AWSSensorManager 	*sensor_manager;
 		AWSConfig			*config;
 		AWSWebServer 		*server;
@@ -94,9 +97,6 @@ class AstroWeatherStation {
 		bool		stop_hotspot( void );
 		bool		store_unsent_data( char * );
 		void		wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
-		char		*ota_board;
-		char		*ota_device;
-		char		*ota_config;
 
 	public:
 

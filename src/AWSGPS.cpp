@@ -21,33 +21,36 @@
 #include "gpio_config.h"
 #include "AWSGPS.h"
 
-AWSGPS::AWSGPS( bool _debug_mode)
+AWSGPS::AWSGPS( bool _debug_mode ) : gps_task_handle( NULL )
 {
 	debug_mode = _debug_mode;
 	update_rtc = false;
 	sc16is750 = NULL;
-	gps_task_handle = NULL;
+	gps_serial = NULL;
+	gps_data = NULL;
 }
 
 void AWSGPS::read_GPS( void )
 {
-	unsigned long start = millis();
+	unsigned long _start = millis();
 
 	if ( sc16is750 ) {
 
 		do {
 			while( sc16is750->available() )
+				// flawfinder: ignore
 				gps.encode( sc16is750->read() );
 			delay( 5 );
-		} while( ( millis() - start ) < 1000 );
+		} while( ( millis() - _start ) < 1000 );
 
 	} else {
 
 		do {
 			while( gps_serial->available() )
+				// flawfinder: ignore
 				gps.encode( gps_serial->read() );
 			delay( 5 );
-		} while( ( millis() - start ) < 1000 );		
+		} while( ( millis() - _start ) < 1000 );
 	}
 }
 
@@ -64,7 +67,7 @@ void AWSGPS::feed( void *dummy )
 
 			} else
 				delay( 5000 );
-			
+
 		} else
 			read_GPS();
 

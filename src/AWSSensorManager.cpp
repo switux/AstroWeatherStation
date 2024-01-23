@@ -52,6 +52,11 @@ AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode )
 	sqm = new SQM( tsl, &sensor_data );
 	
 	wind_sensors = NULL;
+	gps = NULL;
+	config = NULL;
+	hw_version[ 0 ] = 0;
+	rain_event = false;
+	rain_sensor = NULL;
 	available_sensors = 0;
 	sensor_data = {0};
 	solar_panel = _solar_panel;
@@ -283,7 +288,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 				sensor_data.wind_gust = wind_sensors->get_wind_gust();
 			else
 				sensor_data.wind_gust = 0.F;
-			
+
 		}
 		delay( polling_ms_interval );
 	}
@@ -310,8 +315,6 @@ void AWSSensorManager::read_anemometer( void )
 void AWSSensorManager::read_battery_level( void )
 {
 	int		adc_value = 0;
-	float	adc_v_in,
-			bat_v;
 
 	WiFi.mode ( WIFI_OFF );
 	
@@ -330,8 +333,8 @@ void AWSSensorManager::read_battery_level( void )
 
 	if ( debug_mode ) {
 
-		adc_v_in = static_cast<float>(adc_value) * VCC / ADC_V_MAX;
-		bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
+		float adc_v_in = static_cast<float>(adc_value) * VCC / ADC_V_MAX;
+		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", sensor_data.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
 	}
 
@@ -340,8 +343,6 @@ void AWSSensorManager::read_battery_level( void )
 
 void AWSSensorManager::read_BME( void  )
 {
-	float gammaM;
-	
 	if ( ( available_sensors & BME_SENSOR ) == BME_SENSOR ) {
 
 		sensor_data.temperature = bme->readTemperature();
@@ -349,12 +350,12 @@ void AWSSensorManager::read_BME( void  )
 		sensor_data.rh = bme->readHumidity();
 
 		// "Arden Buck" equation
-		gammaM = log( ( sensor_data.rh / 100 )*exp( ( 18.68 - sensor_data.temperature / 234.5 ) * ( sensor_data.temperature / ( 257.14 + sensor_data.temperature )) ));
+		float gammaM = log( ( sensor_data.rh / 100 )*exp( ( 18.68 - sensor_data.temperature / 234.5 ) * ( sensor_data.temperature / ( 257.14 + sensor_data.temperature )) ));
 		if ( sensor_data.temperature >= 0 )
 			sensor_data.dew_point = ( 238.88 * gammaM ) / ( 17.368 - gammaM );
 		else
 			sensor_data.dew_point = ( 247.15 * gammaM ) / ( 17.966 - gammaM );
-		
+
 		if ( debug_mode ) {
 
 			Serial.printf( "[DEBUG] Temperature = %2.2f °C\n", sensor_data.temperature  );
@@ -373,12 +374,13 @@ void AWSSensorManager::read_BME( void  )
 
 void AWSSensorManager::read_GPS( void )
 {
-	char buf[32];
 
 	if ( sensor_data.gps.fix ) {
-		
+
 		if ( debug_mode ) {
 
+			// flawfinder: ignore
+			char buf[32];
 			strftime( buf, 32, "%Y-%m-%d %H:%M:%S", localtime( &sensor_data.gps.time.tv_sec ) );
 			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", sensor_data.gps.latitude, sensor_data.gps.longitude, sensor_data.gps.altitude, buf );
 		}
@@ -418,11 +420,9 @@ void AWSSensorManager::read_rain_sensor( void )
 
 void AWSSensorManager::read_sensors( void )
 {
-	char	string[64];
-	
 
 	if ( solar_panel ) {
-		
+
 		retrieve_sensor_data();
 
 		digitalWrite( GPIO_ENABLE_3_3V, LOW );
@@ -430,7 +430,8 @@ void AWSSensorManager::read_sensors( void )
 
 		if ( sensor_data.battery_level <= BAT_LEVEL_MIN ) {
 
-			memset( string, 0, 64 );
+			// flawfinder: ignore
+			char string[64] = {0};
 			snprintf( string, 64, "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
 
 			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
@@ -455,15 +456,12 @@ void AWSSensorManager::read_sensors( void )
 void AWSSensorManager::read_TSL( void )
 {
 	int			lux = -1;
-	uint32_t	lum;
-	uint16_t	ir,
-				full;
 
 	if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR ) {
 
-		lum = tsl->getFullLuminosity();
-		ir = lum >> 16;
-		full = lum & 0xFFFF;
+		uint32_t lum = tsl->getFullLuminosity();
+		uint16_t ir = lum >> 16;
+		uint16_t full = lum & 0xFFFF;
 		lux = tsl->calculateLux( full, ir );
 
 		if ( debug_mode )

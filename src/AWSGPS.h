@@ -34,7 +34,7 @@ class AWSGPS
 
 		
 	public:
-		AWSGPS( bool );
+		explicit AWSGPS( bool );
 		bool initialise( gps_data_t * );
 		bool initialise( gps_data_t *, I2C_SC16IS750 *, SemaphoreHandle_t );
 		void resume( void );

@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSConfig.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -29,10 +29,11 @@
 
 extern AstroWeatherStation station;
 
+// flawfinder: ignore
 const char	*pwr_mode_str[3] = {
 	"Solar panel",
 	"12V DC",
-	"POE"	
+	"POE"
 };
 
 RTC_DATA_ATTR char _can_rollback = 0;
@@ -47,11 +48,24 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
 
 AWSConfig::AWSConfig( void )
 {
-	ap_ssid = NULL;
-	wifi_ap_password = NULL;
+	ap_ssid = wifi_ap_password = NULL;
 	rain_event_guard_time = 60;
 	sta_ssid = wifi_sta_password = remote_server = url_path = root_ca = tzname = eth_dns = eth_ip = eth_gw = wifi_sta_dns = wifi_sta_ip = wifi_sta_gw = wifi_ap_dns = wifi_ap_ip = wifi_ap_gw = NULL;
 	wifi_mode = ap;
+	pwr_mode = pwr;
+	alpaca_iface = config_iface = wifi_sta;
+	pref_iface = wifi_sta;
+	wifi_sta_ip_mode = eth_ip_mode = dhcp;
+	close_dome_on_rain = true;
+	debug_mode = false;
+	initialised = has_bme = has_dome = has_gps = has_mlx = has_rain_sensor = has_sc16is750 = has_tsl = has_ws = has_wv = has_ethernet = false;
+	msas_calibration_offset = 0.F;
+	pcb_version[ 0 ] = 0;
+	memset( anemometer_cmd, 0, 8 );
+	memset( wind_vane_cmd, 0, 8 );
+	wind_vane_model = anemometer_model = 255;
+	anemometer_com_speed = wind_vane_com_speed = 0;
+	config_port = DEFAULT_CONFIG_PORT;
 }
 
 bool AWSConfig::can_rollback( void )
@@ -63,12 +77,12 @@ aws_iface_t	AWSConfig::get_alpaca_iface( void )
 {
 	return alpaca_iface;
 }
-
+/*
 uint8_t *AWSConfig::get_anemometer_cmd( void )
 {
 	return anemometer_cmd;
 }
-
+*/
 uint16_t AWSConfig::get_anemometer_com_speed( void )
 {
 	return anemometer_com_speed;
@@ -177,19 +191,21 @@ bool AWSConfig::get_has_wv( void )
 char *AWSConfig::get_json_string_config( void )
 {
 	DynamicJsonDocument	aws_json_config(1024);
-	char *json_string = (char *)malloc(1024);
+	// FIXME: unless free()'d by caller this is a memory leak
+	char *json_string = static_cast<char *>( malloc( 1024 ) );
+	// flawfinder: ignore
 	char buf[64];
-		
+
 	aws_json_config["tzname"] = tzname;
 	aws_json_config["pref_iface"] = pref_iface;
     aws_json_config["eth_ip_mode"] = eth_ip_mode;
 	if ( eth_ip_mode == dhcp ) {
 
-		sprintf( buf, "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
+		snprintf( buf, 64, "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
 		aws_json_config["eth_ip"] = buf;
-		sprintf( buf, "%s",  station.get_eth_gw()->toString().c_str() );
+		snprintf( buf, 64, "%s",  station.get_eth_gw()->toString().c_str() );
 		aws_json_config["eth_gw"] = buf;
-		sprintf( buf, "%s",  station.get_eth_dns()->toString().c_str() );
+		snprintf( buf, 64, "%s",  station.get_eth_dns()->toString().c_str() );
 		aws_json_config["eth_dns"] = buf;
 
 	} else {
@@ -205,13 +221,13 @@ char *AWSConfig::get_json_string_config( void )
 
 	if ( wifi_sta_ip_mode == dhcp ) {
 
-		sprintf( buf, "%s/%d", station.get_sta_ip()->toString().c_str(), station.get_sta_cidr_prefix() );
+		snprintf( buf, 64, "%s/%d", station.get_sta_ip()->toString().c_str(), station.get_sta_cidr_prefix() );
 		aws_json_config["wifi_sta_ip"] = buf;
-		sprintf( buf, "%s",  station.get_sta_gw()->toString().c_str() );
+		snprintf( buf, 64, "%s",  station.get_sta_gw()->toString().c_str() );
 		aws_json_config["wifi_sta_gw"] = buf;
-		sprintf( buf, "%s",  station.get_sta_dns()->toString().c_str() );
+		snprintf( buf, 64, "%s",  station.get_sta_dns()->toString().c_str() );
 		aws_json_config["wifi_sta_dns"] = buf;
-		
+
 	} else {
 
 		aws_json_config["wifi_sta_ip"] = wifi_sta_ip;
@@ -407,13 +423,6 @@ bool AWSConfig::load( bool _debug_mode  )
 bool AWSConfig::read_config( void )
 {
 	DynamicJsonDocument	aws_json_config(768);
-	aws_ip_mode_t	t;
-	aws_iface_t		u;
-	aws_wifi_mode_t v;
-	float			w;
-	bool			x;
-	uint8_t			y;
-	uint16_t		z;
 
 	read_hw_info_from_nvs();
 
@@ -427,28 +436,19 @@ bool AWSConfig::read_config( void )
 		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
 	}
 
-	u = aws_json_config.containsKey( "pref_iface" ) ? aws_json_config["pref_iface"] : wifi_ap;
-	if ( pref_iface != u )
-		pref_iface = u;
-
-	t = aws_json_config.containsKey( "eth_ip_mode" ) ? aws_json_config["eth_ip_mode"] : DEFAULT_ETH_IP_MODE;
-	if ( eth_ip_mode != t )
-		eth_ip_mode = t;
+	pref_iface = aws_json_config.containsKey( "pref_iface" ) ? aws_json_config["pref_iface"] : wifi_ap;
+	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? aws_json_config["eth_ip_mode"] : DEFAULT_ETH_IP_MODE;
 
 	set_parameter( aws_json_config, "eth_ip", &eth_ip, DEFAULT_ETH_IP );
 	set_parameter( aws_json_config, "eth_gw", &eth_gw, DEFAULT_ETH_GW );
 	set_parameter( aws_json_config, "eth_dns", &eth_dns, DEFAULT_ETH_DNS );
 
-	v = aws_json_config.containsKey( "wifi_mode" ) ? aws_json_config["wifi_mode"] : DEFAULT_WIFI_MODE;
-	if ( wifi_mode != v )
-		wifi_mode = v;
+	wifi_mode = aws_json_config.containsKey( "wifi_mode" ) ? aws_json_config["wifi_mode"] : DEFAULT_WIFI_MODE;
 		
 	set_parameter( aws_json_config, "sta_ssid", &sta_ssid, DEFAULT_STA_SSID );
 	set_parameter( aws_json_config, "wifi_sta_password", &wifi_sta_password, DEFAULT_WIFI_STA_PASSWORD );
 
-	t = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? aws_json_config["wifi_sta_ip_mode"] : DEFAULT_WIFI_STA_IP_MODE;
-	if ( wifi_sta_ip_mode != t )
-		wifi_sta_ip_mode = t;
+	wifi_sta_ip_mode = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? aws_json_config["wifi_sta_ip_mode"] : DEFAULT_WIFI_STA_IP_MODE;
 
 	set_parameter( aws_json_config, "wifi_sta_ip", &wifi_sta_ip, DEFAULT_WIFI_STA_IP );
 	set_parameter( aws_json_config, "wifi_sta_gw", &wifi_sta_gw, DEFAULT_WIFI_STA_GW );
@@ -463,70 +463,27 @@ bool AWSConfig::read_config( void )
 	alpaca_iface = aws_json_config["alpaca_iface"];
 	config_iface = aws_json_config["config_iface"];
 	
-	y = aws_json_config.containsKey( "windvane_model" ) ? aws_json_config["windvane_model"] : 0;
-	if ( wind_vane_model != y )
-		wind_vane_model = y;
-
-	y = aws_json_config.containsKey( "anemometer_model" ) ? aws_json_config["anemometer_model"] : 0;
-	if ( anemometer_model != y )
-		anemometer_model = y;
-
-	y = aws_json_config.containsKey( "config_port" ) ? aws_json_config["config_port"] : DEFAULT_CONFIG_PORT;
-	if ( config_port != y )
-		config_port = y;
+	wind_vane_model = aws_json_config.containsKey( "windvane_model" ) ? aws_json_config["windvane_model"] : 0;
+	anemometer_model = aws_json_config.containsKey( "anemometer_model" ) ? aws_json_config["anemometer_model"] : 0;
+	config_port = aws_json_config.containsKey( "config_port" ) ? aws_json_config["config_port"] : DEFAULT_CONFIG_PORT;
 
 	set_parameter( aws_json_config, "remote_server", &remote_server, DEFAULT_SERVER );
 	set_parameter( aws_json_config, "url_path", &url_path, DEFAULT_URL_PATH );
 	set_parameter( aws_json_config, "tzname", &tzname, DEFAULT_TZNAME );
 	set_parameter( aws_json_config, "root_ca", &root_ca, DEFAULT_ROOT_CA );
 
-	w = aws_json_config.containsKey( "msas_calibration_offset" ) ? atof( aws_json_config["msas_calibration_offset"] ) : DEFAULT_MSAS_CORRECTION;
-	if ( msas_calibration_offset != w )
-		msas_calibration_offset = w;
-
-	x = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
-	if ( close_dome_on_rain != x )
-		close_dome_on_rain = x;
-
-	x = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
-	if ( has_dome != x )
-		has_dome = x;
-
-	x = aws_json_config.containsKey( "has_bme" ) ? ( aws_json_config["has_bme"] == 1 ) : DEFAULT_HAS_BME;
-	if ( has_bme != x )
-		has_bme = x;
-
-	x = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
-	if ( has_dome != x )
-		has_dome = x;
-
-	x = aws_json_config.containsKey( "has_gps" ) ? ( aws_json_config["has_gps"] == 1 ) : DEFAULT_HAS_GPS;
-	if ( has_gps != x )
-		has_gps = x;
-
-	x = aws_json_config.containsKey( "has_mlx" ) ? ( aws_json_config["has_mlx"] == 1 ) : DEFAULT_HAS_MLX;
-	if ( has_mlx != x )
-		has_mlx = x;
-
-	x = aws_json_config.containsKey( "has_rain_sensor" ) ? ( aws_json_config["has_rain_sensor"] == 1 ) : DEFAULT_HAS_RAIN_SENSOR;
-	if ( has_rain_sensor != x )
-		has_rain_sensor = x;
-
-	z = aws_json_config.containsKey( "rain_event_guard_time" ) ? atof( aws_json_config["rain_event_guard_time"] ) : DEFAULT_RAIN_EVENT_GUARD_TIME;
-	if ( rain_event_guard_time != z )
-		rain_event_guard_time = z;
-		
-	x = aws_json_config.containsKey( "has_tsl" ) ? ( aws_json_config["has_tsl"] == 1 ) : DEFAULT_HAS_TSL;
-	if ( has_tsl != x )
-		has_tsl = x;
-
-	x = aws_json_config.containsKey( "has_ws" ) ? ( aws_json_config["has_ws"] == 1 ) : DEFAULT_HAS_WS;
-	if ( has_ws != x )
-		has_ws = x;
-
-	x = aws_json_config.containsKey( "has_wv" ) ? ( aws_json_config["has_wv"] == 1 ) : DEFAULT_HAS_WV;
-	if ( has_wv != x )
-		has_wv = x;
+	msas_calibration_offset = aws_json_config.containsKey( "msas_calibration_offset" ) ? atof( aws_json_config["msas_calibration_offset"] ) : DEFAULT_MSAS_CORRECTION;
+	close_dome_on_rain = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
+	has_dome = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
+	has_bme = aws_json_config.containsKey( "has_bme" ) ? ( aws_json_config["has_bme"] == 1 ) : DEFAULT_HAS_BME;
+	has_dome = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
+	has_gps = aws_json_config.containsKey( "has_gps" ) ? ( aws_json_config["has_gps"] == 1 ) : DEFAULT_HAS_GPS;
+	has_mlx = aws_json_config.containsKey( "has_mlx" ) ? ( aws_json_config["has_mlx"] == 1 ) : DEFAULT_HAS_MLX;
+	has_rain_sensor = aws_json_config.containsKey( "has_rain_sensor" ) ? ( aws_json_config["has_rain_sensor"] == 1 ) : DEFAULT_HAS_RAIN_SENSOR;
+	rain_event_guard_time = aws_json_config.containsKey( "rain_event_guard_time" ) ? atof( aws_json_config["rain_event_guard_time"] ) : DEFAULT_RAIN_EVENT_GUARD_TIME;
+	has_tsl = aws_json_config.containsKey( "has_tsl" ) ? ( aws_json_config["has_tsl"] == 1 ) : DEFAULT_HAS_TSL;
+	has_ws = aws_json_config.containsKey( "has_ws" ) ? ( aws_json_config["has_ws"] == 1 ) : DEFAULT_HAS_WS;
+	has_wv = aws_json_config.containsKey( "has_wv" ) ? ( aws_json_config["has_wv"] == 1 ) : DEFAULT_HAS_WV;
 
 	return true;
 }
@@ -536,6 +493,7 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 	char	*json_string;
 	int		s = 0;
 
+	// flawfinder: ignore
 	File file = SPIFFS.open( filename, FILE_READ );
 
 	if ( !file ) {
@@ -551,7 +509,7 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 		return false;
 	}
 
-	json_string = (char *)malloc( s );
+	json_string = static_cast<char *>( malloc( s ) );
 	file.readBytes( json_string, s);
 	file.close();
 
@@ -587,13 +545,13 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	if ( ( pwr_mode = (aws_pwr_src_t) nvs.getChar( "pwr_mode", 255 )) == 255 ) {
+	if ( ( pwr_mode = (aws_pwr_src_t) nvs.getChar( "pwr_mode", 127 )) == 127 ) {
 
 		Serial.printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
-	if ( ( x = nvs.getChar( "has_sc16is750", 255 )) == 255 ) {
+	if ( ( x = nvs.getChar( "has_sc16is750", 127 )) == 127 ) {
 
 		Serial.printf( "[PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
 		nvs.end();
@@ -601,7 +559,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 	}
 	has_sc16is750 = ( x == 0 ) ? false : true;
 
-	if ( ( x = nvs.getChar( "has_ethernet", 255 )) == 255 ) {
+	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
 		printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
 		nvs.end();
@@ -615,11 +573,9 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 bool AWSConfig::rollback()
 {
 	uint8_t	buf[ 4096 ];
-	size_t	i;
-
 
 	if ( !_can_rollback ) {
-		
+
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] No configuration to rollback.\n");
 		return true;
@@ -627,21 +583,23 @@ bool AWSConfig::rollback()
 	}
 
 	Serial.printf( "[INFO] Rolling back last submitted configuration.\n" );
-  
+
 	if ( !SPIFFS.begin( true )) {
-		
+
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
+	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf", FILE_WRITE );
+	// flawfinder: ignore
 	File filebak = SPIFFS.open( "/aws.conf.bak" );
-	
+
 	while( filebak.available() ) {
-    
-		i = filebak.readBytes( (char *)buf, 4096 );
+
+		size_t	i = filebak.readBytes( reinterpret_cast<char *>( buf ), 4096 );
 		file.write( buf, i );
 	}
- 
+
 	file.close();
 	filebak.close();
 	SPIFFS.remove( "/aws.conf.bak" );
@@ -653,7 +611,6 @@ bool AWSConfig::rollback()
 bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 {
 	uint8_t	buf[ 4096 ];
-	size_t	i;
 
 	if ( !verify_entries( json_config ))
 		return false;
@@ -661,20 +618,24 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	Serial.printf( "[INFO] Saving submitted configuration.\n" );
 
 	if ( !SPIFFS.begin( true )) {
-		
+
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
+	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf" );
+	// flawfinder: ignore
 	File filebak = SPIFFS.open( "/aws.conf.bak", FILE_WRITE );
-	
+
 	while( file.available() ) {
-		i = file.readBytes( (char *)buf, 4096 );
+
+		size_t	i = file.readBytes( reinterpret_cast<char *>( buf ), 4096 );
 		filebak.write( buf, i );
 	}
 	file.close();
 	filebak.close();
-	
+
+	// flawfinder: ignore
 	file = SPIFFS.open( "/aws.conf", FILE_WRITE );
 	serializeJson( json_config, file );
 	file.close();
@@ -707,7 +668,7 @@ bool AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config
 
 		if ( *config_item && ( *config_item != default_value ))
 			free( *config_item );
-		*config_item = (char *)default_value;
+		*config_item = const_cast<char *>( default_value );
 		return true;
 	}
 	return false;

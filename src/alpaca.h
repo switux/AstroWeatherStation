@@ -37,7 +37,7 @@
 #include "alpaca_safetymonitor.h"
 #include "alpaca_observingconditions.h"
 
-typedef enum 
+typedef enum
 {
 	Camera,
 	CoverCalibrator,
@@ -53,12 +53,15 @@ typedef enum
 } ascom_device_t;
 
 typedef struct configured_device_t {
-	
+
+	// flawfinder: ignore
 	char	DeviceName[32];
+	// flawfinder: ignore
 	char	DeviceType[20];
 	uint32_t DeviceNumber;
+	// flawfinder: ignore
 	char	UniqueID[37];
-	
+
 } configured_device_t;
 
 typedef enum
@@ -72,21 +75,22 @@ typedef enum
 	InvalidWhileSlaved,
 	InvalidOperation,
 	ActionNotImplemented
-	
+
 } ascom_error_t;
 
 typedef enum
 {
 	NotAvailable,
 	DeviceTimeout
-		
+
 } ascom_driver_error_t;
 
 class ascom_device {
 
 	protected:
 
-		unsigned char	message_str[ 256 ];
+		// flawfinder: ignore
+		char			message_str[ 256 ];
 		bool			debug_mode,
 						is_connected = false;
 		const char		*_description,
@@ -99,6 +103,7 @@ class ascom_device {
 
 	public:
 
+			ascom_device( void );
 		void default_bool( AsyncWebServerRequest *, const char *, bool );
 		void description( AsyncWebServerRequest *, const char * );
 		void device_error( AsyncWebServerRequest *, const char *, ascom_driver_error_t , char * );
@@ -116,9 +121,9 @@ class ascom_device {
 class alpaca_safetymonitor : public ascom_device
 {
 	public:
-	
-			alpaca_safetymonitor( bool );
-			
+
+		explicit alpaca_safetymonitor( bool );
+
 		void issafe( AsyncWebServerRequest *, const char * );
 		void set_connected( AsyncWebServerRequest *, const char * );
 };
@@ -127,7 +132,7 @@ class alpaca_observingconditions : public ascom_device
 {
 	public:
 
-			alpaca_observingconditions( bool );
+			explicit alpaca_observingconditions( bool );
 
 		void set_connected( AsyncWebServerRequest *request, const char * );
 		void get_averageperiod( AsyncWebServerRequest *request, const char * );
@@ -168,19 +173,19 @@ typedef struct alpaca_dome_t {
 class alpaca_dome : public ascom_device
 {
 	private:
-	
+
 		dome_shutter_status_t	dome_shutter_status;
 
 	public:
 
-			alpaca_dome( bool );
-		void abortslew( AsyncWebServerRequest *, const char * );
-		void cansetshutter( AsyncWebServerRequest *, const char * );
-		void closeshutter( AsyncWebServerRequest *, const char * );
-		void openshutter( AsyncWebServerRequest *, const char * );
-		void set_connected( AsyncWebServerRequest *, const char * );
-		void slaved( AsyncWebServerRequest *, const char * );
-		void shutterstatus( AsyncWebServerRequest *, const char * );
+		explicit	alpaca_dome( bool );
+		void		abortslew( AsyncWebServerRequest *, const char * );
+		void		cansetshutter( AsyncWebServerRequest *, const char * );
+		void		closeshutter( AsyncWebServerRequest *, const char * );
+		void		openshutter( AsyncWebServerRequest *, const char * );
+		void		set_connected( AsyncWebServerRequest *, const char * );
+		void		slaved( AsyncWebServerRequest *, const char * );
+		void		shutterstatus( AsyncWebServerRequest *, const char * );
 };
 
 class alpaca_telescope : public ascom_device
@@ -193,7 +198,7 @@ class alpaca_telescope : public ascom_device
 					forced_altitude = -1;
 	public:
 
-			alpaca_telescope( bool );
+		explicit alpaca_telescope( bool );
 		void set_connected( AsyncWebServerRequest *, const char * );
 		void siderealtime( AsyncWebServerRequest *, const char * );
 		void siteelevation( AsyncWebServerRequest *, const char * );
@@ -211,15 +216,14 @@ class alpaca_telescope : public ascom_device
 class alpaca_server {
 
 	public:
-						alpaca_server( bool );
+
+		explicit		alpaca_server( bool );
 		alpaca_server	*get_alpaca( void );
 		bool			get_debug_mode( void );
 		AsyncUDP		*get_discovery( void );
 		void			loop( void );
 		bool			start( IPAddress );
-		void			stop( void );
-		void			stop_discovery( void );
-		
+
 	private:
 
 		bool			bad_request,
@@ -233,9 +237,10 @@ class alpaca_server {
 		alpaca_observingconditions	*observing_conditions;
 		alpaca_safetymonitor		*safety_monitor;
 		alpaca_telescope			*telescope;
-		
+
 		ascom_error_t	transaction_status;
-		
+
+		// flawfinder: ignore
 		char			buf[ 255 ] = {0},
 						transaction_details[ 128 ];
 
