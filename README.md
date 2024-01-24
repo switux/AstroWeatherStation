@@ -6,6 +6,8 @@ ESP32 based weather station with features to help operate an astronomical observ
 
 This project aims to provide all the instructions that are needed to build a weather station for remote astronomical observatories. On top of the usual readings, rain events and cloud coverage are reported to allow the safe operation of the observatory.
 
+## PRE-REQUISITES (WIP)
+
 ## BUILD INSTRUCTIONS
 
 The ALPACA web server uses regular expressions that need to be enabled, add the following line to ~/.arduino15/packages/esp**xxxx**/hardware/esp**xxxx**/**{version}**/platform.local.txt:

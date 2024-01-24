@@ -60,6 +60,7 @@ const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
 	{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
 };
 
+// flawfinder: ignore
 const char *ascom_error_message[8] = {
 	"Property or method not implemented",
 	"Invalid value",
@@ -78,38 +79,43 @@ alpaca_server::alpaca_server( bool _debug_mode )
 	safety_monitor = new alpaca_safetymonitor( debug_mode );
 	observing_conditions = new alpaca_observingconditions( debug_mode );
 	telescope = new alpaca_telescope( debug_mode );
+	bad_request = false;
+	server = NULL;
+	transaction_status = NotConnected;
+	memset( transaction_details, 0, 128 );
 }
 
-alpaca_server *alpaca_server::get_alpaca( void )
+/*alpaca_server *alpaca_server::get_alpaca( void )
 {
 	return this;
 }
-
+*/
 void alpaca_server::alpaca_getapiversions( AsyncWebServerRequest *request )
 {
-	unsigned char str[256];
+	// flawfinder: ignore
+	char str[256];
 
 	server_transaction_id++;
-	
+
 	if ( extract_transaction_details( request, false ) ) {
 
-		sprintf( (char *)str, "{\"Value\":[1],%s}", transaction_details );
-		request->send( 200, "application/json", (const char*)str );
+		snprintf( static_cast<char *>( str ), 256, "{\"Value\":[1],%s}", transaction_details );
+		request->send( 200, "application/json", static_cast<const char *>( str ) );
 
 	} else {
 
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", (const char*)str );
+			request->send( 200, "application/json", static_cast<const char *>( str ) );
 
 	}
 }
 
 void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request )
 {
-	char 	str[1024] = {0},
-			str2[2048] = {0};
+	// flawfinder: ignore
+	char 	str[1024] = {0};
 
 	server_transaction_id++;
 
@@ -117,29 +123,32 @@ void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request 
 
 		if ( get_configured_devices( str, 960 )) {
 
+			// flawfinder: ignore
+			char str2[2048] = {0};
 			snprintf( str2, 2047, "{\"Value\":%s,%s}", str, transaction_details );
-			request->send( 200, "application/json", (const char*)str2 );
+			request->send( 200, "application/json", static_cast<const char *>( str2 ) );
 
 		} else
 
 			request->send( 500, "text/plain", "Error while building answer." );
 
 	} else {
-		
+
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", (const char*)str );
+			request->send( 200, "application/json", static_cast<const char *>( str ) );
 	}
 }
 
 void alpaca_server::alpaca_getdescription( AsyncWebServerRequest *request )
 {
 	server_transaction_id++;
-	unsigned char str[256];
-	
-	sprintf( (char *)str, "{\"Value\":{\"ServerName\":\"AWS\",\"Manufacturer\":\"OpenAstroDevices\",\"ManufacturerVersion\":\"v%s\",\"Location\":\"ici\"},%s}", REV , "\"ClientTransactionID\":0,\"ServerTransactionID\":0");
-	request->send( 200, "application/json", (const char*)str );
+	// flawfinder: ignore
+	char str[256];
+
+	snprintf( static_cast<char *>( str ), 256, "{\"Value\":{\"ServerName\":\"AWS\",\"Manufacturer\":\"OpenAstroDevices\",\"ManufacturerVersion\":\"v%s\",\"Location\":\"ici\"},%s}", REV , "\"ClientTransactionID\":0,\"ServerTransactionID\":0");
+	request->send( 200, "application/json", static_cast<const char *>( str ) );
 }
 
 void alpaca_server::alpaca_getsetup( AsyncWebServerRequest *request )
@@ -899,30 +908,32 @@ void alpaca_server::get_config( AsyncWebServerRequest *request )
 
 bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 {
-	char	buf[256];
-	size_t	l = 1;
+	// flawfinder: ignore
+	char	buff[256];
+	size_t	l = 1,
+			l2;
 
 	*json_string = '[';
 	*(json_string+1) = 0;
-		
+
 	for( uint8_t i = 0; i < CONFIGURED_DEVICES; i++ ) {
 
-		l += snprintf( buf, 255, "{\"DeviceName\":\"%s\",\"DeviceType\":\"%s\",\"DeviceNumber\":%d,\"UniqueID\":\"%s\"},", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
+		l += snprintf( buff, 255, "{\"DeviceName\":\"%s\",\"DeviceType\":\"%s\",\"DeviceNumber\":%d,\"UniqueID\":\"%s\"},", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
 		if ( l <= len )
-			strcat( json_string, buf );
+			l2 = strlcat( json_string, buff, len );
 		else {
 			return false;
 		}
 
 	}
-	json_string[ strlen( json_string ) - 1 ] = 0;
+	json_string[ l2 - 1 ] = 0;
 	if ( l <= len - 2 )
-		strcat( json_string, "]" );
+		strlcat( json_string, "]", len );
 	else
 		return false;
 	return true;
 }
-
+/*
 bool alpaca_server::get_debug_mode( void )
 {
 	return debug_mode;
@@ -932,7 +943,7 @@ AsyncUDP *alpaca_server::get_discovery( void )
 {
 	return &ascom_discovery;
 }
-
+*/
 bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request, bool post )
 {
 	transaction_status = Ok;
@@ -942,6 +953,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 		if ( !strcasecmp( request->getParam(i)->name().c_str(), "ClientID" )) {
 
+				// flawfinder: ignore
 				if ( ( client_id = atoi( request->getParam(i)->value().c_str() )) <= 0 ) {
 
 					bad_request = true;
@@ -949,10 +961,11 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 					client_id = 0;
 					break;
 				}
-		}		
+		}
 
 		if ( !strcasecmp( request->getParam(i)->name().c_str(), "ClientTransactionID" )) {
 
+				// flawfinder: ignore
 				if ( ( client_transaction_id = atoi( request->getParam(i)->value().c_str() )) <= 0 ) {
 
 					bad_request = true;
@@ -960,7 +973,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 					client_transaction_id = 0;
 					break;
 				}
-		}		
+		}
 	}
 
 	if ( debug_mode ) {
@@ -981,7 +994,8 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char *msg )
 {
-	unsigned char str[256];
+	// flawfinder: ignore
+	char str[256];
 	server_transaction_id++;
 
 	if ( debug_mode )
@@ -989,15 +1003,15 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		sprintf( (char *)str, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
-		request->send( 200, "application/json", (const char*)str );
+		snprintf( static_cast<char *>( str ), 256, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
+		request->send( 200, "application/json", static_cast<const char *>( str ) );
 
 	} else {
 
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", (const char*)str );
+			request->send( 200, "application/json", static_cast<const char *>( str ) );
 
 	}
 }
@@ -1006,7 +1020,8 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 {
 	if ( packet.length() ) {
 
-		int len = packet.read( (uint8_t*)buf, 255 );
+		// flawfinder: ignore
+		int len = packet.read( reinterpret_cast<uint8_t *>( buf ), 255 );
 		if ( len > 0 )
 			buf[ len ] = 0;
 		if ( len < 16 ) {
@@ -1019,18 +1034,22 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 				Serial.printf( "[INFO] ALPACA Discovery: bad header [%s] from %s:%d\n",  buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
-		sprintf( buf, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
-		ascom_discovery.writeTo( (uint8_t *)buf, strlen( buf ), packet.remoteIP(), packet.remotePort(), packet.interface() );
+		int l = snprintf( buf, 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
+		if ( l > 0 )
+			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );
+		else
+			Serial.printf( "[ERROR] ALPACA: Could not build discovery answer. Please contact support.\n" );
 	}
 }
 
 void alpaca_server::send_file( AsyncWebServerRequest *request )
 {
 	char *filename = strdup( request->url().c_str() );
-	char msg[64];
-	
+
 	if ( !SPIFFS.exists( filename )) {
 
+		// flawfinder: ignore
+		char msg[64];
 		Serial.printf( "[ERROR] File [%s] not found.", filename );
 		snprintf( msg, 64, "[ERROR] File [%s] not found.", filename );
 		request->send( 500, "text/html", msg );
@@ -1054,14 +1073,14 @@ bool alpaca_server::start( IPAddress address )
 
 	}
 	if ( !ascom_discovery.listen( 32227 ))
-	
+
 	if ( debug_mode )
 		Serial.printf( "[INFO] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
-	
+
 	ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
-	
+
 	server->on( "/get_config", HTTP_GET, std::bind( &alpaca_server::get_config, this, std::placeholders::_1 ));
-	
+
 	server->on( "/setup", HTTP_GET, std::bind( &alpaca_server::alpaca_getsetup, this, std::placeholders::_1 ));
 	server->on( "/management/apiversions", HTTP_GET, std::bind( &alpaca_server::alpaca_getapiversions, this, std::placeholders::_1 ));
 	server->on( "/management/v1/description", HTTP_GET, std::bind( &alpaca_server::alpaca_getdescription, this, std::placeholders::_1 ));
@@ -1072,114 +1091,117 @@ bool alpaca_server::start( IPAddress address )
 	server->on( "^\\/api\\/v1\\/(dome|safetymonitor|telescope|observingconditions)\\/0\\/([a-z]+)$", HTTP_PUT, std::bind( &alpaca_server::dispatch_request, this, std::placeholders::_1 ));
 
 	server->on( "^\\/api\\/v1\\/([a-zA-Z]+)\\/([0-9]+)\\/.+$", HTTP_GET, std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
-	
+
 	server->onNotFound( std::bind( &alpaca_server::does_not_exist, this, std::placeholders::_1 ));
 	server->begin();
 
 	return true;
 }
 
-void alpaca_server::stop( void )
+ascom_device::ascom_device( void )
 {
-	server->end();
-}
-
-void alpaca_server::stop_discovery( void )
-{
-	ascom_discovery.close();
+	memset( message_str, 0, 256 );
+	debug_mode = false;
+	_description = NULL;
+	_driverinfo = NULL;
+	_name = NULL;
+	_supportedactions = NULL;
+	_interfaceversion = 0;
+	devicetype = NULL;
+	_driverversion = NULL;
 }
 
 void ascom_device::description( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _description, transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _description, transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::driverinfo( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverinfo, transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverinfo, transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::driverversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverversion, transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverversion, transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::get_connected( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", is_connected?"true":"false", transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", is_connected?"true":"false", transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", _interfaceversion, transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", _interfaceversion, transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::name( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _name, transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _name, transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, const char *msg )
 {
-	snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
-
+/*
 void ascom_device::device_error( AsyncWebServerRequest *request, const char *transaction_details, ascom_driver_error_t error, char *msg )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",\"Value\":false,%s}", 0x500+error, msg, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",\"Value\":false,%s}", 0x500+error, msg, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
-	
-	request->send( 200, "application/json", (const char*)message_str );
-}
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
 
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
+}
+*/
 void ascom_device::default_bool( AsyncWebServerRequest *request, const char *transaction_details, bool truefalse )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", truefalse?"true":"false", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", truefalse?"true":"false", transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
-	
-	request->send( 200, "application/json", (const char*)message_str );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
 }
 
 void ascom_device::return_value( AsyncWebServerRequest *request, const char *transaction_details, double value )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", value, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", value, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
-	
-	request->send( 200, "application/json", (const char*)message_str );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
 }
 
 void ascom_device::return_value( AsyncWebServerRequest *request, const char *transaction_details, byte value )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", value, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", value, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
-	
-	request->send( 200, "application/json", (const char*)message_str );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
 }
 
 void ascom_device::supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", _supportedactions, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", _supportedactions, transaction_details );
 	else
-		snprintf( (char *)message_str, 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
 
-	request->send( 200, "application/json", (const char*)message_str );
+	request->send( 200, "application/json", static_cast<const char*>( message_str ));
 }

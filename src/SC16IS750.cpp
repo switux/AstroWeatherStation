@@ -1,7 +1,7 @@
 /*
    NXP SC16IS1750 UART Bridge driver
-   
-   (c) 2023 Lesage F. 
+
+   (c) 2023 Lesage F.
 
 	Revisions
 		1.0.0	: Barebone version, polled mode operation, made to work with the AstroWeatherStation's GPS
@@ -24,9 +24,9 @@
 /*
  * Used the following documents
  * 		Product data sheet: https://www.nxp.com/docs/en/data-sheet/SC16IS740_750_760.pdf
- * 		
+ *
  * I2C mode only for the moment, SPI will come later :-)
- * 
+ *
  */
 
 #include <Arduino.h>
@@ -105,7 +105,7 @@ void I2C_SC16IS750::enable_extra_features( void )
 
 	tmp = read_register( SC16IS750_LCR );
 	write_register( SC16IS750_LCR, LCR_ACCESS_EFR );
-	
+
 	tmp2 = read_register( SC16IS750_EFR );
 	write_register( SC16IS750_EFR, tmp2 | EFR_ENHANCED_FUNC_ENABLE );
 
@@ -118,6 +118,7 @@ bool I2C_SC16IS750::test( void )
 	return ( read_register( SC16IS750_SPR ) == 0x41 );
 }
 
+// flawfinder: ignore
 int8_t I2C_SC16IS750::read( void )
 {
 	return read_byte();
@@ -267,6 +268,7 @@ int8_t I2C_SC16IS750::read_register( uint8_t register_address )
 	}
 	if ( ( n = Wire.requestFrom( address, 1 )) != 1 )
 		Serial.printf( "ERROR: SC16IS750 received %d bytes instead of 1 while addressing register 0x%02x\n", n, register_address );
+	// flawfinder: ignore
 	return Wire.read();
 }
 

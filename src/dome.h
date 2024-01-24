@@ -34,7 +34,7 @@ class AWSDome {
 
 	public:
 
-		AWSDome( bool );
+		explicit AWSDome( bool );
 		AWSDome( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
 		void close( void * );
 		bool closed( void );

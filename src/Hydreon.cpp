@@ -32,10 +32,12 @@ Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool 
 	uart_nr = _uart_nr;
 	rx_pin = rx;
 	tx_pin = tx;
+	intensity = 0;
+	sensor = NULL;
 	reset_pin = reset;
 	debug_mode = _debug_mode;
 	status = ' ';
-	memset( str, 128, 0 );
+	memset( str, 0, 128 );
 	rg9_read_mutex = xSemaphoreCreateMutex();
 }
 
@@ -156,10 +158,11 @@ byte Hydreon::rain_intensity( void )
 	sensor->println( "R" );
 	read_string();
 
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Rain sensor status string = [%s]\n", str );
-
 	intensity = static_cast<byte>( str[2] - '0' );
+
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str, intensity );
+
 	return intensity;
 }
 
@@ -182,15 +185,14 @@ const char *Hydreon::rain_intensity_str( void )
 
 byte Hydreon::read_string( void )
 {
-	uint8_t i;
 	
-	memset( str, 128, 0 );
+	memset( str, 0, 128 );
 	//FIXME: check if really needed
 	delay( 500 );
 	
 	if ( sensor->available() > 0 ) {
 
-		i = sensor->readBytes( str, 128 );
+		uint8_t i = sensor->readBytes( str, 128 );
 		if ( i >= 2 )
 			str[ i-2 ] = 0;	// trim trailing \n
 

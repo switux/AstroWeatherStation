@@ -68,7 +68,8 @@ class AWSSensorManager {
 	AWSWindSensor		*wind_sensors;
 
 	AWSConfig 			*config;
-	
+
+	// flawfinder: ignore
     char 				hw_version[6];
     uint8_t 			available_sensors;
     sensor_data_t		sensor_data;

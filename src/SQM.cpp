@@ -30,6 +30,8 @@ SQM::SQM( Adafruit_TSL2591 *_tsl, sensor_data_t *_sensor_data )
 {
 	tsl = _tsl;
 	sensor_data = _sensor_data;
+	debug_mode = false;
+	msas_calibration_offset = 0.F;
 }
 
 void SQM::set_debug_mode( bool _debug_mode )
@@ -219,17 +221,14 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 
 uint8_t SQM::SQM_read_with_extended_integration_time( float ambient_temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
 {
-	uint32_t	both_channels;
-	uint16_t	_ir_luminosity,
-				_full_luminosity;
 	uint8_t		iterations = 1;
 
 	while (( *cumulated_visible < 128 ) && ( iterations <= 32 )) {
 
 		iterations++;
-		both_channels = tsl->getFullLuminosity();
-		_ir_luminosity = both_channels >> 16;
-		_full_luminosity = both_channels & 0xFFFF;
+		uint32_t both_channels = tsl->getFullLuminosity();
+		uint16_t _ir_luminosity = both_channels >> 16;
+		uint16_t _full_luminosity = both_channels & 0xFFFF;
 		_ir_luminosity = static_cast<uint16_t>( static_cast<float>(_ir_luminosity) * ch1_temperature_factor( ambient_temp ));
 		_full_luminosity = static_cast<uint16_t>( static_cast<float>(_full_luminosity) * ch0_temperature_factor( ambient_temp ));
 		*cumulated_full += _full_luminosity;

@@ -44,8 +44,8 @@ alpaca_safetymonitor::alpaca_safetymonitor( bool _debug_mode )
 
 void alpaca_safetymonitor::issafe( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( (char *)message_str, 255, "{\"Value\":%s,%s}", station.is_rain_event()?"true":"false", transaction_details );
-	request->send( 200, "application/json", (const char*)message_str );
+	snprintf( static_cast<char *>( message_str ), 255, "{\"Value\":%s,%s}", station.is_rain_event()?"true":"false", transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
@@ -55,20 +55,20 @@ void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
 
 			is_connected = true;
-			snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
 
 		} else {
 
 			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
 
 				is_connected = false;
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
 
 			} else
 
-				snprintf( (char *)message_str, 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
 		}
-		request->send( 200, "application/json", (const char*)message_str );
+		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		return;
 	}
 

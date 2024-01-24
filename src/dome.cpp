@@ -1,6 +1,6 @@
-/*	
+/*
   	dome.cpp
-  	
+
 	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -34,14 +34,14 @@ AWSDome::AWSDome( bool _debug_mode )
 	pinMode( GPIO_DOME_1, OUTPUT );
 	pinMode( GPIO_DOME_2, OUTPUT );
 	pinMode( GPIO_DOME_STATUS, INPUT );
-	
+
 	start_control_task();
 }
 
-AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool _debug_mode )
+AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool _debug_mode ) : i2c_mutex( _i2c_mutex )
 {
 	debug_mode = _debug_mode;
-	i2c_mutex = _i2c_mutex;
+//	i2c_mutex = _i2c_mutex;
 	sc16is750 = _sc16is750;
 	close_dome = false;
 
@@ -56,13 +56,13 @@ AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool 
 		xSemaphoreGive( i2c_mutex );
 		return;
 	}
-	
+
 	sc16is750->pinMode( GPIO_DOME_1, OUTPUT );
 	sc16is750->pinMode( GPIO_DOME_2, OUTPUT );
 	xSemaphoreGive( i2c_mutex );
 
 	pinMode( GPIO_DOME_STATUS, INPUT );
-	
+
 	start_control_task();
 }
 
@@ -74,7 +74,7 @@ void AWSDome::close( void *dummy )
 
 			Serial.printf( "[INFO] Closing dome.\n" );
 			if ( sc16is750 ) {
-		
+
 				while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 
 				sc16is750->digitalWrite( GPIO_DOME_1, HIGH );
@@ -82,11 +82,11 @@ void AWSDome::close( void *dummy )
 				delay( 2000 );
 				sc16is750->digitalWrite( GPIO_DOME_1, LOW );
 				sc16is750->digitalWrite( GPIO_DOME_2, LOW );
-			
-				xSemaphoreGive( i2c_mutex );	
+
+				xSemaphoreGive( i2c_mutex );
 
 			} else {
-		
+
 				digitalWrite( GPIO_DOME_1, HIGH );
 				digitalWrite( GPIO_DOME_2, HIGH );
 				delay( 2000 );
@@ -102,7 +102,7 @@ void AWSDome::close( void *dummy )
 
 bool AWSDome::closed( void )
 {
-	bool x = ( digitalRead( GPIO_DOME_STATUS ) == LOW );	
+	bool x = ( digitalRead( GPIO_DOME_STATUS ) == LOW );
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Dome status: %s\n", x ? "closed" : "open" );
@@ -116,9 +116,9 @@ void AWSDome::start_control_task( void )
 	// during I2C communication with the SC16IS750
 	// Instead we just toggle a flag which is then read by a high prio task in charge of
 	// closing the dome.
-	
+
 	std::function<void(void *)> _close = std::bind( &AWSDome::close, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore( 
+	xTaskCreatePinnedToCore(
 		[](void *param) {
             std::function<void(void*)>* close_proxy = static_cast<std::function<void(void*)>*>( param );
             (*close_proxy)( NULL );
