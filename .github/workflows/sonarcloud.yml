@@ -10,9 +10,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Install sonar-scanner
-        uses: SonarSource/sonarcloud-github-c-cpp@v2
       - name: Run scanner
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
           SONAR_TOKEN: ${{ secrets.4858c48782d1d11e3dec872e9b311c1649203b00 }}   # Generate a token on Sonarcloud.io, add it to the secrets of this repo with the name SONAR_TOKEN (Settings > Secrets > Actions > add new repository secret)
