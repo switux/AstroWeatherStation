@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSWind.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -171,7 +171,7 @@ float AWSWindSensor::read_anemometer( bool verbose )
 		} else {
 
 			if ( debug_mode && verbose )
-				Serial.println( "(Error)." );
+				Serial.printf( "(Error).\n" );
 			delay( 500 );
 		}
 
@@ -243,7 +243,7 @@ int16_t AWSWindSensor::read_wind_vane( bool verbose  )
 		} else {
 
 			if ( debug_mode && verbose )
-				Serial.println( "(Error)." );
+				Serial.printf( "(Error).\n" );
 			delay( 500 );
 		}
 

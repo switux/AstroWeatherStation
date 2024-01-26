@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSWind.h
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -40,7 +40,7 @@ class AWSWindSensor {
 		float	read_anemometer( bool );
 		int16_t	read_wind_vane( bool );
 		bool	wind_vane_initialised( void );
-		
+
 	private:
 
    		bool			_anemometer_initialised,

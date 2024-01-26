@@ -188,7 +188,7 @@ bool AstroWeatherStation::connect_to_wifi()
 		return true;
 	}
 
-	Serial.println( "NOK." );
+	Serial.printf( "NOK.\n" );
 
 	return false;
 }
@@ -206,12 +206,12 @@ bool AstroWeatherStation::disconnect_from_wifi( void )
 
 void AstroWeatherStation::display_banner()
 {
-	Serial.println( "\n##############################################################################################" );
-	Serial.println( "# AstroWeatherStation                                                                        #" );
-	Serial.println( "#  (c) Lesage Franck - lesage@datamancers.net                                                #" );
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
-	Serial.println( "# HARDWARE SETUP                                                                             #" );
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.printf( "\n#############################################################################################\n" );
+	Serial.printf( "# AstroWeatherStation                                                                       #\n" );
+	Serial.printf( "#  (c) Lesage Franck - lesage@datamancers.net                                               #\n" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "# HARDWARE SETUP                                                                            #\n" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
 
 	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
 	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
@@ -221,27 +221,27 @@ void AstroWeatherStation::display_banner()
 	print_config_string( "# GPIO ext. present : %s", config->get_has_sc16is750() ? "Yes" : "No" );
 	print_config_string( "# Firmware          : %s-%s", REV, BUILD_DATE );
 
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
-	Serial.println( "# GPIO PIN CONFIGURATION                                                                     #" );
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "# GPIO PIN CONFIGURATION                                                                    #\n" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
 
 	print_config_string( "# Wind sensors : RX=%d TX=%d CTRL=%d", GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX, GPIO_WIND_SENSOR_CTRL );
 	print_config_string( "# Rain sensor  : RX=%d TX=%d MCLR=%d RAIN=%d", GPIO_RAIN_SENSOR_RX, GPIO_RAIN_SENSOR_TX, GPIO_RAIN_SENSOR_MCLR, GPIO_RAIN_SENSOR_RAIN );
 	if ( solar_panel ) {
-		
+
 		print_config_string( "# 3.3V SWITCH  : %d", GPIO_ENABLE_3_3V );
 		print_config_string( "# 12V SWITCH   : %d", GPIO_ENABLE_12V );
 		print_config_string( "# BAT LVL      : SW=%d ADC=%d", GPIO_BAT_ADC_EN, GPIO_BAT_ADC );
 	}
 	print_config_string( "# DEBUG        : %d", GPIO_DEBUG );
 
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
-	Serial.println( "# RUNTIME CONFIGURATION                                                                      #" );
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "# RUNTIME CONFIGURATION                                                                     #\n" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
 
 	print_runtime_config();
 
-	Serial.println( "##############################################################################################" );
+	Serial.printf( "#############################################################################################\n" );
 }
 
 void AstroWeatherStation::enter_config_mode( void )
@@ -506,10 +506,10 @@ bool AstroWeatherStation::initialise( void )
 
 		sc16is750 = new I2C_SC16IS750( DEFAULT_SC16IS750_ADDR );
 	}
-	
+
 	if ( solar_panel ) {
-		
-//FIXME: we already get this to cater for station uptime
+
+		//FIXME: we already get this to cater for station uptime
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
@@ -519,10 +519,10 @@ bool AstroWeatherStation::initialise( void )
 	} else
 
 		start_config_server();
-	
+
 	if ( !startup_sanity_check() && config->can_rollback() )
 		return config->rollback();
-  
+
 	if ( debug_mode )
 		display_banner();
 
@@ -539,7 +539,7 @@ bool AstroWeatherStation::initialise( void )
 		sync_time();
 		check_rain_event_guard_time();
 	}
-	
+
 	if ( rain_event ) {
 
 		sensor_manager->initialise( sc16is750, config, rain_event );
@@ -551,7 +551,7 @@ bool AstroWeatherStation::initialise( void )
 		return false;
 
 	if ( !solar_panel ) {
-		
+
 		alpaca = new alpaca_server( debug_mode );
 		switch ( config->get_alpaca_iface() ) {
 
@@ -569,9 +569,9 @@ bool AstroWeatherStation::initialise( void )
 
 		}
 	}
-	
+
 	if ( !solar_panel ) {
-		
+
 		if ( config->get_has_rain_sensor() ) {
 
 			if ( debug_mode )
@@ -582,7 +582,7 @@ bool AstroWeatherStation::initialise( void )
 		}
 
 		std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
-		xTaskCreatePinnedToCore( 
+		xTaskCreatePinnedToCore(
 			[](void *param) {
 				std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );
 				(*periodic_tasks_proxy)( NULL );
@@ -784,7 +784,7 @@ const char *AstroWeatherStation::OTA_message( int code )
 void AstroWeatherStation::periodic_tasks( void *dummy )
 {
 	uint8_t	sync_time_mod = 1;
-	
+
 	while ( true ) {
 
 		if ( sync_time_mod % 5 )
@@ -851,7 +851,7 @@ bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 			if ( debug_mode ) {
 
 				Serial.print( "[DEBUG] HTTP response: " );
-				Serial.println( status );
+				Serial.printf( "%d\n", status );
 			}
 			http.end();
 			if ( status == 200 )
@@ -882,7 +882,7 @@ bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] HTTP response: " );
-			Serial.println( status );
+			Serial.printf( "%d\n", status );
 		}
 		if ( status== 200 )
 			sent = true;
@@ -899,17 +899,17 @@ bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
 	// flawfinder: ignore
-  	char	string[96];
+  char	string[96];
 	byte 	i;
 	va_list	args;
 
 	memset( string, 0, 96 );
 	va_start( args, fmt );
 	// flawfinder: ignore
-	int l = vsnprintf( string, 93, fmt, args );
+	int l = vsnprintf( string, 92, fmt, args );
 	va_end( args );
 	if ( l >= 0 ) {
-		for( i = l; i < 93; string[ i++ ] = ' ' );
+		for( i = l; i < 92; string[ i++ ] = ' ' );
 		strlcat( string, "#\n", 95 );
 	}
 	Serial.printf( "%s", string );
@@ -918,11 +918,9 @@ void AstroWeatherStation::print_config_string( const char *fmt, ... )
 void AstroWeatherStation::print_runtime_config( void )
 {
 	// flawfinder: ignore
-  	char	string[96];
-	int		offset,
-			len;
-	uint8_t	pad,
-            j;
+ 	char	string[97];
+	char	*root_ca = config->get_root_ca();
+	int		ca_pos = 0;
 
 	print_config_string( "# AP SSID      : %s", config->get_ap_ssid() );
 	print_config_string( "# AP PASSWORD  : %s", config->get_wifi_ap_password() );
@@ -936,35 +934,45 @@ void AstroWeatherStation::print_runtime_config( void )
 	print_config_string( "# URL PATH     : /%s", config->get_url_path() );
 	print_config_string( "# TZNAME       : %s", config->get_tzname() );
 
-	memset( string, 0, 96 );
-	int l = snprintf( string, 93, "# ROOT CA      : " );
+	memset( string, 0, 97 );
+	int str_len = snprintf( string, 96, "# ROOT CA      : " );
 	// flawfinder: ignore
-	len = strlen( config->get_root_ca() );
-	offset = 0;
-	while ( offset < len ) {
+	int ca_len = strlen( root_ca );
+	int string_pos;
+	while ( ca_pos < ca_len ) {
 
-//		int s = strlen( string );
-		int s = l;
-		int room = 96 - l - 4;
-		l = strlcat( string, config->get_root_ca() + offset, room );
-		// flawfinder: ignore
-		offset += l - s;
-//		offset += strlen( string ) - s;
-		// flawfinder: ignore
-		for ( pad = l; pad < 93; string[ pad++ ] = ' ' );
-//		for ( pad = strlen( string ); pad < 93; string[ pad++ ] = ' ' );
-		// flawfinder: ignore
-		for ( j = 0; j < strlen( string ); j++ )
-			if ( string[j] == '\n' ) string[j] = ' ';
-		strlcat( string, "#\n", 95 );
+		strlcat( string, root_ca + ca_pos, 92 );
+		for ( string_pos = str_len; string_pos < 92; string_pos++ ) {
+
+			if ( string[ string_pos ] == '\n' ) {
+
+				if (( ca_pos < 92 ) || (( ca_len - ca_pos ) < 92 ))
+
+					string[ string_pos ] = ' ';
+
+				else  {
+
+					memcpy( string + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
+					ca_pos++;
+				}
+			}
+
+			ca_pos++;
+			if ( ca_pos > ca_len )
+				break;
+		}
+		ca_pos--;
+		for( int j = string_pos; j < 92; string[ j++ ] = ' ' );
+		memset( string + 91, 0, 6 );
+		strlcat( string, " #\n", 96 );
 		Serial.printf( "%s", string );
-		memset( string, 0, 96 );
-		l = snprintf( string, 96, "# " );
+		memset( string, 0, 97 );
+		str_len = snprintf( string, 96, "# " );
 	}
 
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
-	Serial.println( "# SENSORS & CONTROLS                                                                         #" );
-	Serial.println( "#--------------------------------------------------------------------------------------------#" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
+	Serial.printf( "# SENSORS & CONTROLS                                                                        #\n" );
+	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
 
 	print_config_string( "# DOME             : %s", config->get_has_dome() ? "Yes" : "No" );
 	print_config_string( "# GPS              : %s", config->get_has_gps() ? "Yes" : "No" );
@@ -1016,7 +1024,7 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 		Serial.printf( "[DEBUG] %s", unavailable_sensors );
 
 		if ( j == ALL_SENSORS )
-			Serial.println( "none" );
+			Serial.printf( "none.\n" );
 	}
 
 	if ( j != ALL_SENSORS )
@@ -1262,7 +1270,8 @@ bool AstroWeatherStation::sync_time( void )
 
 		Serial.printf( "\n[DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
 		Serial.print( "Time and date: " );
-		Serial.println( &timeinfo, "%Y-%m-%d %H:%M:%S" );		
+		Serial.print( &timeinfo, "%Y-%m-%d %H:%M:%S\n" );
+		Serial.printf( "\n" );
 	}
 
 	if ( ntp_synced ) {
@@ -1278,7 +1287,7 @@ bool AstroWeatherStation::sync_time( void )
 		// Not proud of this but it should be sufficient if the number of times we miss ntp sync is not too big
 		ntp_time_misses++;
 		sensor_manager->get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
-		
+
 	}
 	return ntp_synced;
 }
