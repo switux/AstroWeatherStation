@@ -1,6 +1,6 @@
-/*	
+/*
   	Hydreon.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -44,7 +44,7 @@ Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool 
 void Hydreon::probe( uint16_t baudrate )
 {
 	status = RAIN_SENSOR_FAIL;
-	
+
 	sensor->begin( baudrate, SERIAL_8N1, rx_pin, tx_pin );
 	sensor->println();
 	sensor->println();
@@ -73,7 +73,7 @@ void Hydreon::probe( uint16_t baudrate )
 		Serial.printf( "%s[INFO] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO] Rain sensor boot message:\n", debug_mode?"\n":"", baudrate, reset_cause() );
 
 		while ( read_string() )
-			Serial.println( str );
+			Serial.printf( "%s", str );
 
 		baud = baudrate;
 	}
@@ -89,22 +89,22 @@ bool Hydreon::initialise( void )
 			Serial.printf( "[DEBUG] Probing rain sensor using previous birate " );
 		probe( baud );
 
-	} else 
+	} else
 		for ( byte i = 0; i < HYDREON_PROBE_RETRIES; i++ ) {
 
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
-			
+
 			for ( byte j = 0; j < HYDREON_SERIAL_SPEEDS; j++ ) {
 
 				esp_task_wdt_reset();
 				probe( bps[j] );
 				if ( status == RAIN_SENSOR_FAIL )
 					sensor->end();
-				else 
+				else
 					break;
 			}
-			
+
 			if ( status != RAIN_SENSOR_FAIL )
 				break;
 		}
@@ -120,7 +120,7 @@ bool Hydreon::initialise( void )
 
 	// FIXME: restore alarms
 	switch( status ) {
-	
+
 		case RAIN_SENSOR_OK:
 			initialised = true;
 			break;
@@ -154,7 +154,7 @@ byte Hydreon::rain_intensity( void )
 		Serial.printf( "[ERROR] Cannot initialise rain sensor. Not returning rain data.\n" );
 		return -1;
 	}
-		
+
 	sensor->println( "R" );
 	read_string();
 
@@ -185,11 +185,10 @@ const char *Hydreon::rain_intensity_str( void )
 
 byte Hydreon::read_string( void )
 {
-	
 	memset( str, 0, 128 );
 	//FIXME: check if really needed
 	delay( 500 );
-	
+
 	if ( sensor->available() > 0 ) {
 
 		uint8_t i = sensor->readBytes( str, 128 );

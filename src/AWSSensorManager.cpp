@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSSensorManager.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -50,7 +50,7 @@ AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode )
 	mlx = new Adafruit_MLX90614;
 	tsl = new Adafruit_TSL2591( 2591 );
 	sqm = new SQM( tsl, &sensor_data );
-	
+
 	wind_sensors = NULL;
 	gps = NULL;
 	config = NULL;
@@ -61,7 +61,7 @@ AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode )
 	sensor_data = {0};
 	solar_panel = _solar_panel;
 	polling_ms_interval = DEFAULT_SENSOR_POLLING_MS_INTERVAL;
-	
+
 	i2c_mutex = xSemaphoreCreateMutex();
 
 	if ( solar_panel ) {
@@ -106,13 +106,13 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
-		xTaskCreatePinnedToCore( 
+		xTaskCreatePinnedToCore(
 			[](void *param) {
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
 			}, "SensorsTask", 3000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
 	}
-	
+
 	return true;
 }
 
@@ -120,12 +120,12 @@ void AWSSensorManager::initialise_BME( void )
 {
 	if ( !bme->begin( 0x76 ) )
 
-		Serial.println( "[ERROR] Could not find BME280." );
+		Serial.printf( "[ERROR] Could not find BME280.\n" );
 
 	else {
 
 		if ( debug_mode )
-			Serial.println( "[INFO] Found BME280." );
+			Serial.printf( "[INFO] Found BME280.\n" );
 
 		available_sensors |= BME_SENSOR;
 	}
@@ -154,12 +154,12 @@ void AWSSensorManager::initialise_MLX( void )
 {
 	if ( !mlx->begin() )
 
-		Serial.println( "[ERROR] Could not find MLX90614" );
+		Serial.printf( "[ERROR] Could not find MLX90614.\n" );
 
 	else {
 
 		if ( debug_mode )
-			Serial.println( "[INFO] Found MLX90614" );
+			Serial.printf( "[INFO] Found MLX90614.\n" );
 
 		available_sensors |= MLX_SENSOR;
 	}
@@ -176,26 +176,26 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
 	}
-		
+
 	if ( !rain_event && config->get_has_bme() )
 		initialise_BME();
-		
+
 	if ( !rain_event && config->get_has_mlx() )
 		initialise_MLX();
-		
+
 	if ( !rain_event && config->get_has_tsl() ) {
-		
+
 		initialise_TSL();
 		sqm->set_msas_calibration_offset( config->get_msas_calibration_offset() );
 		sqm->set_debug_mode( debug_mode );
 	}
-	
+
 	if ( !rain_event &&  config->get_has_ws() ) {
 
 		wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
 		if ( !wind_sensors->initialise_anemometer( config->get_anemometer_model() )) {
 
-			if ( config->get_anemometer_model() == 0x02 ) 
+			if ( config->get_anemometer_model() == 0x02 )
 				available_sensors &= ~WIND_VANE_SENSOR;
 			available_sensors &= ~ANEMOMETER_SENSOR;
 
@@ -213,7 +213,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 			available_sensors |= ANEMOMETER_SENSOR;
 		}
 	}
-		
+
 	// Model 0x02 (VMS-3003-CFSFX-N01) is a 2-in-1 device
 	if ( !rain_event && config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	{
 
@@ -248,13 +248,13 @@ void AWSSensorManager::initialise_TSL( void )
 	if ( !tsl->begin() ) {
 
 		if ( debug_mode )
-			Serial.println( "[ERROR] Could not find TSL2591" );
+			Serial.printf( "[ERROR] Could not find TSL2591.\n" );
 
 	} else {
 
 		if ( debug_mode )
-			Serial.println( "[INFO] Found TSL2591" );
- 
+			Serial.printf( "[INFO] Found TSL2591.\n" );
+
 		tsl->setGain( TSL2591_GAIN_LOW );
 		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 		available_sensors |= TSL_SENSOR;
@@ -296,13 +296,13 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 
 const char *AWSSensorManager::rain_intensity_str( void )
 {
-	return rain_sensor->rain_intensity_str();	
+	return rain_sensor->rain_intensity_str();
 }
 
 void AWSSensorManager::read_anemometer( void )
 {
 	float	x;
-	
+
 	if ( !wind_sensors->anemometer_initialised() )
 		return;
 
@@ -317,13 +317,13 @@ void AWSSensorManager::read_battery_level( void )
 	int		adc_value = 0;
 
 	WiFi.mode ( WIFI_OFF );
-	
+
 	if ( debug_mode )
 		Serial.print( "[DEBUG] Battery level: " );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
 	delay( 500 );
-	
+
 	for( uint8_t i = 0; i < 5; i++ ) {
 
 		adc_value += analogRead( GPIO_BAT_ADC );
@@ -444,7 +444,7 @@ void AWSSensorManager::read_sensors( void )
 
 	} else
 		sensor_data.battery_level = 100.0L;		// When running on 12V, convention is to report 100%
-	
+
 /*	if ( prev_available_sensors != available_sensors ) {
 
 		prev_available_sensors = available_sensors;
@@ -467,7 +467,7 @@ void AWSSensorManager::read_TSL( void )
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Infrared=%05d Full=%05d Visible=%05d Lux = %05d\n", ir, full, full - ir, lux );
 	}
-	
+
 	// Avoid aberrant readings
 	sensor_data.lux = ( lux < TSL_MAX_LUX ) ? lux : -1;
 	sensor_data.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
@@ -476,7 +476,7 @@ void AWSSensorManager::read_TSL( void )
 void AWSSensorManager::read_wind_vane( void )
 {
 	int16_t	x;
-	
+
 	if ( !wind_sensors->wind_vane_initialised() )
 		return;
 
@@ -498,16 +498,16 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		sensor_data.rain_event = rain_event;
 		if ( station.is_ntp_synced() )
 			time( &sensor_data.timestamp );
-		
+
 		if ( config->get_has_bme() )
 			read_BME();
-		
+
 		esp_task_wdt_reset();
-		
+
 		if ( config->get_has_mlx() )
 			read_MLX();
 
-		esp_task_wdt_reset();		
+		esp_task_wdt_reset();
 
 		if ( config->get_has_tsl() ) {
 
@@ -516,7 +516,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
 				sqm->read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
 		}
-	
+
 		if ( config->get_has_ws() )
 			read_anemometer();
 
@@ -527,7 +527,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			read_wind_vane();
 
 		esp_task_wdt_reset();
-		
+
 		xSemaphoreGive( i2c_mutex );
 
 		if ( config->get_has_rain_sensor() )
