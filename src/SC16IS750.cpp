@@ -33,11 +33,9 @@
 #include <Wire.h>
 #include "SC16IS750.h"
 
-I2C_SC16IS750::I2C_SC16IS750( uint8_t _address )
+I2C_SC16IS750::I2C_SC16IS750( uint8_t _address ) : address( _address >> 1 ), has_peek( 0 ), peek_byte( -1 )
 {
-	address = _address >> 1;		// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
-	has_peek = 0;
-	peek_byte = -1;
+	// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
 }
 
 int I2C_SC16IS750::available( void )

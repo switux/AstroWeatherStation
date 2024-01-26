@@ -1,4 +1,4 @@
-/*	
+/*
   	SQM.cpp
 
   	(c) 2023 F.Lesage
@@ -26,12 +26,8 @@
 #include "SQM.h"
 #include "AWSSensorManager.h"
 
-SQM::SQM( Adafruit_TSL2591 *_tsl, sensor_data_t *_sensor_data )
+SQM::SQM( Adafruit_TSL2591 *_tsl, sensor_data_t *_sensor_data ) : tsl( _tsl ), debug_mode( false ), msas_calibration_offset( 0.F ), sensor_data( _sensor_data )
 {
-	tsl = _tsl;
-	sensor_data = _sensor_data;
-	debug_mode = false;
-	msas_calibration_offset = 0.F;
 }
 
 void SQM::set_debug_mode( bool _debug_mode )
@@ -78,7 +74,7 @@ void SQM::change_gain( uint8_t upDown, tsl2591Gain_t *gain_idx )
 
 		tsl->setGain( g );
 		*gain_idx = g;
-	}	
+	}
 }
 
 void SQM::change_integration_time( uint8_t upDown, tsl2591IntegrationTime_t *int_time_idx )
@@ -94,31 +90,31 @@ void SQM::change_integration_time( uint8_t upDown, tsl2591IntegrationTime_t *int
 
 		tsl->setTiming( t );
 		*int_time_idx = t;
-	}	
+	}
 }
 
 void SQM::read_SQM( float ambient_temp )
 {
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
-		
+
 	while ( !SQM_get_msas_nelm( ambient_temp, &sensor_data->msas, &sensor_data->nelm, &sensor_data->full_luminosity, &sensor_data->ir_luminosity, &sensor_data->gain, &sensor_data->integration_time ));
-	
+
 }
 
 bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
 {
 	uint32_t	both_channels;
-	uint16_t	ir_luminosity,
-				full_luminosity,
-				visible_luminosity;
+	uint16_t	ir_luminosity;
+	uint16_t	full_luminosity;
+	uint16_t	visible_luminosity;
 	uint8_t		iterations = 1;
 
 	tsl2591Gain_t				gain_idx;
 	tsl2591IntegrationTime_t	int_time_idx;
 
-	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 },
-					integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
+	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 };
+	const uint16_t	integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
 
 	gain_idx = tsl->getGain();
 	int_time_idx = tsl->getTiming();
@@ -202,13 +198,13 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 	// This formula was derived from conversations on the Yahoo-groups darksky-list
 	// Topic: [DSLF]  Conversion from mg/arcsec^2 to cd/m^2
 	// Date range: Fri, 1 Jul 2005 17:36:41 +0900 to Fri, 15 Jul 2005 08:17:52 -0400
-	
+
 	// I added a calibration offset to match readings from my SQM-LE
 	*msas = ( log10( lux / 108000.F ) / -0.4F ) + msas_calibration_offset;
 	if ( *msas < 0 )
 		*msas = 0;
 	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
-	
+
 	*int_time = integration_time[ int_time_idx ];
 	*gain = gain_factor[ gain_idx >> 4 ];
 	*ch0 = full_luminosity;

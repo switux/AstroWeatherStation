@@ -26,19 +26,19 @@ RTC_DATA_ATTR uint16_t baud=0;
 
 static constexpr int bps[ HYDREON_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
 
-Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool _debug_mode )
+Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool _debug_mode ) :
+	debug_mode( _debug_mode ),
+	initialised( false ),
+	uart_nr( _uart_nr ),
+	intensity( 0 ),
+	reset_pin( reset ),
+	rx_pin( rx ),
+	tx_pin( tx ),
+	status( ' ' ),
+	sensor( nullptr ),
+	rg9_read_mutex( xSemaphoreCreateMutex() )
 {
-	initialised = false;
-	uart_nr = _uart_nr;
-	rx_pin = rx;
-	tx_pin = tx;
-	intensity = 0;
-	sensor = NULL;
-	reset_pin = reset;
-	debug_mode = _debug_mode;
-	status = ' ';
 	memset( str, 0, 128 );
-	rg9_read_mutex = xSemaphoreCreateMutex();
 }
 
 void Hydreon::probe( uint16_t baudrate )

@@ -46,26 +46,54 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
-AWSConfig::AWSConfig( void )
+AWSConfig::AWSConfig( void ) :
+	pwr_mode( pwr ),
+	wifi_mode( ap ),
+	alpaca_iface( wifi_sta ),
+	config_iface( wifi_sta ),
+	pref_iface( wifi_sta ),
+	eth_ip_mode( dhcp ),
+	wifi_sta_ip_mode( dhcp ),
+	close_dome_on_rain( true ),
+	debug_mode( false ),
+	has_ethernet( false ),
+	has_bme( false ),
+	has_dome( false ),
+	has_gps( false ),
+	has_rain_sensor( false ),
+	has_sc16is750( false ),
+	has_tsl( false ),
+	has_ws( false ),
+	has_wv( false ),
+	initialised( false ),
+	msas_calibration_offset( 0.F ),
+	remote_server( nullptr ),
+	root_ca( nullptr ),
+	sta_ssid( nullptr ),
+	eth_dns( nullptr ),
+	eth_ip( nullptr ),
+	eth_gw( nullptr ),
+	wifi_sta_password( nullptr ),
+	wifi_sta_dns( nullptr ),
+	wifi_sta_ip( nullptr ),
+	wifi_sta_gw( nullptr ),
+	ap_ssid( nullptr ),
+	wifi_ap_dns( nullptr ),
+	wifi_ap_password( nullptr ),
+	wifi_ap_ip( nullptr ),
+	wifi_ap_gw( nullptr ),
+	tzname( nullptr ),
+	url_path( nullptr ),
+	anemometer_model( 255 ),
+	wind_vane_model( 255 ),
+	anemometer_com_speed( 0 ),
+	config_port( DEFAULT_CONFIG_PORT ),
+	wind_vane_com_speed( 0 )
 {
-	ap_ssid = wifi_ap_password = NULL;
 	rain_event_guard_time = 60;
-	sta_ssid = wifi_sta_password = remote_server = url_path = root_ca = tzname = eth_dns = eth_ip = eth_gw = wifi_sta_dns = wifi_sta_ip = wifi_sta_gw = wifi_ap_dns = wifi_ap_ip = wifi_ap_gw = NULL;
-	wifi_mode = ap;
-	pwr_mode = pwr;
-	alpaca_iface = config_iface = wifi_sta;
-	pref_iface = wifi_sta;
-	wifi_sta_ip_mode = eth_ip_mode = dhcp;
-	close_dome_on_rain = true;
-	debug_mode = false;
-	initialised = has_bme = has_dome = has_gps = has_mlx = has_rain_sensor = has_sc16is750 = has_tsl = has_ws = has_wv = has_ethernet = false;
-	msas_calibration_offset = 0.F;
 	pcb_version[ 0 ] = 0;
 	memset( anemometer_cmd, 0, 8 );
 	memset( wind_vane_cmd, 0, 8 );
-	wind_vane_model = anemometer_model = 255;
-	anemometer_com_speed = wind_vane_com_speed = 0;
-	config_port = DEFAULT_CONFIG_PORT;
 }
 
 bool AWSConfig::can_rollback( void )
@@ -77,12 +105,7 @@ aws_iface_t	AWSConfig::get_alpaca_iface( void )
 {
 	return alpaca_iface;
 }
-/*
-uint8_t *AWSConfig::get_anemometer_cmd( void )
-{
-	return anemometer_cmd;
-}
-*/
+
 uint16_t AWSConfig::get_anemometer_com_speed( void )
 {
 	return anemometer_com_speed;
