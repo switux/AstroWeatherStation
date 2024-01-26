@@ -58,7 +58,6 @@ AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode ) :
 	i2c_mutex( xSemaphoreCreateMutex() ),
 	polling_ms_interval( DEFAULT_SENSOR_POLLING_MS_INTERVAL )
 {
-
 	hw_version[ 0 ] = 0;
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 
