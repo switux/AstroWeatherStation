@@ -899,7 +899,7 @@ bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
 	// flawfinder: ignore
-  	char	string[96];
+  char	string[96];
 	byte 	i;
 	va_list	args;
 
@@ -918,7 +918,7 @@ void AstroWeatherStation::print_config_string( const char *fmt, ... )
 void AstroWeatherStation::print_runtime_config( void )
 {
 	// flawfinder: ignore
-  	char	string[97];
+ 	char	string[97];
 	char	*root_ca = config->get_root_ca();
 	int		ca_pos = 0;
 
