@@ -33,6 +33,7 @@ class AWSWindSensor {
 	public:
 
 				AWSWindSensor( uint32_t, bool );
+				~AWSWindSensor( void );
 		bool	anemometer_initialised( void );
 		float	get_wind_gust( void );
 		bool	initialise_anemometer( byte );

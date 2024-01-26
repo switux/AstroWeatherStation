@@ -38,7 +38,7 @@ class AstroWeatherStation {
 							ntp_synced,
 							rain_event,
 							solar_panel;
-		char				*json_sensor_data,
+		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ],
 							*ota_board,
 							*ota_device,
 							*ota_config,

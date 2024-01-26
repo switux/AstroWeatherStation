@@ -25,14 +25,13 @@ class AWSGPS
 		SemaphoreHandle_t	i2c_mutex = NULL;
 		HardwareSerial		*gps_serial;
 		gps_data_t			*gps_data;
-		bool				debug_mode,
-							update_rtc;
+		bool				debug_mode;
+		bool				update_rtc;
 
 		void update_data( void );
 		void feed( void * );
 		void read_GPS( void );
 
-		
 	public:
 		explicit AWSGPS( bool );
 		bool initialise( gps_data_t * );

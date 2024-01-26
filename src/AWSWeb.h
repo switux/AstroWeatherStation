@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSWeb.h
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -36,8 +36,6 @@ class AWSWebServer {
 	public:
 
 		AWSWebServer( void );
-		~AWSWebServer( void );
-		
 		void get_configuration( AsyncWebServerRequest * );
 		void get_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );

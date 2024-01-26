@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSGPS.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -21,13 +21,8 @@
 #include "gpio_config.h"
 #include "AWSGPS.h"
 
-AWSGPS::AWSGPS( bool _debug_mode ) : gps_task_handle( NULL )
+AWSGPS::AWSGPS( bool _debug_mode ) : gps_task_handle( nullptr ), sc16is750( nullptr ), gps_serial( nullptr ), gps_data( nullptr ), debug_mode( _debug_mode ), update_rtc( false )
 {
-	debug_mode = _debug_mode;
-	update_rtc = false;
-	sc16is750 = NULL;
-	gps_serial = NULL;
-	gps_data = NULL;
 }
 
 void AWSGPS::read_GPS( void )
@@ -80,7 +75,7 @@ void AWSGPS::update_data( void )
 {
 	struct tm gpstime = {0};
 	time_t now;
-	
+
 	gps_data->fix = gps.location.isValid();
 
 	if ( gps_data->fix ) {

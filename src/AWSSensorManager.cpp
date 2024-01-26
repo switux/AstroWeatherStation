@@ -42,27 +42,25 @@ RTC_DATA_ATTR uint16_t low_battery_event_count = 0;
 SemaphoreHandle_t sensors_read_mutex = NULL;
 extern AstroWeatherStation station;
 
-AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode )
+AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode ) :
+	bme( new Adafruit_BME280() ),
+	mlx( new Adafruit_MLX90614() ),
+	tsl( new Adafruit_TSL2591( 2591 )),
+	rain_sensor( nullptr ),
+	sqm( new SQM( tsl, &sensor_data )),
+	gps( nullptr ),
+	wind_sensors( nullptr ),
+	config( nullptr ),
+	available_sensors( 0 ),
+	debug_mode( _debug_mode ),
+	rain_event( false ),
+	solar_panel( _solar_panel ),
+	i2c_mutex( xSemaphoreCreateMutex() ),
+	polling_ms_interval( DEFAULT_SENSOR_POLLING_MS_INTERVAL )
 {
-	debug_mode = _debug_mode;
 
-	bme = new Adafruit_BME280();
-	mlx = new Adafruit_MLX90614;
-	tsl = new Adafruit_TSL2591( 2591 );
-	sqm = new SQM( tsl, &sensor_data );
-
-	wind_sensors = NULL;
-	gps = NULL;
-	config = NULL;
 	hw_version[ 0 ] = 0;
-	rain_event = false;
-	rain_sensor = NULL;
-	available_sensors = 0;
-	sensor_data = {0};
-	solar_panel = _solar_panel;
-	polling_ms_interval = DEFAULT_SENSOR_POLLING_MS_INTERVAL;
-
-	i2c_mutex = xSemaphoreCreateMutex();
+	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 
 	if ( solar_panel ) {
 
@@ -333,7 +331,7 @@ void AWSSensorManager::read_battery_level( void )
 
 	if ( debug_mode ) {
 
-		float adc_v_in = static_cast<float>(adc_value) * VCC / ADC_V_MAX;
+		float adc_v_in = adc_value * VCC / ADC_V_MAX;
 		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
 		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", sensor_data.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
 	}

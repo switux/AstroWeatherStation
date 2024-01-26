@@ -33,23 +33,29 @@ const char *_windvane_model[3] = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-
 const uint64_t _windvane_cmd[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
 const uint16_t _windvane_speed[3] = { 4800, 9600, 4800 };
 
-AWSWindSensor::AWSWindSensor( uint32_t _polling_ms_interval, bool _debug_mode )
+AWSWindSensor::AWSWindSensor( uint32_t _polling_ms_interval, bool _debug_mode ) :
+	_anemometer_initialised( false ),
+	debug_mode( _debug_mode ),
+	_wind_vane_initialised( false ),
+	wind_speed_index( 0 ),
+	wind_speeds_size( 2*60*1000 / _polling_ms_interval ),
+	wind_gust( 0 ),
+	wind_speed( 0.F ),
+	wind_speeds( static_cast<float *>( malloc( wind_speeds_size * sizeof( float )) ) ),
+	wind_direction( 0 ),
+	bps( 0 ),
+	polling_ms_interval( _polling_ms_interval ),
+	sensor_bus( new SoftwareSerial( GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX ) )
 {
 	memset( anemometer_cmd, 0, 8 );
 	memset( wind_vane_cmd, 0, 8 );
 	memset( answer, 0, 7 );
-	polling_ms_interval = _polling_ms_interval;
-	wind_speed = 0.F;
-	wind_direction = 0;
-	wind_speeds_size = ( 2*60*1000 / polling_ms_interval );
-	wind_speeds = static_cast<float *>( malloc( wind_speeds_size * sizeof( float )) );
-	wind_speed_index = 0;
-	wind_gust = 0;
-	bps = 0;
-	debug_mode = _debug_mode;
-	_anemometer_initialised = _wind_vane_initialised = false;
-	sensor_bus = new SoftwareSerial( GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX );
 	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
+}
+
+AWSWindSensor::~AWSWindSensor( void )
+{
+	free( wind_speeds );
 }
 
 bool AWSWindSensor::anemometer_initialised( void )
@@ -115,8 +121,8 @@ bool AWSWindSensor::initialise_wind_vane( byte model )
 
 float AWSWindSensor::read_anemometer( bool verbose )
 {
-	byte	i = 0,
-			j;
+	byte	i = 0;
+	byte	j;
 
 	memset( answer, 0, 7 );
 
@@ -198,8 +204,8 @@ float AWSWindSensor::get_wind_gust( void )
 
 int16_t AWSWindSensor::read_wind_vane( bool verbose  )
 {
-	byte	i = 0,
-			j;
+	byte	i = 0;
+	byte	j;
 
 	memset( answer, 0, 7 );
 

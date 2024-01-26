@@ -37,15 +37,8 @@
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
-AWSWebServer::AWSWebServer( void )
+AWSWebServer::AWSWebServer( void ) : server( nullptr ), debug_mode( false )
 {
-	server = NULL;
-	debug_mode = false;
-}
-
-AWSWebServer::~AWSWebServer( void )
-{
-	delete server;
 }
 
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )

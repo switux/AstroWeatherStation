@@ -57,22 +57,28 @@ RTC_DATA_ATTR time_t 	last_ntp_time = 0;
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
 RTC_DATA_ATTR bool		catch_rain_event = false;
 
-AstroWeatherStation::AstroWeatherStation( void ) : rain_event( false ), config_mode( false ), debug_mode( false ), ntp_synced( false ), sc16is750( nullptr )
+AstroWeatherStation::AstroWeatherStation( void ) :
+	debug_mode( false ),
+	config_mode( false ),
+	ntp_synced( false ),
+	rain_event( false ),
+	solar_panel( false ),
+	ota_board( nullptr ),
+	ota_device( nullptr ),
+	ota_config( nullptr ),
+	ethernet( nullptr ),
+	ssl_eth_client( nullptr ),
+	current_wifi_mode( sta ),
+	current_pref_iface( wifi_sta ),
+	sensor_manager( nullptr ),
+	config( new AWSConfig() ),
+	server( nullptr ),
+	alpaca( nullptr ),
+	dome( nullptr ),
+	sc16is750( nullptr )
 {
-	solar_panel = false;
 	uptime[ 0 ] = 0;
 	memset( wifi_mac, 0, 6 );
-	config = new AWSConfig();
-	json_sensor_data = static_cast<char *>( malloc( DATA_JSON_STRING_MAXLEN ) );
-	sensor_manager = NULL;
-	server = NULL;
-	alpaca = NULL;
-	dome = NULL;
-	ota_board = ota_config = ota_device = NULL;
-	ssl_eth_client = NULL;
-	ethernet = NULL;
-	current_wifi_mode = sta;
-	current_pref_iface = wifi_sta;
 }
 
 void AstroWeatherStation::check_ota_updates( void )
@@ -136,10 +142,11 @@ IPAddress AstroWeatherStation::cidr_to_mask( byte cidr )
 bool AstroWeatherStation::connect_to_wifi()
 {
 	uint8_t		remaining_attempts	= 10;
-	char		*ip = NULL;
-	char		*cidr = NULL;
+	char		*ip = nullptr;
+	char		*cidr = nullptr;
 	const char	*ssid		= config->get_sta_ssid();
 	const char	*password	= config->get_wifi_sta_password();
+	char		*dummy;
 
 	if (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() )) {
 
@@ -157,10 +164,10 @@ bool AstroWeatherStation::connect_to_wifi()
 			// flawfinder: ignore
 			char buf[32];
 			strlcpy( buf, config->get_sta_ip(), 32 );
-		 	ip = strtok( buf, "/" );
+		 	ip = strtok_r( buf, "/", &dummy );
 		}
 		if ( ip )
-			cidr = strtok( NULL, "/" );
+			cidr = strtok_r( nullptr, "/", &dummy );
 
   		sta_ip.fromString( ip );
   		sta_gw.fromString( config->get_sta_gw() );
@@ -453,8 +460,8 @@ bool AstroWeatherStation::has_rain_sensor( void )
 
 bool AstroWeatherStation::initialise( void )
 {
-	unsigned long	start = micros(),
-					guard = 0;
+	unsigned long	start = micros();
+	unsigned long	guard = 0;
 	// flawfinder: ignore
 	char			string[64];
 	uint8_t			mac[6];
@@ -594,8 +601,9 @@ bool AstroWeatherStation::initialise( void )
 
 bool AstroWeatherStation::initialise_ethernet( void )
 {
-	char	*ip = NULL,
-			*cidr = NULL;
+	char *ip = nullptr;
+	char *cidr = nullptr;
+	char *dummy;
 
 	pinMode( 4, OUTPUT );
 	digitalWrite( 4, HIGH );
@@ -622,10 +630,10 @@ bool AstroWeatherStation::initialise_ethernet( void )
 			// flawfinder: ignore
 			char buf[32];
 			strlcpy( buf, config->get_eth_ip(), 32 );
-		 	ip = strtok( buf, "/" );
+		 	ip = strtok_r( buf, "/", &dummy );
 		}
 		if ( ip )
-			cidr = strtok( NULL, "/" );
+			cidr = strtok_r( nullptr, "/", &dummy );
 
   		eth_ip.fromString( ip );
   		eth_gw.fromString( config->get_eth_gw() );
@@ -684,7 +692,7 @@ bool AstroWeatherStation::initialise_wifi( void )
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Booting in AP+STA mode.\n" );
 			WiFi.mode( WIFI_AP_STA );
-			return ( start_hotspot() & connect_to_wifi() );
+			return ( start_hotspot() && connect_to_wifi() );
 
 		case sta:
 			if ( debug_mode )
@@ -716,8 +724,8 @@ bool AstroWeatherStation::is_sensor_initialised( uint8_t sensor_id )
 byte AstroWeatherStation::mask_to_cidr( uint32_t subnet )
 {
 	byte		cidr 	= 0;
-	uint32_t	mask 	= 0x80000000,
-				x 		= ntohl( subnet );
+	uint32_t	mask 	= 0x80000000;
+	uint32_t	x 		= ntohl( subnet );
 
 	while ( mask != 0 ) {
 		if (( x & mask ) != mask )
@@ -736,7 +744,7 @@ bool AstroWeatherStation::on_solar_panel( void )
 void OTA_callback( int offset, int total_length )
 {
 	static float	percentage = 0.F;
-	float			p = static_cast<float>( 100.F * offset / total_length );
+	float			p = ( 100.F * offset / total_length );
 
 	if ( p - percentage > 10.F ) {
 
@@ -808,8 +816,8 @@ bool AstroWeatherStation::poll_sensors( void )
 
 bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
 {
-	const char	*remote_server = config->get_remote_server(),
-				*url_path = config->get_url_path();
+	const char	*remote_server = config->get_remote_server();
+	const char	*url_path = config->get_url_path();
 	char		*url;
 	bool		sent = false;
 
@@ -1015,7 +1023,7 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 	for ( uint8_t i = 0; i < 7; i++ ) {
 
 		if ( !( k & 1 ))
-		strlcat( unavailable_sensors, sensor_name[i], 13 );
+			strlcat( unavailable_sensors, sensor_name[i], 13 );
 		k >>= 1;
 	}
 
@@ -1162,11 +1170,12 @@ bool AstroWeatherStation::start_config_server( void )
 
 bool AstroWeatherStation::start_hotspot()
 {
-	const char	*ssid		= config->get_ap_ssid(),
-                *password	= config->get_wifi_ap_password();
+	const char	*ssid		= config->get_ap_ssid();
+	const char	*password	= config->get_wifi_ap_password();
 
-	char	*ip = NULL,
-			*cidr = NULL;
+	char *ip = nullptr;
+	char *cidr = nullptr;
+	char *dummy;
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Trying to start AP on SSID [%s] with password [%s]\n", ssid, password );
@@ -1178,10 +1187,10 @@ bool AstroWeatherStation::start_hotspot()
 			// flawfinder: ignore
 			char buf[32];
 			strlcpy( buf, config->get_wifi_ap_ip(), 32 );
-		 	ip = strtok( buf, "/" );
+		 	ip = strtok_r( buf, "/", &dummy );
 		}
 		if ( ip )
-			cidr = strtok( NULL, "/" );
+			cidr = strtok_r( nullptr, "/", &dummy );
 
   		ap_ip.fromString( ip );
   		ap_gw.fromString( config->get_wifi_ap_gw() );
