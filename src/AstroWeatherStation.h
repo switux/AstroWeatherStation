@@ -22,37 +22,16 @@
 #ifndef _AstroWeatherStation_H
 #define _AstroWeatherStation_H
 
-#define REV "3.0.0.0"
 #include "build_seq.h"
 
 // Force DEBUG output even if not activated by external button
-#define DEBUG_MODE 1
+const byte DEBUG_MODE = 1;
 
 // ------------------------------------------------------------------------------
 //
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
 //
 // ------------------------------------------------------------------------------
-
-#define MLX_SENSOR			0x00000001
-#define TSL_SENSOR			0x00000002
-#define BME_SENSOR			0x00000004
-#define WIND_VANE_SENSOR	0x00000008
-#define ANEMOMETER_SENSOR	0x00000010
-#define RAIN_SENSOR			0x00000020
-#define	GPS_SENSOR			0x00000040
-#define ALL_SENSORS			( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR )
-
-#define	DOME_DEVICE			0x00000080
-#define	ETHERNET_DEVICE		0x00000100
-#define	SC16IS750_DEVICE	0x00000200
-
-#define FORMAT_SPIFFS_IF_FAILED true
-
-// Only applicable for solar panel version
-#define	CONFIG_MODE_GUARD	5000000							// 5 seconds
-#define US_SLEEP			5 * 60 * 1000000				// 5 minutes
-#define US_HIBERNATE		1 * 24 * 60 * 60 * 1000000ULL	// 1 day
 
 #include "AWSGPS.h"
 

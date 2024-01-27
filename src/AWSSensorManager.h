@@ -34,26 +34,23 @@
 #include "Hydreon.h"
 #include "AWSWind.h"
 
-#define	GPS_SPEED		9600
+const byte LOW_BATTERY_COUNT_MIN = 5;
+const byte LOW_BATTERY_COUNT_MAX = 10;
 
-#define LOW_BATTERY_COUNT_MIN	5
-#define LOW_BATTERY_COUNT_MAX	10
-#define BAT_V_MAX				4200	// in mV
-#define BAT_V_MIN				3000	// in mV
-#define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
-#define VCC						3300	// in mV
-#define V_DIV_R1				82000	// voltage divider R1 in ohms
-#define V_DIV_R2				300000	// voltage divider R2 in ohms
-#define ADC_MAX					4096	// 12 bits resolution
-#define V_MAX_IN				( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define V_MIN_IN				( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define ADC_V_MAX				( V_MAX_IN*ADC_MAX / VCC )
-#define ADC_V_MIN				( V_MIN_IN*ADC_MAX / VCC )
+const unsigned short 	BAT_V_MAX		= 4200;		// in mV
+const unsigned short	BAT_V_MIN		= 3000;		// in mV
+const byte 				BAT_LEVEL_MIN	= 33;		// in %, corresponds to ~3.4V for a typical Li-ion battery
+const unsigned short	VCC				= 3300;		// in mV
+const unsigned int		V_DIV_R1		= 82000;	// voltage divider R1 in ohms
+const unsigned int		V_DIV_R2		= 300000;	// voltage divider R2 in ohms
+const unsigned short	ADC_MAX			= 4096;		// 12 bits resolution
+const float				V_MAX_IN		= ( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
+const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
-#define	LUX_TO_IRRADIANCE_FACTOR	0.88
-#define	TSL_MAX_LUX					88000
-
-
+const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
+const unsigned int	TSL_MAX_LUX					= 88000;
 
 class AWSSensorManager {
 

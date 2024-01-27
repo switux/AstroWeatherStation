@@ -26,7 +26,7 @@
 #include "dome.h"
 #include "alpaca.h"
 
-#define	DATA_JSON_STRING_MAXLEN	1024
+constexpr size_t DATA_JSON_STRING_MAXLEN = 1024;
 
 void OTA_callback( int, int );
 

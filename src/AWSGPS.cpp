@@ -21,6 +21,8 @@
 #include "gpio_config.h"
 #include "AWSGPS.h"
 
+const unsigned long	GPS_SPEED = 9600;
+
 AWSGPS::AWSGPS( bool _debug_mode ) : gps_task_handle( nullptr ), sc16is750( nullptr ), gps_serial( nullptr ), gps_data( nullptr ), debug_mode( _debug_mode ), update_rtc( false )
 {
 }

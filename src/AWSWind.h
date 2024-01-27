@@ -26,7 +26,7 @@
 #define SEND	HIGH
 #define RECV	LOW
 
-#define WIND_SENSOR_MAX_TRIES		3		// Tests have shown that if there is no valid answer after 3 attempts, the sensor is not available
+const	byte WIND_SENSOR_MAX_TRIES = 3;		// Tests have shown that if there is no valid answer after 3 attempts, the sensor is not available
 
 class AWSWindSensor {
 
