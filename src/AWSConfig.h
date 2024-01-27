@@ -195,7 +195,6 @@ class AWSConfig {
 		char				*url_path;
 		uint8_t				wind_vane_model;
 
-
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );
 		bool 	read_hw_info_from_nvs( void );
