@@ -27,6 +27,19 @@
 #include "AWSConfig.h"
 #include "AWS.h"
 
+unsigned long	MLX_SENSOR			= 0x00000001;
+unsigned long TSL_SENSOR			= 0x00000002;
+unsigned long BME_SENSOR			= 0x00000004;
+unsigned long WIND_VANE_SENSOR	= 0x00000008;
+unsigned long ANEMOMETER_SENSOR	= 0x00000010;
+unsigned long RAIN_SENSOR			= 0x00000020;
+unsigned long	GPS_SENSOR			= 0x00000040;
+unsigned long ALL_SENSORS			= ( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR );
+
+unsigned long	DOME_DEVICE			= 0x00000080;
+unsigned long	ETHERNET_DEVICE		= 0x00000100;
+unsigned long	SC16IS750_DEVICE	= 0x00000200;
+
 extern AstroWeatherStation station;
 extern const std::array<std::string, 3> _anemometer_model;
 

@@ -41,12 +41,8 @@
 
 #define	DEFAULT_SC16IS750_ADDR		0x90
 
-#define	GPS_SPEED	9600
-
 #define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
 
-#define	LOW_BATTERY_COUNT_MIN	5
-#define	LOW_BATTERY_COUNT_MAX	10
 
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_WIFI_STA_SSID[]		= "AstroWeatherStation";

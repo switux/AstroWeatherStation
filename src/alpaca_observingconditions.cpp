@@ -28,6 +28,14 @@
 #include "AWS.h"
 
 extern AstroWeatherStation station;
+extern const unsigned long MLX_SENSOR;
+extern const unsigned long TSL_SENSOR;
+extern const unsigned long BME_SENSOR;
+extern const unsigned long WIND_VANE_SENSOR;
+extern const unsigned long ANEMOMETER_SENSOR;
+extern const unsigned long RAIN_SENSOR;
+extern const unsigned long GPS_SENSOR;
+extern const unsigned long ALL_SENSORS;
 
 constexpr unsigned int str2int( const char* str, int h = 0 )
 {
