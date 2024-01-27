@@ -33,6 +33,7 @@ class AWSWindSensor {
 	public:
 
 		static const std::array<std::string, 3> _anemometer_model;
+		static const std::array<std::string, 3> _windvane_model;
 		
 				AWSWindSensor( uint32_t, bool );
 				~AWSWindSensor( void );

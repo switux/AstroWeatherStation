@@ -176,7 +176,7 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
 
 		else {
-			now = time( NULL );
+			now = time( nullptr );
 			struct tm 	*utc_time = gmtime( &now );
 			// flawfinder: ignore
 			char tmp[64];
@@ -298,8 +298,8 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 
 void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	char	*s = NULL,
-			*e;
+	char *s = nullptr;
+	char *e;
 
 	if ( request->hasParam( "SiteLongitude", true ) ) {
 

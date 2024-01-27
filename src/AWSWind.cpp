@@ -24,13 +24,10 @@
 #include "AWSWind.h"
 
 const std::array<std::string, 3> AWSWindSensor::_anemometer_model = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
-
-//const char *_anemometer_model[3] = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
 const uint64_t _anemometer_cmd[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
 const uint16_t _anemometer_speed[3] = { 4800, 9600, 4800 };
 
-// flawfinder: ignore
-const char *_windvane_model[3] = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3> AWSWindSensor::_windvane_model = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
 const uint64_t _windvane_cmd[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
 const uint16_t _windvane_speed[3] = { 4800, 9600, 4800 };
 

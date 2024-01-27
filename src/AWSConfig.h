@@ -1,7 +1,7 @@
 /*
   	AWSConfig.h
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -59,6 +59,59 @@ typedef enum {
 
 } aws_ip_mode_t;
 
+class AWSNetworkConfig {
+
+	private:
+
+		aws_iface_t		alpaca_iface;
+		aws_iface_t		config_iface;
+		char			*eth_dns;
+		char			*eth_ip;
+		aws_ip_mode_t	eth_ip_mode;
+		char			*eth_gw;
+		aws_iface_t		pref_iface;
+		char			*root_ca;
+		char			*wifi_ap_dns;
+		char			*wifi_ap_gw;
+		char			*wifi_ap_ip;
+		char			*wifi_ap_password;
+		char			*wifi_ap_ssid;
+		aws_wifi_mode_t	wifi_mode;
+		char			*wifi_sta_dns;
+		char			*wifi_sta_gw;
+		char			*wifi_sta_ip;
+		aws_ip_mode_t	wifi_sta_ip_mode;
+		char			*wifi_sta_password;
+		char			*wifi_sta_ssid;
+
+		bool	set_parameter( JsonDocument &, const char *, char **, const char * );
+
+	public:
+
+						AWSNetworkConfig( void );
+		void			commit_config( JsonDocument & );
+		aws_iface_t		get_alpaca_iface( void );
+		aws_iface_t		get_config_iface( void );
+		char			*get_eth_dns( void );
+		char			*get_eth_gw( void );
+		char 			*get_eth_ip( void );
+		aws_ip_mode_t	get_eth_ip_mode( void );
+		aws_iface_t		get_pref_iface( void );
+		char            *get_root_ca( void );
+		char			*get_wifi_ap_dns( void );
+		char			*get_wifi_ap_gw( void );
+		char			*get_wifi_ap_ip( void );
+		char			*get_wifi_ap_password( void );
+		char			*get_wifi_ap_ssid( void );
+		aws_wifi_mode_t get_wifi_mode( void );
+		char			*get_wifi_sta_dns( void );
+		char            *get_wifi_sta_gw( void );
+		char            *get_wifi_sta_ip( void );
+		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
+		char			*get_wifi_sta_password( void );
+		char            *get_wifi_sta_ssid( void );
+};
+
 class AWSConfig {
 
 	public:
@@ -70,7 +123,6 @@ class AWSConfig {
 		uint16_t		get_anemometer_com_speed( void );
 		uint8_t			get_anemometer_model( void );
 		const char *	get_anemometer_model_str( void );
-		char *			get_ap_ssid( void );
 		bool			get_close_dome_on_rain( void );
 		aws_iface_t		get_config_iface( void );
 		uint16_t		get_config_port( void );
@@ -96,10 +148,6 @@ class AWSConfig {
 		uint16_t 		get_rain_event_guard_time( void );
 		char            *get_remote_server( void );
 		char            *get_root_ca( void );
-		char            *get_sta_dns( void );
-		char            *get_sta_gw( void );
-		char            *get_sta_ip( void );
-		char            *get_sta_ssid( void );
 		char            *get_tzname( void );
 		char            *get_url_path( void );
 		aws_wifi_mode_t get_wifi_mode( void );
@@ -107,11 +155,13 @@ class AWSConfig {
 		char *			get_wifi_ap_gw( void );
 		char *			get_wifi_ap_ip( void );
 		char *			get_wifi_ap_password( void );
+		char			*get_wifi_ap_ssid( void );
 		char *			get_wifi_sta_dns( void );
 		char *			get_wifi_sta_gw( void );
 		char *			get_wifi_sta_ip( void );
 		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
 		char *			get_wifi_sta_password( void );
+		char			*get_wifi_sta_ssid( void );
 		uint8_t *		get_wind_vane_cmd( void );
 		uint16_t		get_wind_vane_com_speed( void );
 		uint8_t			get_wind_vane_model( void );
@@ -125,12 +175,6 @@ class AWSConfig {
 	private:
 
 		aws_pwr_src_t	pwr_mode;
-		aws_wifi_mode_t	wifi_mode;
-		aws_iface_t		alpaca_iface,
-						config_iface,
-						pref_iface;
-		aws_ip_mode_t	eth_ip_mode,
-						wifi_sta_ip_mode;
 		
 		bool		close_dome_on_rain,
 					debug_mode,
@@ -151,20 +195,6 @@ class AWSConfig {
 		// flawfinder: ignore
 		char  		pcb_version[8],
 					*remote_server,
-					*root_ca,
-					*sta_ssid,
-					*eth_dns,
-					*eth_ip,
-					*eth_gw,
-					*wifi_sta_password,
-					*wifi_sta_dns,
-					*wifi_sta_ip,
-					*wifi_sta_gw,
-					*ap_ssid,
-					*wifi_ap_dns,
-					*wifi_ap_password,
-					*wifi_ap_ip,
-					*wifi_ap_gw,
 					*tzname,
 					*url_path;
 					
@@ -176,6 +206,8 @@ class AWSConfig {
 					config_port,
 					rain_event_guard_time,
 					wind_vane_com_speed;
+
+		AWSNetworkConfig	network_config;
 				
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );

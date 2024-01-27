@@ -30,42 +30,75 @@
 
 void OTA_callback( int, int );
 
+class AWSNetwork {
+
+	private:
+
+		AWSConfig			*config;
+		aws_iface_t			current_pref_iface;
+		aws_wifi_mode_t		current_wifi_mode;
+		bool				debug_mode;
+		IPAddress			eth_dns;
+		IPAddress			eth_gw;
+		IPAddress			eth_ip;
+		IPAddress			eth_subnet;
+		EthernetClient		*ethernet;
+		SSLClient			*ssl_eth_client;
+		IPAddress			wifi_ap_dns;
+		IPAddress			wifi_ap_gw;
+		IPAddress			wifi_ap_ip;
+		IPAddress			wifi_ap_subnet;
+		uint8_t				wifi_mac[6];
+		IPAddress			wifi_sta_dns;
+		IPAddress			wifi_sta_gw;
+		IPAddress			wifi_sta_ip;
+		IPAddress			wifi_sta_subnet;
+
+	public:
+
+					AWSNetwork( void );
+		IPAddress	cidr_to_mask( byte cidr );
+		bool 		connect_to_wifi( void );
+		bool		disconnect_from_wifi( void );
+		byte		get_eth_cidr_prefix( void );
+		IPAddress 	*get_eth_dns( void );
+		IPAddress	*get_eth_gw( void );
+		IPAddress	*get_eth_ip( void );
+		byte		get_wifi_sta_cidr_prefix( void );
+		IPAddress	*get_wifi_sta_dns( void );
+		IPAddress	*get_wifi_sta_gw( void );
+		IPAddress	*get_wifi_sta_ip( void );
+		uint8_t		*get_wifi_mac( void );	
+		bool		initialise( AWSConfig *, bool );
+		bool		initialise_ethernet( void );
+		bool		initialise_wifi( void );
+		byte		mask_to_cidr( uint32_t );
+		bool		post_content( const char *, const char * );
+		bool		shutdown_wifi( void );
+		bool		start_hotspot( void );
+		bool		stop_hotspot( void );
+
+};
+
 class AstroWeatherStation {
 
 	private:
-		bool				debug_mode,
-							config_mode,
-							ntp_synced,
-							rain_event,
-							solar_panel;
-		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ],
-							*ota_board,
-							*ota_device,
-							*ota_config,
-							// flawfinder: ignore
-							uptime[32];
-		uint8_t				eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF },
-							wifi_mac[6];
 
-		EthernetClient		*ethernet;
-		SSLClient			*ssl_eth_client;
-		IPAddress			ap_dns,
-							ap_gw,
-							ap_ip,
-							ap_subnet,
-							sta_dns,
-							sta_gw,
-							sta_ip,
-							sta_subnet,
-							eth_dns,
-							eth_gw,
-							eth_ip,
-							eth_subnet;
-		aws_wifi_mode_t		current_wifi_mode;
-		aws_iface_t			current_pref_iface;
+		bool				debug_mode;
+		bool				config_mode;
+		bool				ntp_synced;
+		bool				rain_event;
+		bool				solar_panel;
+		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];
+		char				*ota_board;
+		char				*ota_device;
+		char				*ota_config;
+							// flawfinder: ignore
+		char				uptime[32];
 
 		TaskHandle_t		aws_periodic_task_handle;
 
+		AWSNetwork			network;
 		AWSSensorManager 	*sensor_manager;
 		AWSConfig			*config;
 		AWSWebServer 		*server;
@@ -116,10 +149,10 @@ class AstroWeatherStation {
         bool			get_location_coordinates( double *, double * );
         char            *get_root_ca( void );
 		char            *get_uptime( void );
-        byte            get_sta_cidr_prefix( void );
-		IPAddress       *get_sta_dns( void );
-		IPAddress       *get_sta_gw( void );
-        IPAddress       *get_sta_ip( void );
+        byte            get_wifi_sta_cidr_prefix( void );
+		IPAddress       *get_wifi_sta_dns( void );
+		IPAddress       *get_wifi_sta_gw( void );
+        IPAddress       *get_wifi_sta_ip( void );
 		const char		*get_wind_vane_sensorname( void );
 		void            handle_rain_event( void );
 		bool			has_gps( void );
@@ -135,7 +168,6 @@ class AstroWeatherStation {
 		void            reboot( void );
 		void            read_sensors( void );
 		void			report_unavailable_sensors( void );
-
 		void			send_alarm( const char *, const char * );
 		void            send_data( void );
 		bool			sync_time( void );

@@ -49,9 +49,9 @@
 #define	LOW_BATTERY_COUNT_MAX	10
 
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
-static const char DEFAULT_STA_SSID[]			= "AstroWeatherStation";
+static const char DEFAULT_WIFI_STA_SSID[]		= "AstroWeatherStation";
 static const char DEFAULT_WIFI_STA_PASSWORD[]	= "AWS2023!";
-static const char DEFAULT_AP_SSID[]				= "AstroWeatherStation";
+static const char DEFAULT_WIFI_AP_SSID[]		= "AstroWeatherStation";
 static const char DEFAULT_WIFI_AP_PASSWORD[]	= "AWS2023!";
 static const char DEFAULT_TZNAME[]				= "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00";
 static const char DEFAULT_URL_PATH[]			= "weather";
