@@ -28,13 +28,7 @@
 #include "AWS.h"
 
 extern AstroWeatherStation station;
-
-// flawfinder: ignore
-const char	*pwr_mode_str[3] = {
-	"Solar panel",
-	"12V DC",
-	"POE"
-};
+extern const std::array<std::string, 3> _anemometer_model;
 
 RTC_DATA_ATTR char _can_rollback = 0;
 
@@ -118,7 +112,7 @@ uint8_t AWSConfig::get_anemometer_model( void )
 
 const char *AWSConfig::get_anemometer_model_str( void )
 {
-	return _anemometer_model[ anemometer_model ];
+	return AWSWindSensor::_anemometer_model[ anemometer_model ].c_str();
 }
 
 char *AWSConfig::get_ap_ssid( void )
