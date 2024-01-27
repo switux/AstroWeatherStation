@@ -24,7 +24,7 @@
 #include <ArduinoJson.h>
 
 // flawfinder: ignore
-extern const char *_anemometer_model[3];
+//extern const char *_anemometer_model[3];
 // flawfinder: ignore
 extern const char *_windvane_model[3];
 

@@ -33,7 +33,9 @@
 #include "AstroWeatherStation.h"
 #include "AWS.h"
 
-extern const char	*_anemometer_model[3];
+//extern const char	*_anemometer_model[3];
+extern std::array<std::string, 3> _anemometer_model;
+
 extern const char	*_windvane_model[3];
 extern char			catch_rain_event;
 

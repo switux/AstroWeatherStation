@@ -46,9 +46,10 @@
 #include "alpaca.h"
 #include "AWS.h"
 
+const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
+
 extern void IRAM_ATTR		_handle_rain_event( void );
-// flawfinder: ignore
-extern char 				*pwr_mode_str[3];
+
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
 RTC_DATA_ATTR time_t 	rain_event_timestamp = 0;
@@ -222,7 +223,7 @@ void AstroWeatherStation::display_banner()
 
 	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
 	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	print_config_string( "# Power Mode        : %s", pwr_mode_str[ config->get_pwr_mode() ] );
+	print_config_string( "# Power Mode        : %s", pwr_mode_str[ config->get_pwr_mode() ].c_str() );
 	print_config_string( "# PCB version       : %s", config->get_pcb_version() );
 	print_config_string( "# Ethernet present  : %s", config->get_has_ethernet() ? "Yes" : "No" );
 	print_config_string( "# GPIO ext. present : %s", config->get_has_sc16is750() ? "Yes" : "No" );
@@ -907,7 +908,7 @@ bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonSt
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
 	// flawfinder: ignore
-  char	string[96];
+  	char	string[96];
 	byte 	i;
 	va_list	args;
 
@@ -926,7 +927,7 @@ void AstroWeatherStation::print_config_string( const char *fmt, ... )
 void AstroWeatherStation::print_runtime_config( void )
 {
 	// flawfinder: ignore
- 	char	string[97];
+  	char	string[97];
 	char	*root_ca = config->get_root_ca();
 	int		ca_pos = 0;
 

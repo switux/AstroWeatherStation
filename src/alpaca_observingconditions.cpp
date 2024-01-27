@@ -34,7 +34,6 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
-
 alpaca_observingconditions::alpaca_observingconditions( bool _debug_mode )
 {
 	is_connected = false;
@@ -448,4 +447,3 @@ void alpaca_observingconditions::windspeed( AsyncWebServerRequest *request, cons
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
-
