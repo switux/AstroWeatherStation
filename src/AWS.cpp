@@ -80,7 +80,6 @@ AstroWeatherStation::AstroWeatherStation( void ) :
 {
 	uptime[ 0 ] = 0;
 	memset( wifi_mac, 0, 6 );
-	
 }
 
 void AstroWeatherStation::check_ota_updates( void )
