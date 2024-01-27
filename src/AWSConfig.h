@@ -59,6 +59,14 @@ typedef enum {
 
 } aws_ip_mode_t;
 
+typedef struct {
+
+	uint8_t 	cmd[ 8 ];
+	uint8_t		model;
+	uint16_t	com_speed;
+
+} wind_sensor_config_t;
+
 class AWSNetworkConfig {
 
 	private:
@@ -119,8 +127,6 @@ class AWSConfig {
 						AWSConfig( void );
 		bool			can_rollback( void );
 		aws_iface_t		get_alpaca_iface( void );
-		uint8_t *		get_anemometer_cmd( void );
-		uint16_t		get_anemometer_com_speed( void );
 		uint8_t			get_anemometer_model( void );
 		const char *	get_anemometer_model_str( void );
 		bool			get_close_dome_on_rain( void );
@@ -162,8 +168,6 @@ class AWSConfig {
 		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
 		char *			get_wifi_sta_password( void );
 		char			*get_wifi_sta_ssid( void );
-		uint8_t *		get_wind_vane_cmd( void );
-		uint16_t		get_wind_vane_com_speed( void );
 		uint8_t			get_wind_vane_model( void );
 		const char *	get_wind_vane_model_str( void );
 		bool 			load( bool );
@@ -174,47 +178,28 @@ class AWSConfig {
 		
 	private:
 
-		aws_pwr_src_t	pwr_mode;
-		
-		bool		close_dome_on_rain,
-					debug_mode,
-					has_ethernet,
-					has_bme,
-					has_dome,
-					has_gps,
-					has_mlx,
-					has_rain_sensor,
-					has_sc16is750,
-					has_tsl,
-					has_ws,
-					has_wv,
-					initialised;
-					
-		float		msas_calibration_offset;
-
-		// flawfinder: ignore
-		char  		pcb_version[8],
-					*remote_server,
-					*tzname,
-					*url_path;
-					
-		uint8_t 	anemometer_cmd[ 8 ],
-					anemometer_model,
-					wind_vane_cmd[ 8 ],
-					wind_vane_model;
-		uint16_t	anemometer_com_speed,
-					config_port,
-					rain_event_guard_time,
-					wind_vane_com_speed;
-
+		uint8_t 			anemometer_model;
+		bool				close_dome_on_rain;
+		uint16_t			config_port;
+		bool				debug_mode;
+		uint32_t			devices;
+		bool				initialised;
+		float				msas_calibration_offset;
 		AWSNetworkConfig	network_config;
-				
+		// flawfinder: ignore
+		char	  			pcb_version[8];
+		aws_pwr_src_t		pwr_mode;
+		uint16_t			rain_event_guard_time;
+		char				*remote_server;
+		char				*tzname;
+		char				*url_path;
+		uint8_t				wind_vane_model;
+
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );
 		bool 	read_hw_info_from_nvs( void );
 		bool	set_parameter( JsonDocument &, const char *, char **, const char * );
 		bool	verify_entries( JsonVariant & );
-		
 };
 
 #endif

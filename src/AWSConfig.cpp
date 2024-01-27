@@ -44,30 +44,16 @@ AWSConfig::AWSConfig( void ) :
 	pwr_mode( pwr ),
 	close_dome_on_rain( true ),
 	debug_mode( false ),
-	has_ethernet( false ),
-	has_bme( false ),
-	has_dome( false ),
-	has_gps( false ),
-	has_rain_sensor( false ),
-	has_sc16is750( false ),
-	has_tsl( false ),
-	has_ws( false ),
-	has_wv( false ),
 	initialised( false ),
 	msas_calibration_offset( 0.F ),
 	remote_server( nullptr ),
 	tzname( nullptr ),
 	url_path( nullptr ),
-	anemometer_model( 255 ),
-	wind_vane_model( 255 ),
-	anemometer_com_speed( 0 ),
-	config_port( DEFAULT_CONFIG_PORT ),
-	wind_vane_com_speed( 0 )
+	config_port( DEFAULT_CONFIG_PORT )
 {
+	devices = 0;
 	rain_event_guard_time = 60;
 	pcb_version[ 0 ] = 0;
-	memset( anemometer_cmd, 0, 8 );
-	memset( wind_vane_cmd, 0, 8 );
 }
 
 bool AWSConfig::can_rollback( void )
@@ -78,11 +64,6 @@ bool AWSConfig::can_rollback( void )
 aws_iface_t	AWSConfig::get_alpaca_iface( void )
 {
 	return network_config.get_alpaca_iface();
-}
-
-uint16_t AWSConfig::get_anemometer_com_speed( void )
-{
-	return anemometer_com_speed;
 }
 
 uint8_t AWSConfig::get_anemometer_model( void )
@@ -132,52 +113,52 @@ aws_ip_mode_t AWSConfig::get_eth_ip_mode( void )
 
 bool AWSConfig::get_has_bme( void )
 {
-	return has_bme;
+	return ( devices & BME_SENSOR );
 }
 
 bool AWSConfig::get_has_dome( void )
 {
-	return has_dome;
+	return ( devices & DOME_DEVICE );
 }
 
 bool AWSConfig::get_has_ethernet( void )
 {
-	return has_ethernet;
+	return ( devices & ETHERNET_DEVICE );
 }
 
 bool AWSConfig::get_has_gps( void )
 {
-	return has_gps;
+	return ( devices & GPS_SENSOR );
 }
 
 bool AWSConfig::get_has_mlx( void )
 {
-	return has_mlx;
+	return ( devices & MLX_SENSOR );
 }
 
 bool AWSConfig::get_has_rain_sensor( void )
 {
-	return has_rain_sensor;
+	return ( devices & RAIN_SENSOR );
 }
 
 bool AWSConfig::get_has_sc16is750( void )
 {
-	return has_sc16is750;
+	return ( devices & SC16IS750_DEVICE );
 }
 
 bool AWSConfig::get_has_tsl( void )
 {
-	return has_tsl;
+	return ( devices & TSL_SENSOR );
 }
 
 bool AWSConfig::get_has_ws( void )
 {
-	return has_ws;
+	return ( devices & ANEMOMETER_SENSOR );
 }
 
 bool AWSConfig::get_has_wv( void )
 {
-	return has_wv;
+	return ( devices & WIND_VANE_SENSOR );
 }
 
 char *AWSConfig::get_json_string_config( void )
@@ -235,26 +216,26 @@ char *AWSConfig::get_json_string_config( void )
 
 	aws_json_config["remote_server"] = remote_server;
 	aws_json_config["url_path"] = url_path;
-	aws_json_config["has_bme"] = has_bme;
-	aws_json_config["has_tsl"] = has_tsl;
-	aws_json_config["has_mlx"] = has_mlx;
-	aws_json_config["has_ws"] = has_ws;
+	aws_json_config["has_bme"] = get_has_bme();
+	aws_json_config["has_tsl"] = get_has_tsl();
+	aws_json_config["has_mlx"] = get_has_mlx();
+	aws_json_config["has_ws"] = get_has_ws();
 	aws_json_config["anemometer_model"] = anemometer_model;
-	aws_json_config["has_wv"] = has_wv;
+	aws_json_config["has_wv"] = get_has_wv();
 	aws_json_config["windvane_model"] = wind_vane_model;
-	aws_json_config["has_rain_sensor"] = has_rain_sensor;
+	aws_json_config["has_rain_sensor"] = get_has_rain_sensor();
 	aws_json_config["rain_event_guard_time"] = rain_event_guard_time;
-	aws_json_config["has_gps"] = has_gps;
+	aws_json_config["has_gps"] = get_has_gps();
 	aws_json_config["wifi_mode"] = network_config.get_wifi_mode();
 	aws_json_config["alpaca_iface"] = network_config.get_alpaca_iface();
 	aws_json_config["config_iface"] = network_config.get_config_iface();
 
-	aws_json_config["has_sc16is750" ] = has_sc16is750;
+	aws_json_config["has_sc16is750" ] = get_has_sc16is750();
 	
-	aws_json_config["has_dome"] = has_dome;
+	aws_json_config["has_dome"] = get_has_dome();
 	aws_json_config["close_dome_on_rain"] = close_dome_on_rain;
 	
-	aws_json_config["has_ethernet"] = has_ethernet;
+	aws_json_config["has_ethernet"] = get_has_ethernet();
 	
 	if ( serializeJson( aws_json_config, json_string, 1024 ) >= 1024 ) {
 
@@ -370,16 +351,6 @@ char *AWSConfig::get_wifi_sta_ssid( void )
 	return network_config.get_wifi_sta_ssid();
 }
 
-uint8_t *AWSConfig::get_wind_vane_cmd( void )
-{
-	return wind_vane_cmd;
-}
-
-uint16_t AWSConfig::get_wind_vane_com_speed( void )
-{
-	return wind_vane_com_speed;
-}
-
 uint8_t AWSConfig::get_wind_vane_model( void )
 {
 	return wind_vane_model;
@@ -430,16 +401,15 @@ bool AWSConfig::read_config( void )
 
 	msas_calibration_offset = aws_json_config.containsKey( "msas_calibration_offset" ) ? atof( aws_json_config["msas_calibration_offset"] ) : DEFAULT_MSAS_CORRECTION;
 	close_dome_on_rain = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
-	has_dome = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
-	has_bme = aws_json_config.containsKey( "has_bme" ) ? ( aws_json_config["has_bme"] == 1 ) : DEFAULT_HAS_BME;
-	has_dome = aws_json_config.containsKey( "has_dome" ) ? ( aws_json_config["has_dome"] == 1 ) : DEFAULT_HAS_DOME;
-	has_gps = aws_json_config.containsKey( "has_gps" ) ? ( aws_json_config["has_gps"] == 1 ) : DEFAULT_HAS_GPS;
-	has_mlx = aws_json_config.containsKey( "has_mlx" ) ? ( aws_json_config["has_mlx"] == 1 ) : DEFAULT_HAS_MLX;
-	has_rain_sensor = aws_json_config.containsKey( "has_rain_sensor" ) ? ( aws_json_config["has_rain_sensor"] == 1 ) : DEFAULT_HAS_RAIN_SENSOR;
+	devices |= DOME_DEVICE * ( aws_json_config.containsKey( "has_dome" ) ? aws_json_config["has_dome"] : DEFAULT_HAS_DOME );
+	devices |= BME_SENSOR * ( aws_json_config.containsKey( "has_bme" ) ? aws_json_config["has_bme"] : DEFAULT_HAS_BME );
+	devices |= GPS_SENSOR * ( aws_json_config.containsKey( "has_gps" ) ? aws_json_config["has_gps"] : DEFAULT_HAS_GPS );
+	devices |= MLX_SENSOR * ( aws_json_config.containsKey( "has_mlx" ) ? aws_json_config["has_mlx"] : DEFAULT_HAS_MLX );
+	devices |= RAIN_SENSOR * ( aws_json_config.containsKey( "has_rain_sensor" ) ? aws_json_config["has_rain_sensor"] : DEFAULT_HAS_RAIN_SENSOR );
 	rain_event_guard_time = aws_json_config.containsKey( "rain_event_guard_time" ) ? atof( aws_json_config["rain_event_guard_time"] ) : DEFAULT_RAIN_EVENT_GUARD_TIME;
-	has_tsl = aws_json_config.containsKey( "has_tsl" ) ? ( aws_json_config["has_tsl"] == 1 ) : DEFAULT_HAS_TSL;
-	has_ws = aws_json_config.containsKey( "has_ws" ) ? ( aws_json_config["has_ws"] == 1 ) : DEFAULT_HAS_WS;
-	has_wv = aws_json_config.containsKey( "has_wv" ) ? ( aws_json_config["has_wv"] == 1 ) : DEFAULT_HAS_WV;
+	devices |= TSL_SENSOR * ( aws_json_config.containsKey( "has_tsl" ) ? aws_json_config["has_tsl"] : DEFAULT_HAS_TSL );
+	devices |= ANEMOMETER_SENSOR * ( aws_json_config.containsKey( "has_ws" ) ? aws_json_config["has_ws"] : DEFAULT_HAS_WS );
+	devices |= WIND_VANE_SENSOR * ( aws_json_config.containsKey( "has_wv" ) ? aws_json_config["has_wv"] : DEFAULT_HAS_WV );
 
 	return true;
 }
@@ -513,7 +483,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	has_sc16is750 = ( x == 0 ) ? false : true;
+	devices |= ( x == 0 ) ? 0 : SC16IS750_DEVICE;
 
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
@@ -521,7 +491,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	has_ethernet = ( x == 0 ) ? false : true;
+	devices |= ( x == 0 ) ? false : ETHERNET_DEVICE;
 	nvs.end();
 	return true;
 }
@@ -689,14 +659,13 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	if ( x == dhcp ) {
 
-		config_items.remove("eth_ip");
-		config_items.remove("eth_gw");
-		config_items.remove("eth_dns");
+		config_items.remove( "eth_ip" );
+		config_items.remove( "eth_gw" );
+		config_items.remove( "eth_dns" );
 	}
 
 	return true;	
 }
-
 
 AWSNetworkConfig::AWSNetworkConfig( void )
 {
@@ -752,7 +721,6 @@ void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 	config_iface = aws_json_config["config_iface"];
 	
 	set_parameter( aws_json_config, "root_ca", &root_ca, DEFAULT_ROOT_CA );
-
 }
 
 aws_iface_t	AWSNetworkConfig::get_alpaca_iface( void )
