@@ -59,18 +59,12 @@ RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
 RTC_DATA_ATTR bool		catch_rain_event = false;
 
 AstroWeatherStation::AstroWeatherStation( void ) :
-	debug_mode( false ),
-	config_mode( false ),
 	ntp_synced( false ),
 	rain_event( false ),
 	solar_panel( false ),
 	ota_board( nullptr ),
 	ota_device( nullptr ),
 	ota_config( nullptr ),
-	ethernet( nullptr ),
-	ssl_eth_client( nullptr ),
-	current_wifi_mode( sta ),
-	current_pref_iface( wifi_sta ),
 	sensor_manager( nullptr ),
 	config( new AWSConfig() ),
 	server( nullptr ),
@@ -78,8 +72,9 @@ AstroWeatherStation::AstroWeatherStation( void ) :
 	dome( nullptr ),
 	sc16is750( nullptr )
 {
+	debug_mode = false;
+	config_mode = false;
 	uptime[ 0 ] = 0;
-	memset( wifi_mac, 0, 6 );
 }
 
 void AstroWeatherStation::check_ota_updates( void )
@@ -88,6 +83,7 @@ void AstroWeatherStation::check_ota_updates( void )
 	// flawfinder: ignore
 	char			string[64];
 	int				ret_code;
+	uint8_t			*wifi_mac = network.get_wifi_mac();
 
 	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota.OverrideBoard( string );
@@ -128,92 +124,10 @@ void AstroWeatherStation::check_rain_event_guard_time( void )
 	}
 }
 
-IPAddress AstroWeatherStation::cidr_to_mask( byte cidr )
-{
-	uint32_t		subnet;
-
-	if ( cidr )
-		subnet = htonl( ~(( 1 << ( 32 - cidr )) -1 ) );
-	else
-		subnet = htonl( 0 );
-
-	return IPAddress( subnet );
-}
-
-bool AstroWeatherStation::connect_to_wifi()
-{
-	uint8_t		remaining_attempts	= 10;
-	char		*ip = nullptr;
-	char		*cidr = nullptr;
-	const char	*ssid		= config->get_sta_ssid();
-	const char	*password	= config->get_wifi_sta_password();
-	char		*dummy;
-
-	if (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() )) {
-
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] Already connected to SSID [%s].\n", ssid );
-		return true;
-	}
-
-	Serial.printf( "[INFO] Attempting to connect to SSID [%s] ", ssid );
-
-	if ( config->get_wifi_sta_ip_mode() == fixed ) {
-
-		if ( config->get_sta_ip() ) {
-
-			// flawfinder: ignore
-			char buf[32];
-			strlcpy( buf, config->get_sta_ip(), 32 );
-		 	ip = strtok_r( buf, "/", &dummy );
-		}
-		if ( ip )
-			cidr = strtok_r( nullptr, "/", &dummy );
-
-  		sta_ip.fromString( ip );
-  		sta_gw.fromString( config->get_sta_gw() );
-  		sta_dns.fromString( config->get_sta_dns() );
-		// flawfinder: ignore
-  		sta_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr ) ));
-		WiFi.config( sta_ip, sta_gw, sta_subnet, sta_dns );
-
-	}
-	WiFi.begin( ssid , password );
-
-	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {
-
-		Serial.print( "." );
-		delay( 1000 );
-	}
-
-	if ( WiFi.status () == WL_CONNECTED ) {
-
-		sta_ip = WiFi.localIP();
-		sta_subnet = WiFi.subnetMask();
-		sta_gw = WiFi.gatewayIP();
-		sta_dns = WiFi.dnsIP();
-		Serial.printf( " OK. Using IP [%s]\n", WiFi.localIP().toString().c_str() );
-		return true;
-	}
-
-	Serial.printf( "NOK.\n" );
-
-	return false;
-}
-
-bool AstroWeatherStation::disconnect_from_wifi( void )
-{
-	byte i = 0;
-
-	WiFi.disconnect();
-	while ( (i++ < 20) && ( WiFi.status() == WL_CONNECTED ))
-    	delay( 100 );
-
-	return ( WiFi.status() != WL_CONNECTED );
-}
-
 void AstroWeatherStation::display_banner()
 {
+	uint8_t	*wifi_mac = network.get_wifi_mac();
+	
 	Serial.printf( "\n#############################################################################################\n" );
 	Serial.printf( "# AstroWeatherStation                                                                       #\n" );
 	Serial.printf( "#  (c) Lesage Franck - lesage@datamancers.net                                               #\n" );
@@ -285,7 +199,7 @@ AWSDome	*AstroWeatherStation::get_dome( void )
 
 byte AstroWeatherStation::get_eth_cidr_prefix( void )
 {
-	return mask_to_cidr( (uint32_t)eth_subnet );
+	return network.get_eth_cidr_prefix();
 }
 
 bool AstroWeatherStation::get_location_coordinates( double *latitude, double *longitude )
@@ -301,17 +215,17 @@ bool AstroWeatherStation::get_location_coordinates( double *latitude, double *lo
 
 IPAddress *AstroWeatherStation::get_eth_dns( void )
 {
-	return &eth_dns;
+	return network.get_eth_dns();
 }
 
 IPAddress *AstroWeatherStation::get_eth_gw( void )
 {
-	return &eth_gw;
+	return network.get_eth_gw();
 }
 
 IPAddress *AstroWeatherStation::get_eth_ip( void )
 {
-	return &eth_ip;
+	return network.get_eth_ip();
 }
 
 char *AstroWeatherStation::get_json_sensor_data( void )
@@ -404,24 +318,24 @@ char *AstroWeatherStation::get_uptime( void )
 	return uptime;
 }
 
-byte AstroWeatherStation::get_sta_cidr_prefix( void )
+byte AstroWeatherStation::get_wifi_sta_cidr_prefix( void )
 {
-	return mask_to_cidr( (uint32_t)sta_subnet );
+	return network.get_wifi_sta_cidr_prefix();
 }
 
-IPAddress *AstroWeatherStation::get_sta_dns( void )
+IPAddress *AstroWeatherStation::get_wifi_sta_dns( void )
 {
-	return &sta_dns;
+	return network.get_wifi_sta_dns();
 }
 
-IPAddress *AstroWeatherStation::get_sta_gw( void )
+IPAddress *AstroWeatherStation::get_wifi_sta_gw( void )
 {
-	return &sta_gw;
+	return network.get_wifi_sta_gw();
 }
 
-IPAddress *AstroWeatherStation::get_sta_ip( void )
+IPAddress *AstroWeatherStation::get_wifi_sta_ip( void )
 {
-	return &sta_ip;
+	return network.get_wifi_sta_ip();
 }
 
 const char	*AstroWeatherStation::get_wind_vane_sensorname( void )
@@ -504,7 +418,7 @@ bool AstroWeatherStation::initialise( void )
 		sensor_manager->read_battery_level();
 
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
-	if ( !initialise_network() && config->can_rollback() )
+	if ( !network.initialise( config, debug_mode ) && config->can_rollback() )
 		return config->rollback();
 
 	if ( config->get_has_sc16is750() ) {
@@ -576,9 +490,6 @@ bool AstroWeatherStation::initialise( void )
 				break;
 
 		}
-	}
-
-	if ( !solar_panel ) {
 
 		if ( config->get_has_rain_sensor() ) {
 
@@ -600,111 +511,9 @@ bool AstroWeatherStation::initialise( void )
 	return true;
 }
 
-bool AstroWeatherStation::initialise_ethernet( void )
-{
-	char *ip = nullptr;
-	char *cidr = nullptr;
-	char *dummy;
-
-	pinMode( 4, OUTPUT );
-	digitalWrite( 4, HIGH );
-	delay( 250 );
-	digitalWrite( 4, LOW );
-	delay( 50 );
-	digitalWrite( 4, HIGH );
-	delay( 350 );
-
-	ESP32_W5500_onEvent();
-
-	// You will have to change esp_w5500.cpp ETH.begin() to make it accept eth_mac even if a mac already exists,
-	// honestly I do not understand why you would silently override the eth_mac parameter
-	if ( !ETH.begin( GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_SCK, GPIO_SPI_CS_ETH, GPIO_SPI_INT, SPI_CLOCK_MHZ, SPI3_HOST, eth_mac )) {
-
-		Serial.printf( "[ERROR] Could not initialise ethernet!\n" );
-		return false;
-	}
-
-  	if ( config->get_eth_ip_mode() == fixed ) {
-
-		if ( config->get_eth_ip() ) {
-
-			// flawfinder: ignore
-			char buf[32];
-			strlcpy( buf, config->get_eth_ip(), 32 );
-		 	ip = strtok_r( buf, "/", &dummy );
-		}
-		if ( ip )
-			cidr = strtok_r( nullptr, "/", &dummy );
-
-  		eth_ip.fromString( ip );
-  		eth_gw.fromString( config->get_eth_gw() );
-  		eth_dns.fromString( config->get_eth_dns() );
-		// flawfinder: ignore
-		ETH.config( eth_ip, eth_gw, cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) ), eth_dns );
-  	}
-
-	ESP32_W5500_waitForConnect();
-
-	eth_ip = ETH.localIP();
-	eth_gw = ETH.gatewayIP();
-	eth_subnet = ETH.subnetMask();
-	eth_dns = ETH.dnsIP();
-
-	return true;
-}
-
-bool AstroWeatherStation::initialise_network( void )
-{
-	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
-
-	switch ( config->get_pref_iface() ) {
-
-		case wifi_ap:
-		case wifi_sta:
-			return initialise_wifi();
-
-		case eth:
-			return initialise_ethernet();
-
-		default:
-			Serial.printf( "[ERROR] Invalid preferred iface, falling back to WiFi.\n" );
-			initialise_wifi();
-			return false;
-	}
-	return false;
-}
-
 void AstroWeatherStation::initialise_sensors( void )
 {
 	sensor_manager->initialise_sensors( sc16is750 );
-}
-
-bool AstroWeatherStation::initialise_wifi( void )
-{
-	switch ( config->get_wifi_mode() ) {
-
-		case ap:
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Booting in AP mode.\n" );
-			WiFi.mode( WIFI_AP );
-			return start_hotspot();
-
-		case both:
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Booting in AP+STA mode.\n" );
-			WiFi.mode( WIFI_AP_STA );
-			return ( start_hotspot() && connect_to_wifi() );
-
-		case sta:
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Booting in STA mode.\n" );
-			WiFi.mode( WIFI_STA );
-			return connect_to_wifi();
-
-		default:
-			Serial.printf( "[ERROR] Unknown wifi mode [%d]\n", config->get_wifi_mode() );
-	}
-	return false;
 }
 
 bool AstroWeatherStation::is_ntp_synced( void )
@@ -720,21 +529,6 @@ bool AstroWeatherStation::is_rain_event( void )
 bool AstroWeatherStation::is_sensor_initialised( uint8_t sensor_id )
 {
 	return ( sensor_manager->get_available_sensors() & sensor_id );
-}
-
-byte AstroWeatherStation::mask_to_cidr( uint32_t subnet )
-{
-	byte		cidr 	= 0;
-	uint32_t	mask 	= 0x80000000;
-	uint32_t	x 		= ntohl( subnet );
-
-	while ( mask != 0 ) {
-		if (( x & mask ) != mask )
-			break;
-		cidr++;
-		mask >>= 1;
-	}
-	return cidr;
 }
 
 bool AstroWeatherStation::on_solar_panel( void )
@@ -815,96 +609,6 @@ bool AstroWeatherStation::poll_sensors( void )
 	return sensor_manager->poll_sensors();
 }
 
-bool AstroWeatherStation::post_content( const char *endpoint, const char *jsonString )
-{
-	const char	*remote_server = config->get_remote_server();
-	const char	*url_path = config->get_url_path();
-	char		*url;
-	bool		sent = false;
-
-	WiFiClientSecure wifi_client;
-	HTTPClient http;
-
-	uint8_t status,
-			// flawfinder: ignore
-			url_len = 7 + strlen( remote_server ) + 1 + strlen( url_path ) + 3,
-			fe_len;
-
-	char *final_endpoint;
-
-	url = static_cast<char *>( malloc( url_len ) );
-	int l = snprintf( url, url_len, "https://%s/%s/", remote_server, url_path );
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Connecting to server [%s:443] ...", remote_server );
-
-	// flawfinder: ignore
-	fe_len = l + strlen( endpoint ) + 2;
-	final_endpoint = static_cast<char *>( malloc( fe_len ) );
-	strlcpy( final_endpoint, url, fe_len );
-	strlcat( final_endpoint, endpoint, fe_len );
-
-	// FIXME: factorise code
-	if ( config->get_pref_iface() == eth ) {
-
-		if ( http.begin( final_endpoint )) {
-
-			if ( debug_mode )
-				Serial.printf( "OK.\n" );
-
-			http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
-			http.addHeader( "Host", remote_server );
-			http.addHeader( "Accept", "application/json" );
-			http.addHeader( "Content-Type", "application/json" );
-			status = http.POST( jsonString );
-			if ( debug_mode ) {
-
-				Serial.print( "[DEBUG] HTTP response: " );
-				Serial.printf( "%d\n", status );
-			}
-			http.end();
-			if ( status == 200 )
-				sent = true;
-
-		} else
-			if ( debug_mode )
-				Serial.printf( "NOK.\n" );
-
-	} else {
-
-		wifi_client.setCACert( config->get_root_ca() );
-		if ( !wifi_client.connect( remote_server, 443 )) {
-
-			if ( debug_mode )
-        		Serial.print( "NOK.\n" );
-
-		} else {
-
-			if ( debug_mode )
-        		Serial.print( "OK.\n" );
-		}
-
-		http.begin( wifi_client, final_endpoint );
-		http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
-		http.addHeader( "Content-Type", "application/json" );
-		status = http.POST( jsonString );
-		if ( debug_mode ) {
-
-			Serial.print( "[DEBUG] HTTP response: " );
-			Serial.printf( "%d\n", status );
-		}
-		if ( status== 200 )
-			sent = true;
-
-		http.end();
-    	wifi_client.stop();
-	}
-
-	free( final_endpoint );
-	free( url );
-	return sent;
-}
-
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
 	// flawfinder: ignore
@@ -931,11 +635,11 @@ void AstroWeatherStation::print_runtime_config( void )
 	char	*root_ca = config->get_root_ca();
 	int		ca_pos = 0;
 
-	print_config_string( "# AP SSID      : %s", config->get_ap_ssid() );
+	print_config_string( "# AP SSID      : %s", config->get_wifi_ap_ssid() );
 	print_config_string( "# AP PASSWORD  : %s", config->get_wifi_ap_password() );
 	print_config_string( "# AP IP        : %s", config->get_wifi_ap_ip() );
 	print_config_string( "# AP Gateway   : %s", config->get_wifi_ap_gw() );
-	print_config_string( "# STA SSID     : %s", config->get_sta_ssid() );
+	print_config_string( "# STA SSID     : %s", config->get_wifi_sta_ssid() );
 	print_config_string( "# STA PASSWORD : %s", config->get_wifi_sta_password() );
 	print_config_string( "# STA IP       : %s", config->get_wifi_sta_ip() );
 	print_config_string( "# STA Gateway  : %s", config->get_wifi_sta_gw() );
@@ -1017,8 +721,8 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 	const char	sensor_name[7][13] = { "MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RAIN_SENSOR ", "GPS " };
 	// flawfinder: ignore
 	char		unavailable_sensors[96] = "Unavailable sensors: ";
-	uint8_t		j = sensor_manager->get_available_sensors(),
-				k;
+	uint8_t		j = sensor_manager->get_available_sensors();
+	uint8_t		k;
 
 	k = j;
 	for ( uint8_t i = 0; i < 7; i++ ) {
@@ -1049,7 +753,7 @@ void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 	content["message"] = message;
 
 	serializeJson( content, jsonString );
-	post_content( "alarm.php", jsonString );
+	network.post_content( "alarm.php", jsonString );
 }
 
 void AstroWeatherStation::send_backlog_data( void )
@@ -1079,7 +783,7 @@ void AstroWeatherStation::send_backlog_data( void )
 		if ( !i )
 			break;
 		line[i] = '\0';
-		if ( !post_content( "newData.php",  line )) {
+		if ( !network.post_content( "newData.php",  line )) {
 
 			empty = false;
 			// flawfinder: ignore
@@ -1132,7 +836,7 @@ void AstroWeatherStation::send_data( void )
 	if ( debug_mode )
     	Serial.printf( "[DEBUG] Sensor data: %s\n", json_sensor_data );
 
-	if ( post_content( "newData.php",  json_sensor_data ))
+	if ( network.post_content( "newData.php",  json_sensor_data ))
 		send_backlog_data();
 	else
 		store_unsent_data( json_sensor_data );
@@ -1150,59 +854,11 @@ void AstroWeatherStation::send_rain_event_alarm( const char *str )
 	send_alarm( "Rain event", msg );
 }
 
-bool AstroWeatherStation::shutdown_wifi( void )
-{
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Shutting down WIFI.\n" );
-
-	if ( !stop_hotspot() || !disconnect_from_wifi() )
-		return false;
-
-	WiFi.mode( WIFI_OFF );
-	return true;
-}
-
 bool AstroWeatherStation::start_config_server( void )
 {
 	server = new AWSWebServer();
 	server->initialise( debug_mode );
 	return true;
-}
-
-bool AstroWeatherStation::start_hotspot()
-{
-	const char	*ssid		= config->get_ap_ssid();
-	const char	*password	= config->get_wifi_ap_password();
-
-	char *ip = nullptr;
-	char *cidr = nullptr;
-	char *dummy;
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Trying to start AP on SSID [%s] with password [%s]\n", ssid, password );
-
-	if ( WiFi.softAP( ssid, password )) {
-
-		if ( config->get_wifi_ap_ip() ) {
-
-			// flawfinder: ignore
-			char buf[32];
-			strlcpy( buf, config->get_wifi_ap_ip(), 32 );
-		 	ip = strtok_r( buf, "/", &dummy );
-		}
-		if ( ip )
-			cidr = strtok_r( nullptr, "/", &dummy );
-
-  		ap_ip.fromString( ip );
-  		ap_gw.fromString( config->get_wifi_ap_gw() );
-		// flawfinder: ignore
-  		ap_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) );
-
-		WiFi.softAPConfig( ap_ip, ap_gw, ap_subnet );
-		Serial.printf( "[INFO] Started hotspot on SSID [%s/%s] and configuration server @ IP=%s/%s\n", ssid, password, ip, cidr );
-		return true;
-	}
-	return false;
 }
 
 bool AstroWeatherStation::startup_sanity_check( void )
@@ -1219,11 +875,6 @@ bool AstroWeatherStation::startup_sanity_check( void )
 			return true;
 	}
 	return false;
-}
-
-bool AstroWeatherStation::stop_hotspot( void )
-{
-	return WiFi.softAPdisconnect();
 }
 
 bool AstroWeatherStation::store_unsent_data( char *data )
@@ -1323,4 +974,405 @@ void AstroWeatherStation::wakeup_reason_to_string( esp_sleep_wakeup_cause_t wake
 			snprintf( wakeup_string, 49, "Awakened by other: %d", wakeup_reason );
 			break;
 	}
+}
+
+AWSNetwork::AWSNetwork( void )
+{
+	ssl_eth_client = nullptr;
+	current_wifi_mode = sta;
+	current_pref_iface = wifi_sta;
+	memset( wifi_mac, 0, 6 );
+}
+
+IPAddress AWSNetwork::cidr_to_mask( byte cidr )
+{
+	uint32_t		subnet;
+
+	if ( cidr )
+		subnet = htonl( ~(( 1 << ( 32 - cidr )) -1 ) );
+	else
+		subnet = htonl( 0 );
+
+	return IPAddress( subnet );
+}
+
+bool AWSNetwork::connect_to_wifi()
+{
+	uint8_t		remaining_attempts	= 10;
+	char		*ip = nullptr;
+	char		*cidr = nullptr;
+	const char	*ssid		= config->get_wifi_sta_ssid();
+	const char	*password	= config->get_wifi_sta_password();
+	char		*dummy;
+
+	if (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() )) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Already connected to SSID [%s].\n", ssid );
+		return true;
+	}
+
+	Serial.printf( "[INFO] Attempting to connect to SSID [%s] ", ssid );
+
+	if ( config->get_wifi_sta_ip_mode() == fixed ) {
+
+		if ( config->get_wifi_sta_ip() ) {
+
+			// flawfinder: ignore
+			char buf[32];
+			strlcpy( buf, config->get_wifi_sta_ip(), 32 );
+		 	ip = strtok_r( buf, "/", &dummy );
+		}
+		if ( ip )
+			cidr = strtok_r( nullptr, "/", &dummy );
+
+  		wifi_sta_ip.fromString( ip );
+  		wifi_sta_gw.fromString( config->get_wifi_sta_gw() );
+  		wifi_sta_dns.fromString( config->get_wifi_sta_dns() );
+		// flawfinder: ignore
+  		wifi_sta_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr ) ));
+		WiFi.config( wifi_sta_ip, wifi_sta_gw, wifi_sta_subnet, wifi_sta_dns );
+
+	}
+	WiFi.begin( ssid , password );
+
+	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {
+
+		Serial.print( "." );
+		delay( 1000 );
+	}
+
+	if ( WiFi.status () == WL_CONNECTED ) {
+
+		wifi_sta_ip = WiFi.localIP();
+		wifi_sta_subnet = WiFi.subnetMask();
+		wifi_sta_gw = WiFi.gatewayIP();
+		wifi_sta_dns = WiFi.dnsIP();
+		Serial.printf( " OK. Using IP [%s]\n", WiFi.localIP().toString().c_str() );
+		return true;
+	}
+
+	Serial.printf( "NOK.\n" );
+
+	return false;
+}
+
+bool AWSNetwork::disconnect_from_wifi( void )
+{
+	byte i = 0;
+
+	WiFi.disconnect();
+	while ( (i++ < 20) && ( WiFi.status() == WL_CONNECTED ))
+    	delay( 100 );
+
+	return ( WiFi.status() != WL_CONNECTED );
+}
+
+byte AWSNetwork::get_eth_cidr_prefix( void )
+{
+	return mask_to_cidr( (uint32_t)eth_subnet );
+}
+
+IPAddress *AWSNetwork::get_eth_dns( void )
+{
+	return &eth_dns;
+}
+
+IPAddress *AWSNetwork::get_eth_gw( void )
+{
+	return &eth_gw;
+}
+
+IPAddress *AWSNetwork::get_eth_ip( void )
+{
+	return &eth_ip;
+}
+
+byte AWSNetwork::get_wifi_sta_cidr_prefix( void )
+{
+	return mask_to_cidr( (uint32_t)wifi_sta_subnet );
+}
+
+IPAddress *AWSNetwork::get_wifi_sta_dns( void )
+{
+	return &wifi_sta_dns;
+}
+
+IPAddress *AWSNetwork::get_wifi_sta_gw( void )
+{
+	return &wifi_sta_gw;
+}
+
+IPAddress *AWSNetwork::get_wifi_sta_ip( void )
+{
+	return &wifi_sta_ip;
+}
+
+uint8_t *AWSNetwork::get_wifi_mac( void )
+{
+	return wifi_mac;
+}
+
+bool AWSNetwork::initialise_ethernet( void )
+{
+	char *ip = nullptr;
+	char *cidr = nullptr;
+	char *dummy;
+	uint8_t	eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF };
+
+	pinMode( 4, OUTPUT );
+	digitalWrite( 4, HIGH );
+	delay( 250 );
+	digitalWrite( 4, LOW );
+	delay( 50 );
+	digitalWrite( 4, HIGH );
+	delay( 350 );
+
+	ESP32_W5500_onEvent();
+
+	// You will have to change esp_w5500.cpp ETH.begin() to make it accept eth_mac even if a mac already exists,
+	// honestly I do not understand why you would silently override the eth_mac parameter
+	if ( !ETH.begin( GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_SCK, GPIO_SPI_CS_ETH, GPIO_SPI_INT, SPI_CLOCK_MHZ, SPI3_HOST, eth_mac )) {
+
+		Serial.printf( "[ERROR] Could not initialise ethernet!\n" );
+		return false;
+	}
+
+  	if ( config->get_eth_ip_mode() == fixed ) {
+
+		if ( config->get_eth_ip() ) {
+
+			// flawfinder: ignore
+			char buf[32];
+			strlcpy( buf, config->get_eth_ip(), 32 );
+		 	ip = strtok_r( buf, "/", &dummy );
+		}
+		if ( ip )
+			cidr = strtok_r( nullptr, "/", &dummy );
+
+  		eth_ip.fromString( ip );
+  		eth_gw.fromString( config->get_eth_gw() );
+  		eth_dns.fromString( config->get_eth_dns() );
+		// flawfinder: ignore
+		ETH.config( eth_ip, eth_gw, cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) ), eth_dns );
+  	}
+
+	ESP32_W5500_waitForConnect();
+
+	eth_ip = ETH.localIP();
+	eth_gw = ETH.gatewayIP();
+	eth_subnet = ETH.subnetMask();
+	eth_dns = ETH.dnsIP();
+
+	return true;
+}
+
+bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
+{
+	debug_mode = _debug_mode;
+	config = _config;
+	
+	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
+
+	switch ( config->get_pref_iface() ) {
+
+		case wifi_ap:
+		case wifi_sta:
+			return initialise_wifi();
+
+		case eth:
+			return initialise_ethernet();
+
+		default:
+			Serial.printf( "[ERROR] Invalid preferred iface, falling back to WiFi.\n" );
+			initialise_wifi();
+			return false;
+	}
+	return false;
+}
+
+bool AWSNetwork::initialise_wifi( void )
+{
+	switch ( config->get_wifi_mode() ) {
+
+		case ap:
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Booting in AP mode.\n" );
+			WiFi.mode( WIFI_AP );
+			return start_hotspot();
+
+		case both:
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Booting in AP+STA mode.\n" );
+			WiFi.mode( WIFI_AP_STA );
+			return ( start_hotspot() && connect_to_wifi() );
+
+		case sta:
+			if ( debug_mode )
+				Serial.printf( "[DEBUG] Booting in STA mode.\n" );
+			WiFi.mode( WIFI_STA );
+			return connect_to_wifi();
+
+		default:
+			Serial.printf( "[ERROR] Unknown wifi mode [%d]\n", config->get_wifi_mode() );
+	}
+	return false;
+}
+
+byte AWSNetwork::mask_to_cidr( uint32_t subnet )
+{
+	byte		cidr 	= 0;
+	uint32_t	mask 	= 0x80000000;
+	uint32_t	x 		= ntohl( subnet );
+
+	while ( mask != 0 ) {
+		if (( x & mask ) != mask )
+			break;
+		cidr++;
+		mask >>= 1;
+	}
+	return cidr;
+}
+
+bool AWSNetwork::post_content( const char *endpoint, const char *jsonString )
+{
+	const char	*remote_server = config->get_remote_server();
+	const char	*url_path = config->get_url_path();
+	char		*url;
+	bool		sent = false;
+
+	WiFiClientSecure wifi_client;
+	HTTPClient http;
+
+	uint8_t status;
+	// flawfinder: ignore
+	uint8_t url_len = 7 + strlen( remote_server ) + 1 + strlen( url_path ) + 3;
+	uint8_t fe_len;
+
+	char *final_endpoint;
+
+	url = static_cast<char *>( malloc( url_len ) );
+	int l = snprintf( url, url_len, "https://%s/%s/", remote_server, url_path );
+
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Connecting to server [%s:443] ...", remote_server );
+
+	// flawfinder: ignore
+	fe_len = l + strlen( endpoint ) + 2;
+	final_endpoint = static_cast<char *>( malloc( fe_len ) );
+	strlcpy( final_endpoint, url, fe_len );
+	strlcat( final_endpoint, endpoint, fe_len );
+
+	// FIXME: factorise code
+	if ( config->get_pref_iface() == eth ) {
+
+		if ( http.begin( final_endpoint )) {
+
+			if ( debug_mode )
+				Serial.printf( "OK.\n" );
+
+			http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
+			http.addHeader( "Host", remote_server );
+			http.addHeader( "Accept", "application/json" );
+			http.addHeader( "Content-Type", "application/json" );
+			status = http.POST( jsonString );
+			if ( debug_mode ) {
+
+				Serial.print( "[DEBUG] HTTP response: " );
+				Serial.printf( "%d\n", status );
+			}
+			http.end();
+			if ( status == 200 )
+				sent = true;
+
+		} else
+			if ( debug_mode )
+				Serial.printf( "NOK.\n" );
+
+	} else {
+
+		wifi_client.setCACert( config->get_root_ca() );
+		if ( !wifi_client.connect( remote_server, 443 )) {
+
+			if ( debug_mode )
+        		Serial.print( "NOK.\n" );
+
+		} else {
+
+			if ( debug_mode )
+        		Serial.print( "OK.\n" );
+		}
+
+		http.begin( wifi_client, final_endpoint );
+		http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
+		http.addHeader( "Content-Type", "application/json" );
+		status = http.POST( jsonString );
+		if ( debug_mode ) {
+
+			Serial.print( "[DEBUG] HTTP response: " );
+			Serial.printf( "%d\n", status );
+		}
+		if ( status== 200 )
+			sent = true;
+
+		http.end();
+    	wifi_client.stop();
+	}
+
+	free( final_endpoint );
+	free( url );
+	return sent;
+}
+
+bool AWSNetwork::shutdown_wifi( void )
+{
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Shutting down WIFI.\n" );
+
+	if ( !stop_hotspot() || !disconnect_from_wifi() )
+		return false;
+
+	WiFi.mode( WIFI_OFF );
+	return true;
+}
+
+bool AWSNetwork::start_hotspot( void )
+{
+	const char	*ssid		= config->get_wifi_ap_ssid();
+	const char	*password	= config->get_wifi_ap_password();
+
+	char *ip = nullptr;
+	char *cidr = nullptr;
+	char *dummy;
+
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Trying to start AP on SSID [%s] with password [%s]\n", ssid, password );
+
+	if ( WiFi.softAP( ssid, password )) {
+
+		if ( config->get_wifi_ap_ip() ) {
+
+			// flawfinder: ignore
+			char buf[32];
+			strlcpy( buf, config->get_wifi_ap_ip(), 32 );
+		 	ip = strtok_r( buf, "/", &dummy );
+		}
+		if ( ip )
+			cidr = strtok_r( nullptr, "/", &dummy );
+
+  		wifi_ap_ip.fromString( ip );
+  		wifi_ap_gw.fromString( config->get_wifi_ap_gw() );
+		// flawfinder: ignore
+  		wifi_ap_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) );
+
+		WiFi.softAPConfig( wifi_ap_ip, wifi_ap_gw, wifi_ap_subnet );
+		Serial.printf( "[INFO] Started hotspot on SSID [%s/%s] and configuration server @ IP=%s/%s\n", ssid, password, ip, cidr );
+		return true;
+	}
+	return false;
+}
+
+bool AWSNetwork::stop_hotspot( void )
+{
+	return WiFi.softAPdisconnect();
 }
