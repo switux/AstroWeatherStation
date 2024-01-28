@@ -25,9 +25,9 @@ class AWSDome {
 
 	private:
 
-		bool				close_dome,
-							is_connected,
-							debug_mode;
+		bool				close_dome;
+		bool				is_connected;
+		bool				debug_mode;
 		I2C_SC16IS750		*sc16is750;
 		SemaphoreHandle_t	i2c_mutex;
 		TaskHandle_t		dome_task_handle;

@@ -60,14 +60,14 @@ alpaca_telescope::alpaca_telescope( bool _debug_mode )
 
 void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	double		longitude,
-				latitude;
+	double		longitude;
+	double		latitude;
 
 	if ( is_connected ) {
 
 		if ( !station.get_sensor_data()->gps.fix && !station.is_ntp_synced() )
 
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
 
 		else {
 			
@@ -86,15 +86,15 @@ void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char 
 					astro_lib.rejectDST();
 				astro_lib.setGMTdate( 1900+utc_time->tm_year, 1+utc_time->tm_mon, utc_time->tm_mday );
 				astro_lib.setLocalTime( utc_time->tm_hour, utc_time->tm_min, utc_time->tm_sec );
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", astro_lib.getLocalSiderealTime(), transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", astro_lib.getLocalSiderealTime(), transaction_details );
 
 			} else
 
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
 		}
 	} else
 
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 	
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -105,18 +105,18 @@ void alpaca_telescope::siteelevation( AsyncWebServerRequest *request, const char
 
 		if ( forced_altitude >= 0 )
 
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", forced_altitude, transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", forced_altitude, transaction_details );
 
 		else {
 			
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
 			else
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", station.get_sensor_data()->gps.altitude, transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", station.get_sensor_data()->gps.altitude, transaction_details );
 		}
 	} else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -127,18 +127,18 @@ void alpaca_telescope::sitelatitude( AsyncWebServerRequest *request, const char 
 
 		if ( forced_latitude >= 0 )
 
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", forced_latitude, transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", forced_latitude, transaction_details );
 
 		else {
 
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
 			else
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", station.get_sensor_data()->gps.latitude, transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", station.get_sensor_data()->gps.latitude, transaction_details );
 		}
 	} else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -149,19 +149,19 @@ void alpaca_telescope::sitelongitude( AsyncWebServerRequest *request, const char
 
 		if ( forced_longitude >= 0 )
 
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", forced_longitude, transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", forced_longitude, transaction_details );
 
 		else {
 
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
 			else
-				snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%3.6f,%s}", station.get_sensor_data()->gps.longitude, transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.6f,%s})json", station.get_sensor_data()->gps.longitude, transaction_details );
 
 		}
 	} else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -173,7 +173,7 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 
 		if ( !station.get_sensor_data()->gps.fix && !station.is_ntp_synced() )
 
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",%s}", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
 
 		else {
 			now = time( nullptr );
@@ -181,12 +181,12 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 			// flawfinder: ignore
 			char tmp[64];
 			strftime( tmp, 63, "%FT%TZ", utc_time );
-			snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", tmp, transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", tmp, transaction_details );
 		}
 
 	} else
 
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -194,9 +194,9 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 void alpaca_telescope::axisrates( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":[{\"Maximum\":0.0,\"Minimum\":0.0}]}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":"","Value":[{"Maximum":0.0,"Minimum":0.0}]})json", transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Dome is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -204,9 +204,9 @@ void alpaca_telescope::axisrates( AsyncWebServerRequest *request, const char *tr
 void alpaca_telescope::trackingrates( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":[0]}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":"","Value":[0]})json", transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"Telescope is not connected\",%s}", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -220,12 +220,12 @@ void alpaca_telescope::set_connected( AsyncWebServerRequest *request, const char
 			if ( station.is_ntp_synced() || station.has_gps() ) {
 
 				is_connected = true;
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 			} else {
 					
 				is_connected = false;
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1031,\"ErrorMessage\":\"No GPS or not NTP synced\"}", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1031,"ErrorMessage":"No GPS or not NTP synced"})json", transaction_details );
 					
 			}
 				
@@ -234,11 +234,11 @@ void alpaca_telescope::set_connected( AsyncWebServerRequest *request, const char
 			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
 
 				is_connected = false;
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 			} else
 
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		return;
@@ -252,16 +252,16 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 	
 	if ( request->hasParam( "SiteElevation", true ) ) {
 
-		char	*s = strdup( request->getParam( "SiteElevation", true )->value().c_str() ),
-				*e;
+		char	*s = strdup( request->getParam( "SiteElevation", true )->value().c_str() );
+		char	*e;
 		double	x = strtof( s, &e );
 		if (( *e != '\0' ) || ( x >10000 ) || ( x < -300 ))
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
 
 		else {
 
 			forced_altitude = x;
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		free( s );
@@ -276,17 +276,17 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 
 	if ( request->hasParam( "SiteLatitude", true ) ) {
 
-		char	*s = strdup( request->getParam( "SiteLatitude", true )->value().c_str() ),
-				*e;
+		char	*s = strdup( request->getParam( "SiteLatitude", true )->value().c_str() );
+		char	*e;
 		double	x = strtof( s, &e );
 		if (( *e != '\0' ) || ( x > 90 ) || ( x < -90 ))
 			
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
 
 		else {
 
 			forced_latitude = x;
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		free( s );
@@ -307,12 +307,12 @@ void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const 
 		double	x = strtof( s, &e );
 		if (( *e != '\0' ) || ( x > 180 ) || ( x < -180 ))
 			
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );
 
 		else {
 
 			forced_longitude = x;
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		free( s );
@@ -331,13 +331,13 @@ void alpaca_telescope::set_utcdate( AsyncWebServerRequest *request, const char *
 
 		if ( !strptime( request->getParam( "UTCDate", true )->value().c_str(), "%FT%T.", &utc_date )) {
 
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid datetime (%s)\"}", transaction_details, request->getParam( "UTCDate", true )->value().c_str() );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid datetime (%s)"})json", transaction_details, request->getParam( "UTCDate", true )->value().c_str() );
 
 		} else {
 
 			now.tv_sec = mktime( &utc_date );
 			settimeofday( &now, NULL );
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );

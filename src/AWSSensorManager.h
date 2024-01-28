@@ -70,9 +70,9 @@ class AWSSensorManager {
     char 				hw_version[6];
     uint8_t 			available_sensors;
     sensor_data_t		sensor_data;
-    bool				debug_mode,
-						rain_event,
-						solar_panel;
+    bool				debug_mode;
+	bool				rain_event;
+	bool				solar_panel;
     TaskHandle_t		sensors_task_handle;
     SemaphoreHandle_t	i2c_mutex = NULL;
    	uint32_t			polling_ms_interval;

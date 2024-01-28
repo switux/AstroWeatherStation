@@ -47,20 +47,20 @@ class AWSWindSensor {
 
 	private:
 
-   		bool			_anemometer_initialised,
-   						debug_mode,
-   						_wind_vane_initialised;
-	   	byte			anemometer_model,
-	   					wind_speed_index,
-   						wind_speeds_size;
-  	 	float			wind_gust,
-  	 					wind_speed,
-  	 					*wind_speeds;
+   		bool			_anemometer_initialised;
+		bool			debug_mode;
+		bool			_wind_vane_initialised;
+	   	byte			anemometer_model;
+	   	byte			wind_speed_index;
+   		byte			wind_speeds_size;
+  	 	float			wind_gust;
+  	 	float			wind_speed;
+  	 	float			*wind_speeds;
    		int16_t			wind_direction;
    		uint16_t		bps;
-		uint8_t			anemometer_cmd[8],
-						answer[7],
-						wind_vane_cmd[8];
+		uint8_t			anemometer_cmd[8];
+		uint8_t			answer[7];
+		uint8_t			wind_vane_cmd[8];
 		uint32_t		polling_ms_interval;
 		SoftwareSerial	*sensor_bus;
 
