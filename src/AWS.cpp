@@ -55,11 +55,6 @@ const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE"
 const bool				FORMAT_SPIFFS_IF_FAILED = true;
 const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
 
-const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
-
-const bool				FORMAT_SPIFFS_IF_FAILED = true;
-const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
-
 RTC_DATA_ATTR time_t 	rain_event_timestamp = 0;
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;

@@ -98,8 +98,8 @@ void I2C_SC16IS750::toggle_sleep( bool sleep )
 
 void I2C_SC16IS750::enable_extra_features( void )
 {
-	uint8_t	tmp,
-			tmp2;
+	uint8_t	tmp;
+	uint8_t	tmp2;
 
 	tmp = read_register( SC16IS750_LCR );
 	write_register( SC16IS750_LCR, LCR_ACCESS_EFR );
@@ -142,9 +142,9 @@ int8_t I2C_SC16IS750::read_byte( void )
 void I2C_SC16IS750::set_baudrate( uint32_t baudrate )
 {
     ulong		divisor;
-    uint8_t		prescaler = 1,
-				tmp1,
-				tmp2;
+    uint8_t		prescaler = 1;
+	uint8_t		tmp1;
+	uint8_t		tmp2;
 
 	divisor = SC16IS750_XTAL_FREQ / ( 16 * baudrate );
 	if ( divisor > 0xffff ) {

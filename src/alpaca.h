@@ -91,14 +91,14 @@ class ascom_device {
 
 		// flawfinder: ignore
 		char			message_str[ 256 ];
-		bool			debug_mode,
-						is_connected = false;
-		const char		*_description,
-						*devicetype,
-						*_driverinfo,
-						*_driverversion,
-						*_name,
-						*_supportedactions;
+		bool			debug_mode;
+		bool			is_connected = false;
+		const char		*_description;
+		const char		*devicetype;
+		const char		*_driverinfo;
+		const char		*_driverversion;
+		const char		*_name;
+		const char		*_supportedactions;
 		short			_interfaceversion;
 
 	public:
@@ -193,9 +193,9 @@ class alpaca_telescope : public ascom_device
 	private:
 			SiderealPlanets	astro_lib;
 
-			double	forced_latitude = -1,
-					forced_longitude = -1,
-					forced_altitude = -1;
+			double	forced_latitude = -1;
+			double	forced_longitude = -1;
+			double	forced_altitude = -1;
 	public:
 
 		explicit alpaca_telescope( bool );
@@ -226,9 +226,9 @@ class alpaca_server {
 
 	private:
 
-		bool			bad_request,
-						debug_mode,
-						server_up = false;
+		bool			bad_request;
+		bool			debug_mode;
+		bool			server_up = false;
 
 		AsyncWebServer 	*server;
 		AsyncUDP		ascom_discovery;
@@ -241,12 +241,12 @@ class alpaca_server {
 		ascom_error_t	transaction_status;
 
 		// flawfinder: ignore
-		char			buf[ 255 ] = {0},
-						transaction_details[ 128 ];
+		char			buf[ 255 ] = {0};
+		char			transaction_details[ 128 ];
 
-		int				client_id = 0,
-						client_transaction_id = 0,
-						server_transaction_id = 0;
+		int				client_id = 0;
+		int				client_transaction_id = 0;
+		int				server_transaction_id = 0;
 
 		void 			alpaca_getapiversions( AsyncWebServerRequest * );
 		void			alpaca_getdescription( AsyncWebServerRequest * );

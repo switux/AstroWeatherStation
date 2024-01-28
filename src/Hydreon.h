@@ -29,16 +29,16 @@ class Hydreon {
 
 	private:
 
-		bool			debug_mode,
-						initialised;
-		uint8_t			uart_nr,
-						intensity,
-						reset_pin,
-						rx_pin,
-						tx_pin;
+		bool			debug_mode;
+		bool			initialised;
+		uint8_t			uart_nr;
+		uint8_t			intensity;
+		uint8_t			reset_pin;
+		uint8_t			rx_pin;
+		uint8_t			tx_pin;
 		// flawfinder: ignore
-		char			str[128],
-						status;
+		char			str[128];
+		char			status;
 
 		HardwareSerial	*sensor;
 		SemaphoreHandle_t rg9_read_mutex;
