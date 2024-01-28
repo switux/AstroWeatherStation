@@ -27,18 +27,18 @@
 #include "AWSConfig.h"
 #include "AWS.h"
 
-unsigned long	MLX_SENSOR			= 0x00000001;
-unsigned long TSL_SENSOR			= 0x00000002;
-unsigned long BME_SENSOR			= 0x00000004;
-unsigned long WIND_VANE_SENSOR	= 0x00000008;
-unsigned long ANEMOMETER_SENSOR	= 0x00000010;
-unsigned long RAIN_SENSOR			= 0x00000020;
-unsigned long	GPS_SENSOR			= 0x00000040;
-unsigned long ALL_SENSORS			= ( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR );
+const unsigned long	MLX_SENSOR			= 0x00000001;
+const unsigned long TSL_SENSOR			= 0x00000002;
+const unsigned long BME_SENSOR			= 0x00000004;
+const unsigned long WIND_VANE_SENSOR	= 0x00000008;
+const unsigned long ANEMOMETER_SENSOR	= 0x00000010;
+const unsigned long RAIN_SENSOR			= 0x00000020;
+const unsigned long	GPS_SENSOR			= 0x00000040;
+const unsigned long ALL_SENSORS			= ( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR );
 
-unsigned long	DOME_DEVICE			= 0x00000080;
-unsigned long	ETHERNET_DEVICE		= 0x00000100;
-unsigned long	SC16IS750_DEVICE	= 0x00000200;
+const unsigned long	DOME_DEVICE			= 0x00000080;
+const unsigned long	ETHERNET_DEVICE		= 0x00000100;
+const unsigned long	SC16IS750_DEVICE	= 0x00000200;
 
 extern AstroWeatherStation station;
 extern const std::array<std::string, 3> _anemometer_model;
@@ -53,20 +53,17 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
-AWSConfig::AWSConfig( void ) :
-	pwr_mode( pwr ),
-	close_dome_on_rain( true ),
-	debug_mode( false ),
-	initialised( false ),
-	msas_calibration_offset( 0.F ),
-	remote_server( nullptr ),
-	tzname( nullptr ),
-	url_path( nullptr ),
-	config_port( DEFAULT_CONFIG_PORT )
+AWSConfig::AWSConfig( void ) : 	remote_server( nullptr ), tzname( nullptr ), url_path( nullptr )
 {
+	close_dome_on_rain = true;
+	config_port = DEFAULT_CONFIG_PORT;
+	debug_mode = false;
 	devices = 0;
-	rain_event_guard_time = 60;
+	initialised = false;
+	msas_calibration_offset = 0.F;
 	pcb_version[ 0 ] = 0;
+	pwr_mode = pwr;
+	rain_event_guard_time = 60;
 }
 
 bool AWSConfig::can_rollback( void )
@@ -74,7 +71,7 @@ bool AWSConfig::can_rollback( void )
 	return _can_rollback;
 }
 
-aws_iface_t	AWSConfig::get_alpaca_iface( void )
+aws_iface AWSConfig::get_alpaca_iface( void )
 {
 	return network_config.get_alpaca_iface();
 }
@@ -94,7 +91,7 @@ bool AWSConfig::get_close_dome_on_rain( void )
 	return close_dome_on_rain;
 }
 
-aws_iface_t	AWSConfig::get_config_iface( void )
+aws_iface AWSConfig::get_config_iface( void )
 {
 	return network_config.get_config_iface();
 }
@@ -183,7 +180,7 @@ char *AWSConfig::get_json_string_config( void )
 	char buf[64];
 
 	aws_json_config["tzname"] = tzname;
-	aws_json_config["pref_iface"] = network_config.get_pref_iface();
+	aws_json_config["pref_iface"] = static_cast<byte>( network_config.get_pref_iface() );
     aws_json_config["eth_ip_mode"] = network_config.get_eth_ip_mode();
 	if ( network_config.get_eth_ip_mode() == dhcp ) {
 
@@ -240,8 +237,8 @@ char *AWSConfig::get_json_string_config( void )
 	aws_json_config["rain_event_guard_time"] = rain_event_guard_time;
 	aws_json_config["has_gps"] = get_has_gps();
 	aws_json_config["wifi_mode"] = network_config.get_wifi_mode();
-	aws_json_config["alpaca_iface"] = network_config.get_alpaca_iface();
-	aws_json_config["config_iface"] = network_config.get_config_iface();
+	aws_json_config["alpaca_iface"] = static_cast<byte>( network_config.get_alpaca_iface() );
+	aws_json_config["config_iface"] = static_cast<byte>( network_config.get_config_iface() );
 
 	aws_json_config["has_sc16is750" ] = get_has_sc16is750();
 	
@@ -269,7 +266,7 @@ char *AWSConfig::get_pcb_version( void )
 	return pcb_version;
 }
 
-aws_iface_t AWSConfig::get_pref_iface( void )
+aws_iface AWSConfig::get_pref_iface( void )
 {
 	return network_config.get_pref_iface();
 }
@@ -680,33 +677,33 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	return true;	
 }
 
-AWSNetworkConfig::AWSNetworkConfig( void )
+AWSNetworkConfig::AWSNetworkConfig( void ) : 
+	eth_dns( nullptr ),
+	eth_ip( nullptr ),
+	eth_gw( nullptr ),
+	wifi_sta_dns( nullptr ),
+	wifi_sta_ip( nullptr ),
+	wifi_sta_gw( nullptr ),
+	wifi_sta_ssid( nullptr ),
+	wifi_sta_password( nullptr ),
+	wifi_ap_ssid( nullptr ),
+	wifi_ap_dns( nullptr ),
+	wifi_ap_password( nullptr ),
+	wifi_ap_ip( nullptr ),
+	wifi_ap_gw( nullptr ),
+	root_ca( nullptr )
 {
 	wifi_mode = ap;
-	alpaca_iface = wifi_sta;
-	config_iface = wifi_sta;
-	pref_iface = wifi_sta;
+	alpaca_iface = aws_iface::wifi_sta;
+	config_iface = aws_iface::wifi_sta;
+	pref_iface = aws_iface::wifi_sta;
 	eth_ip_mode = dhcp;
 	wifi_sta_ip_mode = dhcp;
-	wifi_sta_ssid = nullptr;
-	eth_dns = nullptr;
-	eth_ip = nullptr;
-	eth_gw = nullptr;
-	wifi_sta_password = nullptr;
-	wifi_sta_dns = nullptr;
-	wifi_sta_ip = nullptr;
-	wifi_sta_gw = nullptr;
-	wifi_ap_ssid = nullptr;
-	wifi_ap_dns = nullptr;
-	wifi_ap_password = nullptr;
-	wifi_ap_ip = nullptr;
-	wifi_ap_gw = nullptr;
-	root_ca = nullptr;
 }
 
 void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 {
-	pref_iface = aws_json_config.containsKey( "pref_iface" ) ? aws_json_config["pref_iface"] : wifi_ap;
+	pref_iface = static_cast<aws_iface>( aws_json_config.containsKey( "pref_iface" ) ? static_cast<int>( aws_json_config["pref_iface"] ) : static_cast<int>( aws_iface::wifi_ap ));
 	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? aws_json_config["eth_ip_mode"] : DEFAULT_ETH_IP_MODE;
 
 	set_parameter( aws_json_config, "eth_ip", &eth_ip, DEFAULT_ETH_IP );
@@ -730,18 +727,18 @@ void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 	set_parameter( aws_json_config, "wifi_ap_gw", &wifi_ap_gw, DEFAULT_WIFI_AP_GW );
 	set_parameter( aws_json_config, "wifi_ap_dns", &wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
 
-	alpaca_iface = aws_json_config["alpaca_iface"];
-	config_iface = aws_json_config["config_iface"];
+	alpaca_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["alpaca_iface"] ));
+	config_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["config_iface"] ));
 	
 	set_parameter( aws_json_config, "root_ca", &root_ca, DEFAULT_ROOT_CA );
 }
 
-aws_iface_t	AWSNetworkConfig::get_alpaca_iface( void )
+aws_iface AWSNetworkConfig::get_alpaca_iface( void )
 {
 	return alpaca_iface;
 }
 
-aws_iface_t	AWSNetworkConfig::get_config_iface( void )
+aws_iface AWSNetworkConfig::get_config_iface( void )
 {
 	return config_iface;
 }
@@ -766,7 +763,7 @@ aws_ip_mode_t AWSNetworkConfig::get_eth_ip_mode( void )
 	return eth_ip_mode;
 }
 
-aws_iface_t	AWSNetworkConfig::get_pref_iface( void )
+aws_iface AWSNetworkConfig::get_pref_iface( void )
 {
 	return pref_iface;
 }

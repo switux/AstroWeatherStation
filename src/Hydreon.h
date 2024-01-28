@@ -21,12 +21,7 @@
 #ifndef _HYDREON_H
 #define _HYDREON_H
 
-#define HYDREON_SERIAL_SPEEDS	7
-#define HYDREON_PROBE_RETRIES	3
-
-#define RAIN_SENSOR_OK			0
-#define RAIN_SENSOR_FAIL		127
-#define RAIN_SENSOR_UART		1
+extern const byte RAIN_SENSOR_UART;
 
 #include <Arduino.h>
 

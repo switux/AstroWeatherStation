@@ -21,8 +21,8 @@
 #ifndef _SQM_H
 #define _SQM_H
 
-#define	DOWN	-1
-#define	UP		1
+#define	DOWN	( -1 )
+#define	UP		( 1 )
 
 #include "Adafruit_TSL2591.h"
 

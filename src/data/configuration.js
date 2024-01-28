@@ -1,3 +1,71 @@
+function toggle_panel( panel_id )
+{
+	switch( panel_id ) {
+
+		case 0:
+			document.getElementById("general").style.display = 'flex';
+			document.getElementById("general").style.backgroundColor = '#f6f6f6';
+			document.getElementById("network").style.display = 'none';
+			document.getElementById("network").style.backgroundColor = '#dbdbdb';
+			document.getElementById("sensors").style.display = 'none';
+			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
+			document.getElementById("controls").style.display = 'none';
+			document.getElementById("controls").style.backgroundColor = '#dbdbdb';
+			document.getElementById("banner_general").style.backgroundColor = "#f6f6f6";
+			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
+			
+			break;
+
+		case 1:
+			document.getElementById("general").style.display = 'none';
+			document.getElementById("general").style.backgroundColor = '#dbdbdb';
+			document.getElementById("network").style.display = 'flex';
+			document.getElementById("network").style.backgroundColor = '#f6f6f6';
+			document.getElementById("sensors").style.display = 'none';
+			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
+			document.getElementById("controls").style.display = 'none';
+			document.getElementById("controls").style.backgroundColor = '#dbdbdb';
+			document.getElementById("banner_network").style.backgroundColor = "#f6f6f6";
+			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
+			break;
+
+		case 2:
+			document.getElementById("general").style.display = 'none';
+			document.getElementById("general").style.backgroundColor = '#dbdbdb';
+			document.getElementById("network").style.display = 'none';
+			document.getElementById("network").style.backgroundColor = '#dbdbdb';
+			document.getElementById("sensors").style.display = 'flex';
+			document.getElementById("sensors").style.backgroundColor = '#f6f6f6';
+			document.getElementById("controls").style.display = 'none';
+			document.getElementById("controls").style.backgroundColor = '#dbdbdb';
+			document.getElementById("banner_sensors").style.backgroundColor = "#f6f6f6";
+			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
+			break;
+
+		case 3:
+			document.getElementById("general").style.display = 'none';
+			document.getElementById("general").style.backgroundColor = '#dbdbdb';
+			document.getElementById("network").style.display = 'none';
+			document.getElementById("network").style.backgroundColor = '#dbdbdb';
+			document.getElementById("sensors").style.display = 'none';
+			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
+			document.getElementById("controls").style.display = 'flex';
+			document.getElementById("controls").style.backgroundColor = '#f6f6f6';
+			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
+			document.getElementById("banner_controls").style.backgroundColor = "#f6f6f6";
+			break;
+
+	}
+}
+
 function send_config()
 {
 	req = new XMLHttpRequest();
@@ -8,6 +76,7 @@ function send_config()
 
 function display_values()
 {
+	toggle_panel( 0 );
 	req = new XMLHttpRequest();
 	req2 = new XMLHttpRequest();
 	req2.onreadystatechange = function() {
@@ -50,11 +119,15 @@ function display_values()
 			document.getElementById("has_mlx").checked = values['has_mlx'];
 			document.getElementById("has_ws").checked = values['has_ws'];
 			document.getElementById("has_wv").checked = values['has_wv'];
-			document.getElementById("has_rg9").checked = values['has_rg9'];
+			document.getElementById("has_rain_sensor").checked = values['has_rain_sensor'];
 			document.getElementById("has_gps").checked = values['has_gps'];
 
 			document.querySelector("#anemometer_model").value=values['anemometer_model'];
 			document.querySelector("#windvane_model").value=values['windvane_model'];
+			
+			document.getElementById("safety_wind_speed_max").value=values['safety_wind_speed_max'];
+			document.querySelector("#safety_cloud_coverage_max").value=values['safety_cloud_coverage_max'];
+			document.querySelector("#safety_rain_intensity").value=values['safety_rain_intensity'];
 			
 			if ( values['has_ethernet'] === true )
 				document.getElementById("iface_option").style.display = "table-row";
@@ -106,7 +179,9 @@ function toggle_wifi_mode( wifi_mode )
 {
 	switch( wifi_mode ) {
 		case 0:
+			document.getElementById("show_ap_ssid").style.display = "none";
 			document.getElementById("show_wifi_ap_password").style.display = "none";
+			document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 			document.getElementById("show_wifi_ap_ip").style.display = "none";
 			document.getElementById("show_wifi_ap_gw").style.display = "none";
 			document.getElementById("show_wifi_ap_dns").style.display = "none";
@@ -119,7 +194,9 @@ function toggle_wifi_mode( wifi_mode )
 
 			break;
 		case 1:
+			document.getElementById("show_sta_ssid").style.display = "none";
 			document.getElementById("show_wifi_sta_password").style.display = "none";
+			document.getElementById("show_wifi_sta_ip_mode").style.display = "none";
 			document.getElementById("show_wifi_sta_ip").style.display = "none";
 			document.getElementById("show_wifi_sta_gw").style.display = "none";
 			document.getElementById("show_wifi_sta_dns").style.display = "none";
@@ -132,6 +209,10 @@ function toggle_wifi_mode( wifi_mode )
 			show_wifi();
 			break;
 	}
+}
+
+function toggle_safety_monitor()
+{
 }
 
 function toggle_sta_ipgw( show )
@@ -187,6 +268,7 @@ function hide_wifi()
 	document.getElementById("show_wifi_sta_dns").style.display = "none";
 	document.getElementById("show_ap_ssid").style.display = "none";
 	document.getElementById("show_wifi_ap_password").style.display = "none";
+	document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 	document.getElementById("show_wifi_ap_ip").style.display = "none";
 	document.getElementById("show_wifi_ap_gw").style.display = "none";
 	document.getElementById("show_wifi_ap_dns").style.display = "none";
@@ -207,6 +289,7 @@ function show_wifi()
 	document.getElementById("show_wifi_sta_dns").style.display = "table-row";
 	document.getElementById("show_ap_ssid").style.display = "table-row";
 	document.getElementById("show_wifi_ap_password").style.display = "table-row";
+	document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
 	document.getElementById("show_wifi_ap_ip").style.display = "table-row";
 	document.getElementById("show_wifi_ap_gw").style.display = "table-row";
 	document.getElementById("show_wifi_ap_dns").style.display = "table-row";

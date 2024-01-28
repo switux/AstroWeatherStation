@@ -24,17 +24,24 @@
 #include <ArduinoJson.h>
 
 // flawfinder: ignore
-//extern const char *_anemometer_model[3];
-// flawfinder: ignore
 extern const char *_windvane_model[3];
 
-typedef enum {
+extern const unsigned long MLX_SENSOR;
+extern const unsigned long TSL_SENSOR;
+extern const unsigned long BME_SENSOR;
+extern const unsigned long WIND_VANE_SENSOR;
+extern const unsigned long ANEMOMETER_SENSOR;
+extern const unsigned long RAIN_SENSOR;
+extern const unsigned long GPS_SENSOR;
+extern const unsigned long ALL_SENSORS;
+
+enum struct aws_iface {
 
 	wifi_ap,
 	wifi_sta,
 	eth
 
-} aws_iface_t;
+};
 
 typedef enum {
 
@@ -71,13 +78,13 @@ class AWSNetworkConfig {
 
 	private:
 
-		aws_iface_t		alpaca_iface;
-		aws_iface_t		config_iface;
+		aws_iface		alpaca_iface;
+		aws_iface		config_iface;
 		char			*eth_dns;
 		char			*eth_ip;
 		aws_ip_mode_t	eth_ip_mode;
 		char			*eth_gw;
-		aws_iface_t		pref_iface;
+		aws_iface		pref_iface;
 		char			*root_ca;
 		char			*wifi_ap_dns;
 		char			*wifi_ap_gw;
@@ -98,13 +105,13 @@ class AWSNetworkConfig {
 
 						AWSNetworkConfig( void );
 		void			commit_config( JsonDocument & );
-		aws_iface_t		get_alpaca_iface( void );
-		aws_iface_t		get_config_iface( void );
+		aws_iface		get_alpaca_iface( void );
+		aws_iface		get_config_iface( void );
 		char			*get_eth_dns( void );
 		char			*get_eth_gw( void );
 		char 			*get_eth_ip( void );
 		aws_ip_mode_t	get_eth_ip_mode( void );
-		aws_iface_t		get_pref_iface( void );
+		aws_iface		get_pref_iface( void );
 		char            *get_root_ca( void );
 		char			*get_wifi_ap_dns( void );
 		char			*get_wifi_ap_gw( void );
@@ -126,11 +133,11 @@ class AWSConfig {
 
 						AWSConfig( void );
 		bool			can_rollback( void );
-		aws_iface_t		get_alpaca_iface( void );
+		aws_iface		get_alpaca_iface( void );
 		uint8_t			get_anemometer_model( void );
 		const char *	get_anemometer_model_str( void );
 		bool			get_close_dome_on_rain( void );
-		aws_iface_t		get_config_iface( void );
+		aws_iface		get_config_iface( void );
 		uint16_t		get_config_port( void );
 		char *			get_eth_dns( void );
 		char *			get_eth_gw( void );
@@ -149,7 +156,7 @@ class AWSConfig {
 		char *			get_json_string_config( void );
 		float			get_msas_calibration_offset( void );
 		char *			get_pcb_version( void );
-		aws_iface_t		get_pref_iface( void );
+		aws_iface		get_pref_iface( void );
 		aws_pwr_src_t	get_pwr_mode( void );
 		uint16_t 		get_rain_event_guard_time( void );
 		char            *get_remote_server( void );
@@ -194,6 +201,7 @@ class AWSConfig {
 		char				*tzname;
 		char				*url_path;
 		uint8_t				wind_vane_model;
+
 
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );
