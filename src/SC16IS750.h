@@ -146,13 +146,13 @@
 #define	EFCR_TX_DISABLE		(1 << 2)
 
 #define	SC16IS750_XTAL_FREQ			(14745600UL)
-#define	SC16IS750_REG_ADDR_SHIFT	3
+#define	SC16IS750_REG_ADDR_SHIFT	( 3 )
 
-#define	NO_PARITY			0
-#define	ODD_PARITY			1
-#define	EVEN_PARITY			2
-#define	FORCE_1_PARITY		3
-#define	FORCE_0_PARITY		4
+#define	NO_PARITY			( 0 )
+#define	ODD_PARITY			( 1 )
+#define	EVEN_PARITY			( 2 )
+#define	FORCE_1_PARITY		( 3 )
+#define	FORCE_0_PARITY		( 4 )
 
 class I2C_SC16IS750
 {

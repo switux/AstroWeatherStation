@@ -39,8 +39,9 @@ extern std::array<std::string, 3> _anemometer_model;
 extern const char	*_windvane_model[3];
 extern char			catch_rain_event;
 
-unsigned long 		US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
-unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
+const char					*REV 				= "3.0.0.0";
+const unsigned long 		US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
+const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 AstroWeatherStation station;
 

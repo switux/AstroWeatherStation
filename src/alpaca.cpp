@@ -18,8 +18,8 @@
 
  */
 
-#define _ASYNC_WEBSERVER_LOGLEVEL_		0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_	0
+#define _ASYNC_WEBSERVER_LOGLEVEL_		( 0 )
+#define _ETHERNET_WEBSERVER_LOGLEVEL_	( 0 )
 
 #ifndef ASYNCWEBSERVER_REGEX
 #error "ASYNCWEBSERVER_REGEX not defined, please read build instructions!"
@@ -43,7 +43,7 @@
 #include "AWS.h"
 
 // Keep this, as otherwise it will be the value defined in http_parser.h that will be taken ( = 4 ) and not the one expected by ESPAsyncWebSrv
-#define	HTTP_PUT	8
+#define	HTTP_PUT	( 8 )
 
 extern AstroWeatherStation station;
 extern char *REV;

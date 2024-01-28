@@ -58,28 +58,33 @@ extern bool					FORMAT_SPIFFS_IF_FAILED = true;
 extern unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
 extern char					*REV					= "3.0.0.0";
 
+const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
+
+const bool				FORMAT_SPIFFS_IF_FAILED = true;
+const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
+
 RTC_DATA_ATTR time_t 	rain_event_timestamp = 0;
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
 RTC_DATA_ATTR bool		catch_rain_event = false;
 
-AstroWeatherStation::AstroWeatherStation( void ) :
-	ntp_synced( false ),
-	rain_event( false ),
-	solar_panel( false ),
-	ota_board( nullptr ),
-	ota_device( nullptr ),
-	ota_config( nullptr ),
-	sensor_manager( nullptr ),
-	config( new AWSConfig() ),
-	server( nullptr ),
-	alpaca( nullptr ),
-	dome( nullptr ),
-	sc16is750( nullptr )
+AstroWeatherStation::AstroWeatherStation( void )
 {
-	debug_mode = false;
+	alpaca = nullptr;
+	config = new AWSConfig();
 	config_mode = false;
+	debug_mode = false;
+	dome = nullptr;
+	ntp_synced = false;
+	ota_board = nullptr;
+	ota_config = nullptr;
+	ota_device = nullptr;
+	rain_event = false;
+	sc16is750 = nullptr;
+	sensor_manager = nullptr;
+	server = nullptr;
+	solar_panel = false;
 	uptime[ 0 ] = 0;
 }
 
@@ -483,15 +488,15 @@ bool AstroWeatherStation::initialise( void )
 		alpaca = new alpaca_server( debug_mode );
 		switch ( config->get_alpaca_iface() ) {
 
-			case sta:
+			case aws_iface::wifi_sta:
 				alpaca->start( WiFi.localIP() );
 				break;
 
-			case ap:
+			case aws_iface::wifi_ap:
 				alpaca->start( WiFi.softAPIP() );
 				break;
 
-			case eth:
+			case aws_iface::eth:
 				alpaca->start( Ethernet.localIP() );
 				break;
 
@@ -871,13 +876,13 @@ bool AstroWeatherStation::startup_sanity_check( void )
 {
 	switch ( config->get_pref_iface() ) {
 
-		case wifi_sta:
+		case aws_iface::wifi_sta:
 			return Ping.ping( WiFi.gatewayIP(), 3 );
 
-		case eth:
+		case aws_iface::eth:
 			return Ping.ping( ETH.gatewayIP(), 3 );
 
-		case wifi_ap:
+		case aws_iface::wifi_ap:
 			return true;
 	}
 	return false;
@@ -986,7 +991,7 @@ AWSNetwork::AWSNetwork( void )
 {
 	ssl_eth_client = nullptr;
 	current_wifi_mode = sta;
-	current_pref_iface = wifi_sta;
+	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
 }
 
@@ -1182,11 +1187,11 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	switch ( config->get_pref_iface() ) {
 
-		case wifi_ap:
-		case wifi_sta:
+		case aws_iface::wifi_ap:
+		case aws_iface::wifi_sta:
 			return initialise_wifi();
 
-		case eth:
+		case aws_iface::eth:
 			return initialise_ethernet();
 
 		default:
@@ -1270,7 +1275,7 @@ bool AWSNetwork::post_content( const char *endpoint, const char *jsonString )
 	strlcat( final_endpoint, endpoint, fe_len );
 
 	// FIXME: factorise code
-	if ( config->get_pref_iface() == eth ) {
+	if ( config->get_pref_iface() == aws_iface::eth ) {
 
 		if ( http.begin( final_endpoint )) {
 

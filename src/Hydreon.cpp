@@ -24,7 +24,15 @@
 
 RTC_DATA_ATTR uint16_t baud=0;
 
+constexpr byte HYDREON_SERIAL_SPEEDS = 7;
+
 static constexpr int bps[ HYDREON_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
+
+constexpr byte HYDREON_PROBE_RETRIES = 3;
+
+constexpr byte RAIN_SENSOR_OK	= 0;
+constexpr byte RAIN_SENSOR_FAIL	= 127;
+const byte RAIN_SENSOR_UART	= 1;
 
 Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool _debug_mode ) :
 	debug_mode( _debug_mode ),

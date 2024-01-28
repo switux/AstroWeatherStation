@@ -35,7 +35,7 @@ class AWSNetwork {
 	private:
 
 		AWSConfig			*config;
-		aws_iface_t			current_pref_iface;
+		aws_iface			current_pref_iface;
 		aws_wifi_mode_t		current_wifi_mode;
 		bool				debug_mode;
 		IPAddress			eth_dns;
@@ -84,27 +84,27 @@ class AstroWeatherStation {
 
 	private:
 
+		alpaca_server		*alpaca;
 		bool				debug_mode;
+		AWSConfig			*config;
 		bool				config_mode;
-		bool				ntp_synced;
-		bool				rain_event;
-		bool				solar_panel;
+		AWSDome				*dome;
 		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];
+		bool				ntp_synced;
 		char				*ota_board;
-		char				*ota_device;
 		char				*ota_config;
+		char				*ota_device;
+		bool				rain_event;
+		I2C_SC16IS750		*sc16is750;
+		AWSSensorManager 	*sensor_manager;
+		AWSWebServer 		*server;
+		bool				solar_panel;
 							// flawfinder: ignore
 		char				uptime[32];
 
 		TaskHandle_t		aws_periodic_task_handle;
 
 		AWSNetwork			network;
-		AWSSensorManager 	*sensor_manager;
-		AWSConfig			*config;
-		AWSWebServer 		*server;
-		alpaca_server		*alpaca;
-		AWSDome				*dome;
-		I2C_SC16IS750		*sc16is750;
 
 		void		check_rain_event_guard_time( void );
 		IPAddress	cidr_to_mask( byte );

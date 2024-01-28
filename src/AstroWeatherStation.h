@@ -27,6 +27,9 @@
 // Force DEBUG output even if not activated by external button
 const byte DEBUG_MODE = 1;
 
+extern const unsigned long 	US_SLEEP;
+extern const char			*REV;
+
 // ------------------------------------------------------------------------------
 //
 // DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
