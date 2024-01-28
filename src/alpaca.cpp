@@ -46,6 +46,7 @@
 #define	HTTP_PUT	( 8 )
 
 extern AstroWeatherStation station;
+extern char *REV;
 
 constexpr unsigned int str2int(const char* str, int h = 0 )
 {

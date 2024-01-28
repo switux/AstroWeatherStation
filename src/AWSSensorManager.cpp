@@ -42,6 +42,14 @@ RTC_DATA_ATTR uint16_t low_battery_event_count = 0;
 SemaphoreHandle_t sensors_read_mutex = NULL;
 
 extern AstroWeatherStation station;
+extern unsigned long MLX_SENSOR;
+extern unsigned long TSL_SENSOR;
+extern unsigned long BME_SENSOR;
+extern unsigned long WIND_VANE_SENSOR;
+extern unsigned long ANEMOMETER_SENSOR;
+extern unsigned long RAIN_SENSOR;
+extern unsigned long GPS_SENSOR;
+extern unsigned long ALL_SENSORS;
 
 AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode ) :
 	bme( new Adafruit_BME280() ),

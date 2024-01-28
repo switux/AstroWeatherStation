@@ -49,6 +49,14 @@
 extern void IRAM_ATTR		_handle_rain_event( void );
 
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
+extern unsigned long	ALL_SENSORS;
+extern unsigned long 	US_SLEEP;
+
+const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
+
+extern bool					FORMAT_SPIFFS_IF_FAILED = true;
+extern unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
+extern char					*REV					= "3.0.0.0";
 
 const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
 
