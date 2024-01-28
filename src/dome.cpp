@@ -26,13 +26,13 @@
 AWSDome::AWSDome( bool _debug_mode )
 {
 	debug_mode = _debug_mode;
-	sc16is750 = NULL;
+	sc16is750 = nullptr;
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Enabling dome control.\n" );
 
-	pinMode( GPIO_DOME_1, OUTPUT );
-	pinMode( GPIO_DOME_2, OUTPUT );
+	pinMode( GPIO_DOME_1_DIRECT, OUTPUT );
+	pinMode( GPIO_DOME_2_DIRECT, OUTPUT );
 	pinMode( GPIO_DOME_STATUS, INPUT );
 
 	start_control_task();
@@ -41,7 +41,6 @@ AWSDome::AWSDome( bool _debug_mode )
 AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool _debug_mode ) : i2c_mutex( _i2c_mutex )
 {
 	debug_mode = _debug_mode;
-//	i2c_mutex = _i2c_mutex;
 	sc16is750 = _sc16is750;
 	close_dome = false;
 
