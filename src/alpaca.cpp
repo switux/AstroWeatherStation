@@ -46,7 +46,6 @@
 #define	HTTP_PUT	( 8 )
 
 extern AstroWeatherStation station;
-extern char *REV;
 
 constexpr unsigned int str2int(const char* str, int h = 0 )
 {
@@ -143,7 +142,7 @@ void alpaca_server::alpaca_getdescription( AsyncWebServerRequest *request )
 	// flawfinder: ignore
 	char str[256];
 
-	snprintf( static_cast<char *>( str ), 256, "{\"Value\":{\"ServerName\":\"AWS\",\"Manufacturer\":\"OpenAstroDevices\",\"ManufacturerVersion\":\"v%s\",\"Location\":\"ici\"},%s}", REV , "\"ClientTransactionID\":0,\"ServerTransactionID\":0");
+	snprintf( static_cast<char *>( str ), 256, R"json({"Value":{"ServerName":"AWS","Manufacturer":"L-OpenAstroDevices","ManufacturerVersion":"v%s","Location":"ici"},%s})json", REV , R"json("ClientTransactionID":0,"ServerTransactionID":0)json");
 	request->send( 200, "application/json", static_cast<const char *>( str ) );
 }
 
@@ -914,7 +913,7 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 
 	for( uint8_t i = 0; i < CONFIGURED_DEVICES; i++ ) {
 
-		l += snprintf( buff, 255, "{\"DeviceName\":\"%s\",\"DeviceType\":\"%s\",\"DeviceNumber\":%d,\"UniqueID\":\"%s\"},", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
+		l += snprintf( buff, 255, R"json({"DeviceName":"%s","DeviceType":"%s","DeviceNumber":%d,"UniqueID":"%s"},)json", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
 		if ( l <= len )
 			l2 = strlcat( json_string, buff, len );
 		else {
@@ -974,7 +973,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 		return false;
 
 	server_transaction_id++;
-	snprintf( transaction_details, 127, "\"ClientID\":%d,\"ClientTransactionID\":%d,\"ServerTransactionID\":%d", client_id, client_transaction_id, server_transaction_id );
+	snprintf( transaction_details, 127, R"json("ClientID":%d,"ClientTransactionID":%d,"ServerTransactionID":%d)json", client_id, client_transaction_id, server_transaction_id );
 	return true;
 }
 
@@ -989,7 +988,7 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		snprintf( static_cast<char *>( str ), 256, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
+		snprintf( static_cast<char *>( str ), 256, R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
 		request->send( 200, "application/json", static_cast<const char *>( str ) );
 
 	} else {
@@ -1099,52 +1098,52 @@ ascom_device::ascom_device( void ) :
 
 void ascom_device::description( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _description, transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", _description, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::driverinfo( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverinfo, transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", _driverinfo, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::driverversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _driverversion, transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", _driverversion, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::get_connected( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", is_connected?"true":"false", transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", is_connected?"true":"false", transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", _interfaceversion, transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", _interfaceversion, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::name( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":\"%s\",%s}", _name, transaction_details );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", _name, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, const char *msg )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1024,\"ErrorMessage\":\"%s\"}", transaction_details, msg?msg:"" );
+	snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
 void ascom_device::device_error( AsyncWebServerRequest *request, const char *transaction_details, ascom_driver_error_t error, char *msg )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":%d,\"ErrorMessage\":\"%s\",\"Value\":false,%s}", 0x500+error, msg, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s","Value":false,%s})json", 0x500+error, msg, transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
@@ -1152,9 +1151,9 @@ void ascom_device::device_error( AsyncWebServerRequest *request, const char *tra
 void ascom_device::default_bool( AsyncWebServerRequest *request, const char *transaction_details, bool truefalse )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", truefalse?"true":"false", transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", truefalse?"true":"false", transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
@@ -1163,9 +1162,9 @@ void ascom_device::default_bool( AsyncWebServerRequest *request, const char *tra
 void ascom_device::return_value( AsyncWebServerRequest *request, const char *transaction_details, double value )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%f,%s}", value, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", value, transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
@@ -1174,9 +1173,9 @@ void ascom_device::return_value( AsyncWebServerRequest *request, const char *tra
 void ascom_device::return_value( AsyncWebServerRequest *request, const char *transaction_details, byte value )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%d,%s}", value, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", value, transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 
@@ -1185,9 +1184,9 @@ void ascom_device::return_value( AsyncWebServerRequest *request, const char *tra
 void ascom_device::supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":%s,%s}", _supportedactions, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", _supportedactions, transaction_details );
 	else
-		snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":1031,\"ErrorMessage\":\"%s is not connected\",%s}", devicetype, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char*>( message_str ));
 }

@@ -66,14 +66,6 @@ typedef enum {
 
 } aws_ip_mode_t;
 
-typedef struct {
-
-	uint8_t 	cmd[ 8 ];
-	uint8_t		model;
-	uint16_t	com_speed;
-
-} wind_sensor_config_t;
-
 class AWSNetworkConfig {
 
 	private:
