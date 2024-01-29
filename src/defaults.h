@@ -23,7 +23,7 @@
 
 #define	DEFAULT_CLOSE_DOME_ON_RAIN		1
 #define	DEFAULT_CONFIG_PORT				80
-#define	DEFAULT_ETH_IP_MODE				dhcp
+#define	DEFAULT_ETH_IP_MODE				aws_ip_mode::dhcp
 #define	DEFAULT_HAS_BME					0
 #define	DEFAULT_HAS_DOME				0
 #define	DEFAULT_HAS_GPS					0
@@ -34,10 +34,10 @@
 #define	DEFAULT_HAS_WS					0
 #define	DEFAULT_HAS_WV					0
 #define	DEFAULT_MSAS_CORRECTION			-0.55
-#define	DEFAULT_PREF_IFACE				ap
+#define	DEFAULT_PREF_IFACE				aws_iface::ap
 #define	DEFAULT_RAIN_EVENT_GUARD_TIME	60
-#define	DEFAULT_WIFI_MODE				both
-#define	DEFAULT_WIFI_STA_IP_MODE		dhcp
+#define	DEFAULT_WIFI_MODE				aws_wifi_mode::both
+#define	DEFAULT_WIFI_STA_IP_MODE		aws_ip_mode::dhcp
 
 #define	DEFAULT_SC16IS750_ADDR		0x90
 

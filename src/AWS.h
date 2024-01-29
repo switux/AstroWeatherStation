@@ -36,7 +36,7 @@ class AWSNetwork {
 
 		AWSConfig			*config;
 		aws_iface			current_pref_iface;
-		aws_wifi_mode_t		current_wifi_mode;
+		aws_wifi_mode		current_wifi_mode;
 		bool				debug_mode;
 		IPAddress			eth_dns;
 		IPAddress			eth_gw;

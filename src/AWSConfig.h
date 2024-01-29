@@ -35,7 +35,7 @@ extern const unsigned long RAIN_SENSOR;
 extern const unsigned long GPS_SENSOR;
 extern const unsigned long ALL_SENSORS;
 
-enum struct aws_iface {
+enum struct aws_iface : byte {
 
 	wifi_ap,
 	wifi_sta,
@@ -43,28 +43,28 @@ enum struct aws_iface {
 
 };
 
-typedef enum {
+enum struct aws_wifi_mode : byte {
 
 	sta,
 	ap,
 	both
 
-} aws_wifi_mode_t;
+};
 
-typedef enum {
+enum struct aws_pwr_src : byte {
 
 	panel,
-	pwr,
+	dc12v,
 	poe
 
-} aws_pwr_src_t;
+};
 
-typedef enum {
+enum struct aws_ip_mode : byte {
 
 	dhcp,
 	fixed
 
-} aws_ip_mode_t;
+};
 
 class AWSNetworkConfig {
 
@@ -74,7 +74,7 @@ class AWSNetworkConfig {
 		aws_iface		config_iface;
 		char			*eth_dns;
 		char			*eth_ip;
-		aws_ip_mode_t	eth_ip_mode;
+		aws_ip_mode		eth_ip_mode;
 		char			*eth_gw;
 		aws_iface		pref_iface;
 		char			*root_ca;
@@ -83,11 +83,11 @@ class AWSNetworkConfig {
 		char			*wifi_ap_ip;
 		char			*wifi_ap_password;
 		char			*wifi_ap_ssid;
-		aws_wifi_mode_t	wifi_mode;
+		aws_wifi_mode	wifi_mode;
 		char			*wifi_sta_dns;
 		char			*wifi_sta_gw;
 		char			*wifi_sta_ip;
-		aws_ip_mode_t	wifi_sta_ip_mode;
+		aws_ip_mode		wifi_sta_ip_mode;
 		char			*wifi_sta_password;
 		char			*wifi_sta_ssid;
 
@@ -102,7 +102,7 @@ class AWSNetworkConfig {
 		char			*get_eth_dns( void );
 		char			*get_eth_gw( void );
 		char 			*get_eth_ip( void );
-		aws_ip_mode_t	get_eth_ip_mode( void );
+		aws_ip_mode		get_eth_ip_mode( void );
 		aws_iface		get_pref_iface( void );
 		char            *get_root_ca( void );
 		char			*get_wifi_ap_dns( void );
@@ -110,11 +110,11 @@ class AWSNetworkConfig {
 		char			*get_wifi_ap_ip( void );
 		char			*get_wifi_ap_password( void );
 		char			*get_wifi_ap_ssid( void );
-		aws_wifi_mode_t get_wifi_mode( void );
+		aws_wifi_mode	get_wifi_mode( void );
 		char			*get_wifi_sta_dns( void );
 		char            *get_wifi_sta_gw( void );
 		char            *get_wifi_sta_ip( void );
-		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
+		aws_ip_mode		get_wifi_sta_ip_mode( void );
 		char			*get_wifi_sta_password( void );
 		char            *get_wifi_sta_ssid( void );
 };
@@ -134,7 +134,7 @@ class AWSConfig {
 		char *			get_eth_dns( void );
 		char *			get_eth_gw( void );
 		char *			get_eth_ip( void );
-		aws_ip_mode_t	get_eth_ip_mode( void );
+		aws_ip_mode		get_eth_ip_mode( void );
 		bool			get_has_ethernet( void );
 		bool 			get_has_bme( void );
 		bool			get_has_dome( void );
@@ -149,13 +149,13 @@ class AWSConfig {
 		float			get_msas_calibration_offset( void );
 		char *			get_pcb_version( void );
 		aws_iface		get_pref_iface( void );
-		aws_pwr_src_t	get_pwr_mode( void );
+		aws_pwr_src		get_pwr_mode( void );
 		uint16_t 		get_rain_event_guard_time( void );
 		char            *get_remote_server( void );
 		char            *get_root_ca( void );
 		char            *get_tzname( void );
 		char            *get_url_path( void );
-		aws_wifi_mode_t get_wifi_mode( void );
+		aws_wifi_mode	get_wifi_mode( void );
 		char *			get_wifi_ap_dns( void );
 		char *			get_wifi_ap_gw( void );
 		char *			get_wifi_ap_ip( void );
@@ -164,7 +164,7 @@ class AWSConfig {
 		char *			get_wifi_sta_dns( void );
 		char *			get_wifi_sta_gw( void );
 		char *			get_wifi_sta_ip( void );
-		aws_ip_mode_t	get_wifi_sta_ip_mode( void );
+		aws_ip_mode		get_wifi_sta_ip_mode( void );
 		char *			get_wifi_sta_password( void );
 		char			*get_wifi_sta_ssid( void );
 		uint8_t			get_wind_vane_model( void );
@@ -187,7 +187,7 @@ class AWSConfig {
 		AWSNetworkConfig	network_config;
 		// flawfinder: ignore
 		char	  			pcb_version[8];
-		aws_pwr_src_t		pwr_mode;
+		aws_pwr_src			pwr_mode;
 		uint16_t			rain_event_guard_time;
 		char				*remote_server;
 		char				*tzname;

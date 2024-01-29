@@ -140,7 +140,7 @@ void AstroWeatherStation::display_banner()
 
 	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
 	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	print_config_string( "# Power Mode        : %s", pwr_mode_str[ config->get_pwr_mode() ].c_str() );
+	print_config_string( "# Power Mode        : %s", pwr_mode_str[ static_cast<byte>( config->get_pwr_mode() ) ].c_str() );
 	print_config_string( "# PCB version       : %s", config->get_pcb_version() );
 	print_config_string( "# Ethernet present  : %s", config->get_has_ethernet() ? "Yes" : "No" );
 	print_config_string( "# GPIO ext. present : %s", config->get_has_sc16is750() ? "Yes" : "No" );
@@ -400,7 +400,7 @@ bool AstroWeatherStation::initialise( void )
 	if ( !config->load( debug_mode ) )
 		return false;
 
-	solar_panel = ( config->get_pwr_mode() == panel );
+	solar_panel = ( config->get_pwr_mode() == aws_pwr_src::panel );
 	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota_board = strdup( string );
 
@@ -623,7 +623,7 @@ void AstroWeatherStation::print_config_string( const char *fmt, ... )
 	memset( string, 0, 96 );
 	va_start( args, fmt );
 	// flawfinder: ignore
-	int l = vsnprintf( string, 92, fmt, args );
+	int l = vsnprintf( string, 92, fmt, args );	// NOSONAR
 	va_end( args );
 	if ( l >= 0 ) {
 		for( i = l; i < 92; string[ i++ ] = ' ' );
@@ -983,7 +983,7 @@ void AstroWeatherStation::wakeup_reason_to_string( esp_sleep_wakeup_cause_t wake
 AWSNetwork::AWSNetwork( void )
 {
 	ssl_eth_client = nullptr;
-	current_wifi_mode = sta;
+	current_wifi_mode = aws_wifi_mode::sta;
 	current_pref_iface = aws_iface::wifi_sta;
 	memset( wifi_mac, 0, 6 );
 }
@@ -1018,7 +1018,7 @@ bool AWSNetwork::connect_to_wifi()
 
 	Serial.printf( "[INFO] Attempting to connect to SSID [%s] ", ssid );
 
-	if ( config->get_wifi_sta_ip_mode() == fixed ) {
+	if ( config->get_wifi_sta_ip_mode() == aws_ip_mode::fixed ) {
 
 		if ( config->get_wifi_sta_ip() ) {
 
@@ -1142,7 +1142,7 @@ bool AWSNetwork::initialise_ethernet( void )
 		return false;
 	}
 
-  	if ( config->get_eth_ip_mode() == fixed ) {
+  	if ( config->get_eth_ip_mode() == aws_ip_mode::fixed ) {
 
 		if ( config->get_eth_ip() ) {
 
@@ -1199,19 +1199,19 @@ bool AWSNetwork::initialise_wifi( void )
 {
 	switch ( config->get_wifi_mode() ) {
 
-		case ap:
+		case aws_wifi_mode::ap:
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Booting in AP mode.\n" );
 			WiFi.mode( WIFI_AP );
 			return start_hotspot();
 
-		case both:
+		case aws_wifi_mode::both:
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Booting in AP+STA mode.\n" );
 			WiFi.mode( WIFI_AP_STA );
 			return ( start_hotspot() && connect_to_wifi() );
 
-		case sta:
+		case aws_wifi_mode::sta:
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Booting in STA mode.\n" );
 			WiFi.mode( WIFI_STA );
