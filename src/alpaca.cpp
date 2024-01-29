@@ -80,7 +80,7 @@ alpaca_server::alpaca_server( bool _debug_mode ) :
 	observing_conditions( new alpaca_observingconditions( debug_mode )),
 	safety_monitor( new alpaca_safetymonitor( debug_mode )),
 	telescope( new alpaca_telescope( debug_mode )),
-	transaction_status( NotConnected )
+	transaction_status( ascom_error_t::NotConnected )
 {
 	memset( transaction_details, 0, 128 );
 }
@@ -931,7 +931,7 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 
 bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request, bool post )
 {
-	transaction_status = Ok;
+	transaction_status = ascom_error::Ok;
 	bad_request = false;
 
 	for( int i = 0; i < request->params(); i++ ) {
@@ -1050,6 +1050,7 @@ void alpaca_server::send_file( AsyncWebServerRequest *request )
 bool alpaca_server::start( IPAddress address )
 {
 	if ( !server_up ) {
+
 		server = new AsyncWebServer( ALPACA_SERVER_PORT );
 		if ( server )
 			Serial.printf("[INFO] Started ALPACA server.\n" );
@@ -1059,11 +1060,16 @@ bool alpaca_server::start( IPAddress address )
 	}
 	if ( !ascom_discovery.listen( 32227 ))
 
-	if ( debug_mode )
-		Serial.printf( "[INFO] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
+		Serial.printf( "[ERROR] Could not start ALPACA discovery service.\n" );
+		
+	else {	
 
-	ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
+		if ( debug_mode )
+			Serial.printf( "[INFO] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
 
+		ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
+	}
+	
 	server->on( "/get_config", HTTP_GET, std::bind( &alpaca_server::get_config, this, std::placeholders::_1 ));
 
 	server->on( "/setup", HTTP_GET, std::bind( &alpaca_server::alpaca_getsetup, this, std::placeholders::_1 ));

@@ -62,7 +62,7 @@ AWSConfig::AWSConfig( void ) : 	remote_server( nullptr ), tzname( nullptr ), url
 	initialised = false;
 	msas_calibration_offset = 0.F;
 	pcb_version[ 0 ] = 0;
-	pwr_mode = pwr;
+	pwr_mode = aws_pwr_src::dc12v;
 	rain_event_guard_time = 60;
 }
 
@@ -116,7 +116,7 @@ char *AWSConfig::get_eth_ip( void )
 	return network_config.get_eth_ip();
 }
 
-aws_ip_mode_t AWSConfig::get_eth_ip_mode( void )
+aws_ip_mode AWSConfig::get_eth_ip_mode( void )
 {
 	return network_config.get_eth_ip_mode();
 }
@@ -181,8 +181,8 @@ char *AWSConfig::get_json_string_config( void )
 
 	aws_json_config["tzname"] = tzname;
 	aws_json_config["pref_iface"] = static_cast<byte>( network_config.get_pref_iface() );
-    aws_json_config["eth_ip_mode"] = network_config.get_eth_ip_mode();
-	if ( network_config.get_eth_ip_mode() == dhcp ) {
+    aws_json_config["eth_ip_mode"] = static_cast<byte>( network_config.get_eth_ip_mode() );
+	if ( network_config.get_eth_ip_mode() == aws_ip_mode::dhcp ) {
 
 		snprintf( buf, 64, "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
 		aws_json_config["eth_ip"] = buf;
@@ -200,9 +200,9 @@ char *AWSConfig::get_json_string_config( void )
 	}
 	aws_json_config["sta_ssid"] = network_config.get_wifi_sta_ssid();
 	aws_json_config["wifi_sta_password"] = network_config.get_wifi_sta_password();
-	aws_json_config["wifi_sta_ip_mode"] = network_config.get_wifi_sta_ip_mode();
+	aws_json_config["wifi_sta_ip_mode"] = static_cast<byte>( network_config.get_wifi_sta_ip_mode() );
 
-	if ( network_config.get_wifi_sta_ip_mode() == dhcp ) {
+	if ( network_config.get_wifi_sta_ip_mode() == aws_ip_mode::dhcp ) {
 
 		snprintf( buf, 64, "%s/%d", station.get_wifi_sta_ip()->toString().c_str(), station.get_wifi_sta_cidr_prefix() );
 		aws_json_config["wifi_sta_ip"] = buf;
@@ -236,7 +236,7 @@ char *AWSConfig::get_json_string_config( void )
 	aws_json_config["has_rain_sensor"] = get_has_rain_sensor();
 	aws_json_config["rain_event_guard_time"] = rain_event_guard_time;
 	aws_json_config["has_gps"] = get_has_gps();
-	aws_json_config["wifi_mode"] = network_config.get_wifi_mode();
+	aws_json_config["wifi_mode"] = static_cast<byte>( network_config.get_wifi_mode() );
 	aws_json_config["alpaca_iface"] = static_cast<byte>( network_config.get_alpaca_iface() );
 	aws_json_config["config_iface"] = static_cast<byte>( network_config.get_config_iface() );
 
@@ -271,7 +271,7 @@ aws_iface AWSConfig::get_pref_iface( void )
 	return network_config.get_pref_iface();
 }
 
-aws_pwr_src_t AWSConfig::get_pwr_mode( void )
+aws_pwr_src AWSConfig::get_pwr_mode( void )
 {
 	return pwr_mode;
 }
@@ -321,7 +321,7 @@ char *AWSConfig::get_wifi_ap_ssid( void )
 	return network_config.get_wifi_ap_ssid();
 }
 
-aws_wifi_mode_t AWSConfig::get_wifi_mode( void )
+aws_wifi_mode AWSConfig::get_wifi_mode( void )
 {
 	return network_config.get_wifi_mode();
 }
@@ -346,7 +346,7 @@ char *AWSConfig::get_wifi_sta_ip( void )
 	return network_config.get_wifi_sta_ip();
 }
 
-aws_ip_mode_t AWSConfig::get_wifi_sta_ip_mode( void )
+aws_ip_mode AWSConfig::get_wifi_sta_ip_mode( void )
 {
 	return network_config.get_wifi_sta_ip_mode();
 }
@@ -481,7 +481,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	if ( ( pwr_mode = (aws_pwr_src_t) nvs.getChar( "pwr_mode", 127 )) == 127 ) {
+	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
 
 		Serial.printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
 		nvs.end();
@@ -616,7 +616,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	// config_items is only a way of presenting the items in proposed_config
 
 	JsonObject config_items = proposed_config.as<JsonObject>();
-	byte	x = dhcp;
+	aws_ip_mode x = aws_ip_mode::dhcp;
 	
 	for( JsonPair item : config_items ) {
 
@@ -648,7 +648,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "windvane_model" ):
 				break;
 			case str2int( "eth_ip_mode" ):
-				x = ( item.value() == "0" ) ? dhcp : fixed;
+				x = ( item.value() == "0" ) ? aws_ip_mode::dhcp : aws_ip_mode::fixed;
 				break;
 			case str2int( "clone_dome_on_rain" ):
 			case str2int( "has_bme" ):
@@ -667,7 +667,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 		}
 	}
 
-	if ( x == dhcp ) {
+	if ( x == aws_ip_mode::dhcp ) {
 
 		config_items.remove( "eth_ip" );
 		config_items.remove( "eth_gw" );
@@ -693,29 +693,29 @@ AWSNetworkConfig::AWSNetworkConfig( void ) :
 	wifi_ap_gw( nullptr ),
 	root_ca( nullptr )
 {
-	wifi_mode = ap;
+	wifi_mode = aws_wifi_mode::ap;
 	alpaca_iface = aws_iface::wifi_sta;
 	config_iface = aws_iface::wifi_sta;
 	pref_iface = aws_iface::wifi_sta;
-	eth_ip_mode = dhcp;
-	wifi_sta_ip_mode = dhcp;
+	eth_ip_mode = aws_ip_mode::dhcp;
+	wifi_sta_ip_mode = aws_ip_mode::dhcp;
 }
 
 void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 {
-	pref_iface = static_cast<aws_iface>( aws_json_config.containsKey( "pref_iface" ) ? static_cast<int>( aws_json_config["pref_iface"] ) : static_cast<int>( aws_iface::wifi_ap ));
-	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? aws_json_config["eth_ip_mode"] : DEFAULT_ETH_IP_MODE;
+	pref_iface = aws_json_config.containsKey( "pref_iface" ) ? static_cast<aws_iface>( aws_json_config["pref_iface"].as<byte>() ) : aws_iface::wifi_ap;
+	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["eth_ip_mode"].as<byte>() ) : DEFAULT_ETH_IP_MODE;
 
 	set_parameter( aws_json_config, "eth_ip", &eth_ip, DEFAULT_ETH_IP );
 	set_parameter( aws_json_config, "eth_gw", &eth_gw, DEFAULT_ETH_GW );
 	set_parameter( aws_json_config, "eth_dns", &eth_dns, DEFAULT_ETH_DNS );
 
-	wifi_mode = aws_json_config.containsKey( "wifi_mode" ) ? aws_json_config["wifi_mode"] : DEFAULT_WIFI_MODE;
+	wifi_mode = aws_json_config.containsKey( "wifi_mode" ) ? static_cast<aws_wifi_mode>( aws_json_config["wifi_mode"].as<byte>() ) : DEFAULT_WIFI_MODE;
 		
 	set_parameter( aws_json_config, "sta_ssid", &wifi_sta_ssid, DEFAULT_WIFI_STA_SSID );
 	set_parameter( aws_json_config, "wifi_sta_password", &wifi_sta_password, DEFAULT_WIFI_STA_PASSWORD );
 
-	wifi_sta_ip_mode = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? aws_json_config["wifi_sta_ip_mode"] : DEFAULT_WIFI_STA_IP_MODE;
+	wifi_sta_ip_mode = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["wifi_sta_ip_mode"].as<byte>() ) : DEFAULT_WIFI_STA_IP_MODE;
 
 	set_parameter( aws_json_config, "wifi_sta_ip", &wifi_sta_ip, DEFAULT_WIFI_STA_IP );
 	set_parameter( aws_json_config, "wifi_sta_gw", &wifi_sta_gw, DEFAULT_WIFI_STA_GW );
@@ -727,8 +727,7 @@ void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 	set_parameter( aws_json_config, "wifi_ap_gw", &wifi_ap_gw, DEFAULT_WIFI_AP_GW );
 	set_parameter( aws_json_config, "wifi_ap_dns", &wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
 
-	alpaca_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["alpaca_iface"] ));
-	config_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["config_iface"] ));
+	config_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["config_iface"].as<byte>() ));
 	
 	set_parameter( aws_json_config, "root_ca", &root_ca, DEFAULT_ROOT_CA );
 }
@@ -758,7 +757,7 @@ char *AWSNetworkConfig::get_eth_ip( void )
 	return eth_ip;
 }
 
-aws_ip_mode_t AWSNetworkConfig::get_eth_ip_mode( void )
+aws_ip_mode AWSNetworkConfig::get_eth_ip_mode( void )
 {
 	return eth_ip_mode;
 }
@@ -773,7 +772,7 @@ char *AWSNetworkConfig::get_root_ca( void )
 	return root_ca;
 }
 
-aws_wifi_mode_t AWSNetworkConfig::get_wifi_mode( void )
+aws_wifi_mode AWSNetworkConfig::get_wifi_mode( void )
 {
 	return wifi_mode;
 }
@@ -818,7 +817,7 @@ char *AWSNetworkConfig::get_wifi_sta_ip( void )
 	return wifi_sta_ip;
 }
 
-aws_ip_mode_t AWSNetworkConfig::get_wifi_sta_ip_mode( void )
+aws_ip_mode AWSNetworkConfig::get_wifi_sta_ip_mode( void )
 {
 	return wifi_sta_ip_mode;
 }

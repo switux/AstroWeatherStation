@@ -101,7 +101,7 @@ void alpaca_observingconditions::rainrate( AsyncWebServerRequest *request, const
 {
 	if ( !station.has_rain_sensor() )
 
-		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"The station has no rain sensor",%s})json", 1023 + PropertyOrMethodNotImplemented, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"The station has no rain sensor",%s})json", 1023 + static_cast<byte>( ascom_error::PropertyOrMethodNotImplemented ), transaction_details );
 
 	else {
 
@@ -112,7 +112,7 @@ void alpaca_observingconditions::rainrate( AsyncWebServerRequest *request, const
 			if ( x >= 0 )
 				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", rain_rate[ x ], transaction_details );
 			else
-				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Rain sensor data is temporarily unavailable",%s})json", 1023 + PropertyOrMethodNotImplemented, transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Rain sensor data is temporarily unavailable",%s})json", 1023 + static_cast<byte>( ascom_error::PropertyOrMethodNotImplemented ), transaction_details );
 
 		} else
 
@@ -235,9 +235,9 @@ void alpaca_observingconditions::set_averageperiod( AsyncWebServerRequest *reque
 				else {
 
 					if ( x < 0 )
-						snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Value must be positive or 0",%s})json", 1023+InvalidValue, transaction_details );
+						snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Value must be positive or 0",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details );
 					else
-						snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Only providing live data, please set to 0.",%s})json", 1023+InvalidValue, transaction_details );
+						snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"Only providing live data, please set to 0.",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details );
 				}
 			} else {
 

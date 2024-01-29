@@ -37,7 +37,7 @@
 #include "alpaca_safetymonitor.h"
 #include "alpaca_observingconditions.h"
 
-typedef enum
+enum struct ascom_device_type : byte
 {
 	Camera,
 	CoverCalibrator,
@@ -50,7 +50,9 @@ typedef enum
 	Switch,
 	Telescope,
 	Video
-} ascom_device_t;
+};
+
+using ascom_device_t = ascom_device_type;
 
 typedef struct configured_device_t {
 
@@ -64,7 +66,7 @@ typedef struct configured_device_t {
 
 } configured_device_t;
 
-typedef enum
+enum struct ascom_error_t : byte
 {
 	Ok,
 	PropertyOrMethodNotImplemented,
@@ -76,7 +78,8 @@ typedef enum
 	InvalidOperation,
 	ActionNotImplemented
 
-} ascom_error_t;
+};
+using ascom_error = ascom_error_t;
 
 typedef enum
 {
@@ -155,14 +158,16 @@ class alpaca_observingconditions : public ascom_device
 
 };
 
-typedef enum
+enum struct dome_shutter_status_type : byte
 {
 	Open,
 	Closed,
 	Opening,
 	Closing,
 	Error
-} dome_shutter_status_t;
+};
+
+using dome_shutter_status_t = dome_shutter_status_type;
 
 typedef struct alpaca_dome_t {
 
@@ -238,7 +243,7 @@ class alpaca_server {
 		alpaca_safetymonitor		*safety_monitor;
 		alpaca_telescope			*telescope;
 
-		ascom_error_t	transaction_status;
+		ascom_error		transaction_status;
 
 		// flawfinder: ignore
 		char			buf[ 255 ] = {0};
