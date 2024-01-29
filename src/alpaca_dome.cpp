@@ -69,6 +69,7 @@ void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 
 		station.get_dome()->trigger_close();
 		dome_shutter_status = dome_shutter_status_t::Closing;
+
 		snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Alpaca dome.closeshutter OK\n" );
@@ -141,7 +142,7 @@ void alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *tra
 
 		// FIXME Issue #26 : Of that we can be sure, but the rest?
 		if ( station.get_dome()->closed() )
-			dome_shutter_status = dome_shutter_status_t::Closed;
+      dome_shutter_status = dome_shutter_status_t::Closed;
 		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", static_cast<byte>( dome_shutter_status ), transaction_details );
 
 	} else
