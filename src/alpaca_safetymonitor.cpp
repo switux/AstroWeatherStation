@@ -55,18 +55,18 @@ void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
 
 			is_connected = true;
-			snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 		} else {
 
 			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
 
 				is_connected = false;
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":0,\"ErrorMessage\":\"\"}", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 			} else
 
-				snprintf( static_cast<char *>( message_str ), 255, "{%s,\"ErrorNumber\":1025,\"ErrorMessage\":\"Invalid value (%s)\"}", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 		return;

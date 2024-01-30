@@ -1144,10 +1144,10 @@ void ascom_device::not_implemented( AsyncWebServerRequest *request, const char *
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
 
-void ascom_device::device_error( AsyncWebServerRequest *request, const char *transaction_details, ascom_driver_error_t error, char *msg )
+void ascom_device::device_error( AsyncWebServerRequest *request, const char *transaction_details, ascom_driver_error error, char *msg )
 {
 	if ( is_connected )
-		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s","Value":false,%s})json", 0x500+error, msg, transaction_details );
+		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s","Value":false,%s})json", 0x500 + static_cast<byte>( error ), msg, transaction_details );
 	else
 		snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":1031,"ErrorMessage":"%s is not connected",%s})json", devicetype, transaction_details );
 

@@ -61,6 +61,8 @@ RTC_DATA_ATTR time_t 	last_ntp_time = 0;
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;
 RTC_DATA_ATTR bool		catch_rain_event = false;
 
+extern uint32_t	initheap;
+
 AstroWeatherStation::AstroWeatherStation( void )
 {
 	alpaca = nullptr;
@@ -82,18 +84,17 @@ AstroWeatherStation::AstroWeatherStation( void )
 
 void AstroWeatherStation::check_ota_updates( void )
 {
-	ESP32OTAPull	ota;
-	// flawfinder: ignore
-	char			string[64];
-	int				ret_code;
-	uint8_t			*wifi_mac = network.get_wifi_mac();
+	ESP32OTAPull			ota;
+	std::array<char, 64>	string;
+	int						ret_code;
+	uint8_t					*wifi_mac = network.get_wifi_mac();
 
-	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
-	ota.OverrideBoard( string );
-	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	ota.OverrideDevice( string );
-	snprintf( string, 64, "%d-%s-%s-%s", config->get_pwr_mode(), config->get_pcb_version(), REV, BUILD_DATE );
-	ota.SetConfig( string );
+	snprintf( string.data(), string.size(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+	ota.OverrideBoard( string.data() );
+	snprintf( string.data(), string.size(), "%02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
+	ota.OverrideDevice( string.data() );
+	snprintf( string.data(), string.size(), "%d-%s-%s-%s", config->get_pwr_mode(), config->get_pcb_version(), REV, BUILD_DATE );
+	ota.SetConfig( string.data() );
 	ota.SetCallback( OTA_callback );
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
 	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV );
@@ -271,6 +272,9 @@ char *AstroWeatherStation::get_json_sensor_data( void )
 	json_data["gps_time_usec"] = sensor_data->gps.time.tv_usec;
 	json_data["uptime"] = get_uptime();
 
+	json_data["initheap" ] = initheap;
+	json_data["freeheap"] = xPortGetFreeHeapSize();
+	
 	serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
 	return json_sensor_data;
 }
@@ -378,11 +382,10 @@ bool AstroWeatherStation::has_rain_sensor( void )
 
 bool AstroWeatherStation::initialise( void )
 {
-	unsigned long	start = micros();
-	unsigned long	guard = 0;
-	// flawfinder: ignore
-	char			string[64];
-	uint8_t			mac[6];
+	unsigned long			start = micros();
+	unsigned long			guard = 0;
+	std::array<char,64>		string;
+	std::array<uint8_t,6>	mac;
 
  	pinMode( GPIO_DEBUG, INPUT );
 
@@ -401,18 +404,18 @@ bool AstroWeatherStation::initialise( void )
 		return false;
 
 	solar_panel = ( config->get_pwr_mode() == aws_pwr_src::panel );
-	snprintf( string, 64, "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
-	ota_board = strdup( string );
+	snprintf( string.data(), string.size(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+	ota_board = strdup( string.data() );
 
 	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
 		boot_timestamp = 0;
 
-	esp_read_mac( mac, ESP_MAC_WIFI_STA );
-	snprintf( string, 64, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
-	ota_device = strdup( string );
+	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
+	snprintf( string.data(), string.size(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+	ota_device = strdup( string.data() );
 
-	snprintf( string, 64, "%d-%s-%s-%s",config->get_pwr_mode(), config->get_pcb_version(), REV, BUILD_DATE );
-	ota_config = strdup( string );
+	snprintf( string.data(), string.size(), "%d-%s-%s-%s",config->get_pwr_mode(), config->get_pcb_version(), REV, BUILD_DATE );
+	ota_config = strdup( string.data() );
 
 	// Initialise here and read battery level before initialising WiFi as GPIO_13 is on ADC_2, and is not available when WiFi is on.
 	sensor_manager = new AWSSensorManager( solar_panel, debug_mode );
@@ -615,29 +618,26 @@ bool AstroWeatherStation::poll_sensors( void )
 
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
-	// flawfinder: ignore
-  	char	string[96];
-	byte 	i;
+	std::array<char, 96>	string; 
+ 	byte 	i;
 	va_list	args;
 
-	memset( string, 0, 96 );
+	memset( string.data(), 0, string.size() );
 	va_start( args, fmt );
-	// flawfinder: ignore
-	int l = vsnprintf( string, 92, fmt, args );	// NOSONAR
+	int l = vsnprintf( string.data(), 92, fmt, args );	// NOSONAR
 	va_end( args );
 	if ( l >= 0 ) {
 		for( i = l; i < 92; string[ i++ ] = ' ' );
-		strlcat( string, "#\n", 95 );
+		strlcat( string.data(), "#\n", string.size() - 1 );
 	}
-	Serial.printf( "%s", string );
+	Serial.printf( "%s", string.data() );
 }
 
 void AstroWeatherStation::print_runtime_config( void )
 {
-	// flawfinder: ignore
-  	char	string[97];
-	char	*root_ca = config->get_root_ca();
-	int		ca_pos = 0;
+	std::array<char,97>	string;
+	char				*root_ca = config->get_root_ca();
+	int					ca_pos = 0;
 
 	print_config_string( "# AP SSID      : %s", config->get_wifi_ap_ssid() );
 	print_config_string( "# AP PASSWORD  : %s", config->get_wifi_ap_password() );
@@ -651,14 +651,14 @@ void AstroWeatherStation::print_runtime_config( void )
 	print_config_string( "# URL PATH     : /%s", config->get_url_path() );
 	print_config_string( "# TZNAME       : %s", config->get_tzname() );
 
-	memset( string, 0, 97 );
-	int str_len = snprintf( string, 96, "# ROOT CA      : " );
+	memset( string.data(), 0, string.size() );
+	int str_len = snprintf( string.data(), string.size(), "# ROOT CA      : " );
 	// flawfinder: ignore
 	int ca_len = strlen( root_ca );
 	int string_pos;
 	while ( ca_pos < ca_len ) {
 
-		strlcat( string, root_ca + ca_pos, 92 );
+		strlcat( string.data(), root_ca + ca_pos, 92 );
 		for ( string_pos = str_len; string_pos < 92; string_pos++ ) {
 
 			if ( string[ string_pos ] == '\n' ) {
@@ -669,7 +669,7 @@ void AstroWeatherStation::print_runtime_config( void )
 
 				else  {
 
-					memcpy( string + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
+					memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
 					ca_pos++;
 				}
 			}
@@ -680,11 +680,11 @@ void AstroWeatherStation::print_runtime_config( void )
 		}
 		ca_pos--;
 		for( int j = string_pos; j < 92; string[ j++ ] = ' ' );
-		memset( string + 91, 0, 6 );
-		strlcat( string, " #\n", 96 );
-		Serial.printf( "%s", string );
-		memset( string, 0, 97 );
-		str_len = snprintf( string, 96, "# " );
+		memset( string.data() + 91, 0, 6 );
+		strlcat( string.data(), " #\n", 96 );
+		Serial.printf( "%s", string.data() );
+		memset( string.data(), 0, 97 );
+		str_len = snprintf( string.data(), 96, "# " );
 	}
 
 	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
@@ -721,38 +721,38 @@ void AstroWeatherStation::reboot( void )
 
 void AstroWeatherStation::report_unavailable_sensors( void )
 {
-	// flawfinder: ignore
-	const char	sensor_name[7][13] = { "MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RAIN_SENSOR ", "GPS " };
-	// flawfinder: ignore
-	char		unavailable_sensors[96] = "Unavailable sensors: ";
+	std::array<std::string, 7> sensor_name = { "MLX96014 ", "TSL2591 ", "BME280 ", "WIND VANE ", "ANEMOMETER ", "RAIN_SENSOR ", "GPS " };
+	std::array<char,96> unavailable_sensors;
 	uint8_t		j = sensor_manager->get_available_sensors();
 	uint8_t		k;
+
+	strlcpy( unavailable_sensors.data(), "Unavailable sensors: ", unavailable_sensors.size() );
 
 	k = j;
 	for ( uint8_t i = 0; i < 7; i++ ) {
 
 		if ( !( k & 1 ))
-			strlcat( unavailable_sensors, sensor_name[i], 13 );
+			strlcat( unavailable_sensors.data(), sensor_name[i].c_str(), 13 );
 		k >>= 1;
 	}
 
 	if ( debug_mode ) {
 
-		Serial.printf( "[DEBUG] %s", unavailable_sensors );
+		Serial.printf( "[DEBUG] %s", unavailable_sensors.data() );
 
 		if ( j == ALL_SENSORS )
 			Serial.printf( "none.\n" );
 	}
 
 	if ( j != ALL_SENSORS )
-		send_alarm( "Unavailable sensors report", unavailable_sensors );
+		send_alarm( "Unavailable sensors report", unavailable_sensors.data() );
 }
 
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 {
 	DynamicJsonDocument content( 512 );
 	// flawfinder: ignore
-	char jsonString[ 600 ];
+	char jsonString[ 600 ];	// NOSONAR
 	content["subject"] = subject;
 	content["message"] = message;
 

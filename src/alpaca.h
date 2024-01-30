@@ -81,12 +81,13 @@ enum struct ascom_error_t : byte
 };
 using ascom_error = ascom_error_t;
 
-typedef enum
+enum struct ascom_driver_error_t : byte
 {
 	NotAvailable,
 	DeviceTimeout
 
-} ascom_driver_error_t;
+};
+using ascom_driver_error = ascom_driver_error_t;
 
 class ascom_device {
 

@@ -67,16 +67,17 @@ void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char 
 
 		if ( !station.get_sensor_data()->gps.fix && !station.is_ntp_synced() )
 
-			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix and not NTP synced", transaction_details );
 
 		else {
 			
 			if ( station.get_location_coordinates( &latitude, &longitude )) {
 				
 				astro_lib.setLatLong( latitude, longitude );
-				struct tm  *utc_time = gmtime( &station.get_sensor_data()->gps.time.tv_sec );
+				struct tm dummy;
+				struct tm  *utc_time = gmtime_r( &station.get_sensor_data()->gps.time.tv_sec, &dummy );
 				utc_time->tm_isdst = -1;
-				const struct tm *local_time = localtime( &station.get_sensor_data()->gps.time.tv_sec );
+				const struct tm *local_time = localtime_r( &station.get_sensor_data()->gps.time.tv_sec, &dummy );
 				time_t time2 = mktime( utc_time );
 				astro_lib.setTimeZone( (int)( station.get_sensor_data()->gps.time.tv_sec - time2 ) / 3600 );
 				Serial.printf("TZ OFFSET=%d\n", (int)( station.get_sensor_data()->gps.time.tv_sec - time2 ) / 3600);
@@ -90,7 +91,7 @@ void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char 
 
 			} else
 
-				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix", transaction_details );
 		}
 	} else
 
@@ -111,7 +112,7 @@ void alpaca_telescope::siteelevation( AsyncWebServerRequest *request, const char
 			
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix", transaction_details );
 			else
 				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", station.get_sensor_data()->gps.altitude, transaction_details );
 		}
@@ -133,7 +134,7 @@ void alpaca_telescope::sitelatitude( AsyncWebServerRequest *request, const char 
 
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix", transaction_details );
 			else
 				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", station.get_sensor_data()->gps.latitude, transaction_details );
 		}
@@ -155,7 +156,7 @@ void alpaca_telescope::sitelongitude( AsyncWebServerRequest *request, const char
 
 			if ( !station.get_sensor_data()->gps.fix )
 
-				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix", transaction_details );
+				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix", transaction_details );
 			else
 				snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.6f,%s})json", station.get_sensor_data()->gps.longitude, transaction_details );
 
@@ -173,11 +174,12 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 
 		if ( !station.get_sensor_data()->gps.fix && !station.is_ntp_synced() )
 
-			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + NotAvailable, "No GPS fix and not NTP synced", transaction_details );
+			snprintf( static_cast<char *>( message_str ), 255, R"json({"ErrorNumber":%d,"ErrorMessage":"%s",%s})json", 0x500 + static_cast<byte>( ascom_driver_error::NotAvailable ), "No GPS fix and not NTP synced", transaction_details );
 
 		else {
 			now = time( nullptr );
-			struct tm 	*utc_time = gmtime( &now );
+			struct tm	dummy;
+			struct tm 	*utc_time = gmtime_r( &now, &dummy );
 			// flawfinder: ignore
 			char tmp[64];
 			strftime( tmp, 63, "%FT%TZ", utc_time );
