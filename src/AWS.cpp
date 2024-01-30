@@ -625,6 +625,7 @@ void AstroWeatherStation::print_config_string( const char *fmt, ... )
 	memset( string.data(), 0, string.size() );
 	va_start( args, fmt );
 	int l = vsnprintf( string.data(), 92, fmt, args );	// NOSONAR
+
 	va_end( args );
 	if ( l >= 0 ) {
 		for( i = l; i < 92; string[ i++ ] = ' ' );
