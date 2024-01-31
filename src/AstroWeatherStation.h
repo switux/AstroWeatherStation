@@ -38,6 +38,15 @@ extern const char			*REV;
 
 #include "AWSGPS.h"
 
+struct aws_health_data_t {
+
+	float			battery_level;
+	uint32_t		uptime;
+	uint32_t		init_heap_size;
+	uint32_t		current_heap_size;
+	uint32_t		largest_free_heap_block;
+};
+
 struct sensor_data_t {
 
 	time_t			timestamp;

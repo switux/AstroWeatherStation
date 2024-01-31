@@ -84,19 +84,20 @@ class AstroWeatherStation {
 
 	private:
 
-		alpaca_server		*alpaca;
-		bool				debug_mode;
-		AWSConfig			*config;
-		bool				config_mode;
-		AWSDome				*dome;
-		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];
-		bool				ntp_synced;
-		char				*ota_board;
-		char				*ota_config;
-		char				*ota_device;
-		bool				rain_event;
-		I2C_SC16IS750		*sc16is750;
-		AWSSensorManager 	*sensor_manager;
+		alpaca_server		*alpaca = nullptr;
+		aws_health_data_t	station_health_data;
+		AWSConfig			config;
+		bool				config_mode	= false;
+		bool				debug_mode	= false;
+		AWSDome				*dome		= nullptr;
+		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
+		bool				ntp_synced	= false;
+		char				*ota_board	= nullptr;
+		char				*ota_config	= nullptr;
+		char				*ota_device	= nullptr;
+		bool				rain_event	= false;
+		I2C_SC16IS750		*sc16is750	= nullptr;
+		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		*server;
 		bool				solar_panel;
 							// flawfinder: ignore
@@ -109,6 +110,7 @@ class AstroWeatherStation {
 		void		check_rain_event_guard_time( void );
 		IPAddress	cidr_to_mask( byte );
 		bool		connect_to_wifi( void );
+		void		compute_uptime( void );
 		bool		disconnect_from_wifi( void );
 		void		display_banner( void );
 		void		enter_config_mode( void );
@@ -148,7 +150,8 @@ class AstroWeatherStation {
         char            *get_json_string_config( void );
         bool			get_location_coordinates( double *, double * );
         char            *get_root_ca( void );
-		char            *get_uptime( void );
+		uint32_t        get_uptime( void );
+		char            *get_uptime_str( char *, size_t );
         byte            get_wifi_sta_cidr_prefix( void );
 		IPAddress       *get_wifi_sta_dns( void );
 		IPAddress       *get_wifi_sta_gw( void );

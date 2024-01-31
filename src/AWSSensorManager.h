@@ -70,15 +70,15 @@ class AWSSensorManager {
     char 				hw_version[6];
     uint8_t 			available_sensors;
     sensor_data_t		sensor_data;
-    bool				debug_mode;
+    bool				debug_mode	= false;
 	bool				rain_event;
-	bool				solar_panel;
+	bool				solar_panel	= false;
     TaskHandle_t		sensors_task_handle;
     SemaphoreHandle_t	i2c_mutex = NULL;
    	uint32_t			polling_ms_interval;
 
   public:
-    					AWSSensorManager( bool, bool );
+    					AWSSensorManager( void );
     bool				begin( void );
     uint8_t				get_available_sensors( void );
     bool				get_debug_mode( void );
@@ -94,7 +94,9 @@ class AWSSensorManager {
     void				read_rain_sensor( void );
     void				read_sensors( void );
     void				reset_rain_event( void );
+    void				set_debug_mode( bool );
     void				set_rain_event( void );
+	void				set_solar_panel( bool );
 
   private:
 

@@ -43,7 +43,7 @@ SemaphoreHandle_t sensors_read_mutex = NULL;
 
 extern AstroWeatherStation station;
 
-AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode ) :
+AWSSensorManager::AWSSensorManager( void ) :
 	bme( new Adafruit_BME280() ),
 	mlx( new Adafruit_MLX90614() ),
 	tsl( new Adafruit_TSL2591( 2591 )),
@@ -53,22 +53,12 @@ AWSSensorManager::AWSSensorManager( bool _solar_panel, bool _debug_mode ) :
 	wind_sensors( nullptr ),
 	config( nullptr ),
 	available_sensors( 0 ),
-	debug_mode( _debug_mode ),
 	rain_event( false ),
-	solar_panel( _solar_panel ),
 	i2c_mutex( xSemaphoreCreateMutex() ),
 	polling_ms_interval( DEFAULT_SENSOR_POLLING_MS_INTERVAL )
 {
-
 	hw_version[ 0 ] = 0;
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
-
-	if ( solar_panel ) {
-
-		pinMode( GPIO_BAT_ADC_EN, OUTPUT );
-		pinMode( GPIO_BAT_ADC, INPUT );
-
-	}
 }
 
 uint8_t AWSSensorManager::get_available_sensors( void )
@@ -538,7 +528,24 @@ void AWSSensorManager::retrieve_sensor_data( void )
 	}
 }
 
+void AWSSensorManager::set_debug_mode( bool b )
+{
+	debug_mode = b;
+}
+
 void AWSSensorManager::set_rain_event( void )
 {
 	rain_event = true;
+}
+
+void AWSSensorManager::set_solar_panel( bool b )
+{
+	solar_panel = b;
+	
+	if ( solar_panel ) {
+
+		pinMode( GPIO_BAT_ADC_EN, OUTPUT );
+		pinMode( GPIO_BAT_ADC, INPUT );
+
+	}
 }

@@ -73,7 +73,10 @@ void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 {
-	request->send( 200, "text/plain", station.get_uptime() );
+	std::array<char,32> str;
+
+	station.get_uptime_str( str.data(), str.size() );
+	request->send( 200, "text/plain", str.data() );
 }
 
 void AWSWebServer::index( AsyncWebServerRequest *request )
