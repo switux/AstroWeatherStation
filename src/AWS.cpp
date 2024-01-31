@@ -61,6 +61,8 @@ RTC_DATA_ATTR time_t 	last_ntp_time = 0;				// NOSONAR
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;			// NOSONAR
 RTC_DATA_ATTR bool		catch_rain_event = false;		// NOSONAR
 
+extern uint32_t	initheap;
+
 AstroWeatherStation::AstroWeatherStation( void )
 {
 	station_health_data.init_heap_size = xPortGetFreeHeapSize();
@@ -615,26 +617,25 @@ bool AstroWeatherStation::poll_sensors( void )
 
 void AstroWeatherStation::print_config_string( const char *fmt, ... )
 {
-	// flawfinder: ignore
-  	char	string[96];
-	byte 	i;
+	std::array<char, 96>	string; 
+ 	byte 	i;
 	va_list	args;
 
-	memset( string, 0, 96 );
+	memset( string.data(), 0, string.size() );
 	va_start( args, fmt );
-	// flawfinder: ignore
-	int l = vsnprintf( string, 92, fmt, args );	// NOSONAR
+	int l = vsnprintf( string.data(), 92, fmt, args );	// NOSONAR
+
 	va_end( args );
 	if ( l >= 0 ) {
 		for( i = l; i < 92; string[ i++ ] = ' ' );
-		strlcat( string, "#\n", 95 );
+		strlcat( string.data(), "#\n", string.size() - 1 );
 	}
-	Serial.printf( "%s", string );
+	Serial.printf( "%s", string.data() );
 }
 
 void AstroWeatherStation::print_runtime_config( void )
 {
-  	std::array<char,97>	string;
+ 	std::array<char,97>	string;
 	char				*root_ca = config.get_root_ca();
 	int					ca_pos = 0;
 
@@ -652,6 +653,7 @@ void AstroWeatherStation::print_runtime_config( void )
 
 	memset( string.data(), 0, string.size() );
 	int str_len = snprintf( string.data(), string.size() - 1, "# ROOT CA      : " );
+
 	// flawfinder: ignore
 	int ca_len = strlen( root_ca );
 	int string_pos;
