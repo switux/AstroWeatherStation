@@ -33,9 +33,8 @@
 #include <Wire.h>
 #include "SC16IS750.h"
 
-I2C_SC16IS750::I2C_SC16IS750( uint8_t _address ) : address( _address >> 1 ), has_peek( 0 ), peek_byte( -1 )
+I2C_SC16IS750::I2C_SC16IS750( void )
 {
-	// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
 }
 
 int I2C_SC16IS750::available( void )
@@ -43,8 +42,17 @@ int I2C_SC16IS750::available( void )
     return available_data_in_FIFO();
 }
 
+void I2C_SC16IS750::set_address( uint8_t a )
+{
+	// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
+	address = a >> 1;
+}
+
 bool I2C_SC16IS750::begin( uint32_t baudrate )
 {
+	if ( !address )
+		return false;
+
 	Wire.begin();
 	if ( !test() ) {
 

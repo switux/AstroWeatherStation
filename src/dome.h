@@ -21,25 +21,25 @@
 #ifndef _DOME_H
 #define	_DOME_H
 
-class AWSDome {
+class Dome : public Device {
 
 	private:
 
-		bool				close_dome;
-		bool				is_connected;
-		bool				debug_mode;
-		I2C_SC16IS750		*sc16is750;
+		bool				close_dome		= false;
+		bool				is_connected	= false;
+		bool				debug_mode		= false;
+		I2C_SC16IS750		*sc16is750		= nullptr;
 		SemaphoreHandle_t	i2c_mutex;
 		TaskHandle_t		dome_task_handle;
 
 	public:
 
-		explicit AWSDome( bool );
-		AWSDome( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
+		explicit Dome( void );
 		void close( void * );
 		bool closed( void );
 		bool get_connected( void );
-		void start_control_task( void );
+		void initialise( bool );
+		void initialise( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
 		void trigger_close( void );
 };
 

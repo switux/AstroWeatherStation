@@ -25,7 +25,7 @@
 #include <HardwareSerial.h>
 #include "gpio_config.h"
 
-class Hydreon : public Sensor {
+class Hydreon : public Device {
 
 	private:
 
@@ -47,6 +47,7 @@ class Hydreon : public Sensor {
 		bool			initialise( void );
 		void			probe( uint16_t );
 		byte			read_string( void );
+		void			try_baudrates( void );
 
 	public:
 

@@ -29,4 +29,32 @@
 #define TELESCOPE_DRIVER_VERSION	"1.0"
 #define	TELESCOPE_INTERFACE_VERSION	3
 
+#include <SiderealPlanets.h>
+#include "alpaca_device.h"
+
+class alpaca_telescope : public alpaca_device
+{
+	private:
+			SiderealPlanets	astro_lib;
+
+			double	forced_latitude = -1;
+			double	forced_longitude = -1;
+			double	forced_altitude = -1;
+	public:
+
+		explicit alpaca_telescope( bool );
+		void set_connected( AsyncWebServerRequest *, const char * );
+		void siderealtime( AsyncWebServerRequest *, const char * );
+		void siteelevation( AsyncWebServerRequest *, const char * );
+		void set_siteelevation( AsyncWebServerRequest *, const char * );
+		void sitelatitude( AsyncWebServerRequest *, const char * );
+		void set_sitelatitude( AsyncWebServerRequest *, const char * );
+		void sitelongitude( AsyncWebServerRequest *, const char * );
+		void set_sitelongitude( AsyncWebServerRequest *, const char * );
+		void trackingrates( AsyncWebServerRequest *, const char * );
+		void utcdate( AsyncWebServerRequest *, const char * );
+		void set_utcdate( AsyncWebServerRequest *, const char * );
+		void axisrates( AsyncWebServerRequest *, const char * );
+};
+
 #endif

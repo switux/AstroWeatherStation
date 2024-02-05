@@ -23,7 +23,8 @@
 #include "defaults.h"
 #include "gpio_config.h"
 #include "common.h"
-#include "alpaca.h"
+#include "alpaca_device.h"
+#include "alpaca_server.h"
 #include "alpaca_dome.h"
 #include "AstroWeatherStation.h"
 
@@ -100,7 +101,7 @@ void alpaca_dome::set_connected( AsyncWebServerRequest *request, const char *tra
 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
 
-			if ( station.get_dome() != NULL ) {
+			if ( station.get_dome() != nullptr ) {
 
 				is_connected = true;
 				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );

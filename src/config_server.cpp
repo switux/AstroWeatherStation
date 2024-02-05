@@ -39,7 +39,7 @@ extern HardwareSerial Serial1;
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
-AWSWebServer::AWSWebServer( void ) : server( nullptr ), debug_mode( false )
+AWSWebServer::AWSWebServer( void )
 {
 }
 

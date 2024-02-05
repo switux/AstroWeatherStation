@@ -43,8 +43,8 @@ class AWSWebServer {
 
 	private:
 
-		AsyncWebServer 	*server;
-		bool			debug_mode;
+		AsyncWebServer 	*server		= nullptr;
+		bool			debug_mode	= false;
 
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );

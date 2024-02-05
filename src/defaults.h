@@ -39,7 +39,7 @@
 #define	DEFAULT_WIFI_MODE				aws_wifi_mode::both
 #define	DEFAULT_WIFI_STA_IP_MODE		aws_ip_mode::dhcp
 
-#define	DEFAULT_SC16IS750_ADDR		0x90
+const uint8_t	DEFAULT_SC16IS750_ADDR	=	0x90;
 
 #define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
 

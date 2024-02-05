@@ -21,51 +21,17 @@
 
 #include "gpio_config.h"
 #include "SC16IS750.h"
+#include "device.h"
 #include "dome.h"
 
-AWSDome::AWSDome( bool _debug_mode )
+Dome::Dome( void )
 {
-	debug_mode = _debug_mode;
-	sc16is750 = nullptr;
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Enabling dome control.\n" );
-
-	pinMode( GPIO_DOME_1_DIRECT, OUTPUT );
-	pinMode( GPIO_DOME_2_DIRECT, OUTPUT );
-	pinMode( GPIO_DOME_STATUS, INPUT );
-
-	start_control_task();
+	set_name( "Roll-off roof" );
+	set_description( "Generic relay driven roll-off roof" );
+	set_driver_version( "1.0" );
 }
 
-AWSDome::AWSDome( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool _debug_mode ) : i2c_mutex( _i2c_mutex )
-{
-	debug_mode = _debug_mode;
-	sc16is750 = _sc16is750;
-	close_dome = false;
-
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Enabling dome control through SC16IS750.\n" );
-
-	while ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) != pdTRUE );
-
-	if ( !sc16is750->begin( 9600 )) {		// FIXME: should not need to set baud rate to only use GPIO
-
-		Serial.printf( "[ERROR] Could not find I2C UART. Cannot control dome!\n" );
-		xSemaphoreGive( i2c_mutex );
-		return;
-	}
-
-	sc16is750->pinMode( GPIO_DOME_1, OUTPUT );
-	sc16is750->pinMode( GPIO_DOME_2, OUTPUT );
-	xSemaphoreGive( i2c_mutex );
-
-	pinMode( GPIO_DOME_STATUS, INPUT );
-
-	start_control_task();
-}
-
-void AWSDome::close( void *dummy )
+void Dome::close( void *dummy )
 {
 	while( true ) {
 
@@ -99,24 +65,26 @@ void AWSDome::close( void *dummy )
 	}
 }
 
-bool AWSDome::closed( void )
+bool Dome::closed( void )
 {
 	bool x = ( digitalRead( GPIO_DOME_STATUS ) == LOW );
 
-	if ( debug_mode )
+	if ( get_debug_mode() )
 		Serial.printf( "[DEBUG] Dome status: %s\n", x ? "closed" : "open" );
 
 	return x;
 }
 
-void AWSDome::start_control_task( void )
+void Dome::initialise( bool _debug_mode )
 {
+	set_debug_mode( _debug_mode );
+	
 	// Controlling the dome from an ISR just does not work because the wdt fires off
 	// during I2C communication with the SC16IS750
 	// Instead we just toggle a flag which is then read by a high prio task in charge of
 	// closing the dome.
 
-	std::function<void(void *)> _close = std::bind( &AWSDome::close, this, std::placeholders::_1 );
+	std::function<void(void *)> _close = std::bind( &Dome::close, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {
             std::function<void(void*)>* close_proxy = static_cast<std::function<void(void*)>*>( param );
@@ -124,7 +92,14 @@ void AWSDome::start_control_task( void )
 		}, "DomeControl", 2000, &_close, configMAX_PRIORITIES - 2, &dome_task_handle, 1 );
 }
 
-void AWSDome::trigger_close( void )
+void Dome::initialise( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, bool _debug_mode )
+{
+	i2c_mutex =_i2c_mutex;
+	sc16is750 = _sc16is750;
+	initialise( _debug_mode );
+}
+
+void Dome::trigger_close( void )
 {
 	close_dome = true;
 }

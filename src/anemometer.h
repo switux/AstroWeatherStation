@@ -27,7 +27,7 @@
 #define SEND	HIGH
 #define RECV	LOW
 
-class Anemometer : public Sensor {
+class Anemometer : public Device {
 
 	public:
 

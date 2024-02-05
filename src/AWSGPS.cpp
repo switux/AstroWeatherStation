@@ -17,6 +17,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <stdint.h>
 #include "defaults.h"
 #include "gpio_config.h"
 #include "AWSGPS.h"
@@ -51,7 +52,7 @@ void AWSGPS::read_GPS( void )
 	}
 }
 
-void AWSGPS::feed( void *dummy )
+void AWSGPS::feed( void *dummy )	// NOSONAR
 {
 	while( true ) {
 
@@ -150,7 +151,7 @@ bool AWSGPS::start( void )
 {
 	std::function<void(void *)> _feed = std::bind( &AWSGPS::feed, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore( 
-		[](void *param) {
+		[](void *param) {	// NOSONAR
             std::function<void(void*)>* feed_proxy = static_cast<std::function<void(void*)>*>( param );
             (*feed_proxy)( NULL );
 		}, "GPSFeed", 2000, &_feed, 4, &gps_task_handle, 1 );
