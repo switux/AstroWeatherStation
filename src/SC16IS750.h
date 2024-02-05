@@ -157,7 +157,7 @@
 class I2C_SC16IS750
 {
 	public:
-				explicit I2C_SC16IS750( uint8_t );
+				explicit I2C_SC16IS750( void );
 		bool	begin( uint32_t );
 		// flawfinder: ignore
 		int8_t	read( void );
@@ -169,13 +169,14 @@ class I2C_SC16IS750
 		bool	digitalRead( uint8_t );
 		bool	digitalWrite( uint8_t, bool );
 		bool	pinMode( uint8_t, bool );
+		void	set_address( uint8_t );
 		bool 	setup_GPIO_interrupt( uint8_t, bool );
 
 	private:
 
-		uint8_t address;
-		bool	has_peek;
-		int		peek_byte;
+		uint8_t address		= 0;
+		bool	has_peek	= false;
+		int		peek_byte	= -1;
 
 		void	FIFO_enable( bool );
 		uint8_t get_IO_state( void );

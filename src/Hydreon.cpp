@@ -21,7 +21,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
-#include "sensor.h"
+#include "device.h"
 #include "Hydreon.h"
 
 RTC_DATA_ATTR uint16_t rain_sensor_baud = 0;	// NOSONAR
@@ -42,6 +42,7 @@ Hydreon::Hydreon( void ) : rg9_read_mutex( xSemaphoreCreateMutex() )
 {
 	set_name( "Hydreon RG-9" );
 	set_description( "The Hydreon RG-9 Solid State Rain Sensor is a rainfall sensing device." );
+	set_driver_version( "1.0" );
 	str.clear();
 }
 
@@ -92,24 +93,7 @@ bool Hydreon::initialise( void )
 		probe( rain_sensor_baud );
 
 	} else
-		for ( byte i = 0; i < HYDREON_PROBE_RETRIES; i++ ) {
-
-			if ( get_debug_mode() )
-				Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
-
-			for ( byte j = 0; j < bps.size(); j++ ) {
-
-				esp_task_wdt_reset();
-				probe( bps[j] );
-				if ( status == RAIN_SENSOR_FAIL )
-					sensor.end();
-				else
-					break;
-			}
-
-			if ( status != RAIN_SENSOR_FAIL )
-				break;
-		}
+		try_baudrates();
 
 	if ( status == RAIN_SENSOR_FAIL ) {
 
@@ -227,5 +211,27 @@ const char *Hydreon::reset_cause()
 		case 'D': return "Other";
 		default: return "Unknown";
 
+	}
+}
+
+void Hydreon::try_baudrates( void )
+{
+	for ( byte i = 0; i < HYDREON_PROBE_RETRIES; i++ ) {
+
+		if ( get_debug_mode() )
+			Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
+
+		for ( byte j = 0; j < bps.size(); j++ ) {
+
+			esp_task_wdt_reset();
+			probe( bps[j] );
+			if ( status == RAIN_SENSOR_FAIL )
+				sensor.end();
+			else
+				return;
+		}
+
+		if ( status != RAIN_SENSOR_FAIL )
+				return;
 	}
 }

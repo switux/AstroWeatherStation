@@ -21,7 +21,7 @@
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "sensor.h"
+#include "device.h"
 #include "wind_vane.h"
 
 const std::array<std::string, 3> Wind_vane::_windvane_model = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
@@ -42,6 +42,7 @@ bool Wind_vane::initialise( SoftwareSerial *bus, byte model, bool _debug_mode )
 	set_debug_mode( _debug_mode );
 	set_name( _windvane_model[ model ].c_str() );
 	set_description( _windvane_description[ model ].c_str() );
+	set_driver_version( "1.0");
 
 	uint64_t_to_uint8_t_array( _windvane_cmd[ model ], cmd );
 

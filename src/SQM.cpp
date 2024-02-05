@@ -23,7 +23,7 @@
 #include <Arduino.h>
 
 #include "common.h"
-#include "sensor.h"
+#include "device.h"
 #include "SQM.h"
 #include "Hydreon.h"
 #include "sensor_manager.h"

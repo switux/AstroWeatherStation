@@ -29,6 +29,8 @@
 #define OBSERVINGCONDITIONS_DRIVER_VERSION		"1.0"
 #define	OBSERVINGCONDITIONS_INTERFACE_VERSION	1
 
+#include "alpaca_device.h"
+
 // Attempt to convert RG-9 rain scale to ASCOM's ...
 const float rain_rate[] = {
 	0.F,			// No rain
@@ -41,4 +43,30 @@ const float rain_rate[] = {
 	50.1F			// Violent
 };
 
+class alpaca_observingconditions : public alpaca_device
+{
+	public:
+
+			explicit alpaca_observingconditions( bool );
+
+		void set_connected( AsyncWebServerRequest *request, const char * );
+		void get_averageperiod( AsyncWebServerRequest *request, const char * );
+		void set_averageperiod( AsyncWebServerRequest *request, const char * );
+		void cloudcover( AsyncWebServerRequest *request, const char * );
+		void dewpoint( AsyncWebServerRequest *request, const char * );
+		void humidity( AsyncWebServerRequest *request, const char * );
+		void pressure( AsyncWebServerRequest *request, const char * );
+		void rainrate( AsyncWebServerRequest *request, const char * );
+		void skybrightness( AsyncWebServerRequest *request, const char * );
+		void skyquality( AsyncWebServerRequest *request, const char * );
+		void skytemperature( AsyncWebServerRequest *request, const char * );
+		void temperature( AsyncWebServerRequest *request, const char * );
+		void winddirection( AsyncWebServerRequest *request, const char * );
+		void windgust( AsyncWebServerRequest *request, const char * );
+		void windspeed( AsyncWebServerRequest *request, const char * );
+		void refresh( AsyncWebServerRequest *request, const char * );
+		void sensordescription( AsyncWebServerRequest *request, const char * );
+		void timesincelastupdate( AsyncWebServerRequest *request, const char * );
+
+};
 #endif

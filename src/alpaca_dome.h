@@ -29,4 +29,41 @@
 #define DOME_DRIVER_VERSION		"1.0"
 #define	DOME_INTERFACE_VERSION	2
 
+#include "alpaca_device.h"
+
+enum struct dome_shutter_status_type : byte
+{
+	Open,
+	Closed,
+	Opening,
+	Closing,
+	Error
+};
+
+using dome_shutter_status_t = dome_shutter_status_type;
+
+typedef struct alpaca_dome_t {
+
+	dome_shutter_status_t	shutterstatus;
+
+} alpaca_dome_t;
+
+class alpaca_dome : public alpaca_device
+{
+	private:
+
+		dome_shutter_status_t	dome_shutter_status;
+
+	public:
+
+		explicit	alpaca_dome( bool );
+		void		abortslew( AsyncWebServerRequest *, const char * );
+		void		cansetshutter( AsyncWebServerRequest *, const char * );
+		void		closeshutter( AsyncWebServerRequest *, const char * );
+		void		openshutter( AsyncWebServerRequest *, const char * );
+		void		set_connected( AsyncWebServerRequest *, const char * );
+		void		slaved( AsyncWebServerRequest *, const char * );
+		void		shutterstatus( AsyncWebServerRequest *, const char * );
+};
+
 #endif

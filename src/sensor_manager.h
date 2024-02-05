@@ -31,7 +31,7 @@
 #include "AWSGPS.h"
 #include "config_manager.h"
 #include "SQM.h"
-#include "sensor.h"
+#include "device.h"
 #include "Hydreon.h"
 #include "anemometer.h"
 #include "wind_vane.h"

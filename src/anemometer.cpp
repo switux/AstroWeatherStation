@@ -22,7 +22,7 @@
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "sensor.h"
+#include "device.h"
 #include "anemometer.h"
 
 const std::array<std::string, 3> Anemometer::_anemometer_model = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
@@ -35,6 +35,7 @@ Anemometer::Anemometer( void )
 	memset( cmd, 0, 8 );
 	memset( answer, 0, 7 );
 	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
+	set_driver_version( "1.0" );
 }
 
 bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model, bool _debug_mode )

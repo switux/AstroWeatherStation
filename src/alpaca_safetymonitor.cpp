@@ -23,7 +23,8 @@
 #include "defaults.h"
 #include "gpio_config.h"
 #include "common.h"
-#include "alpaca.h"
+#include "alpaca_device.h"
+#include "alpaca_server.h"
 #include "alpaca_safetymonitor.h"
 #include "AstroWeatherStation.h"
 

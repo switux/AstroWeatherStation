@@ -35,6 +35,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+#include "Embedded_Template_Library.h"
+#include "etl/string.h"
 #include "defaults.h"
 #include "gpio_config.h"
 #include "SC16IS750.h"
@@ -43,7 +45,7 @@
 #include "config_manager.h"
 #include "config_server.h"
 #include "dome.h"
-#include "alpaca.h"
+#include "alpaca_server.h"
 #include "AstroWeatherStation.h"
 
 extern void IRAM_ATTR		_handle_rain_event( void );
@@ -60,8 +62,6 @@ RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;				// NOSONAR
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;			// NOSONAR
 RTC_DATA_ATTR bool		catch_rain_event = false;		// NOSONAR
-
-extern uint32_t	initheap;
 
 AstroWeatherStation::AstroWeatherStation( void )
 {
@@ -138,8 +138,30 @@ void AstroWeatherStation::compute_uptime( void )
 	}
 }
 
+void AstroWeatherStation::determine_boot_mode( void )
+{
+ 	unsigned long			start = micros();
+	unsigned long			guard = 0;
+
+	pinMode( GPIO_DEBUG, INPUT );
+
+	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
+	while ( !( gpio_get_level( GPIO_DEBUG ))) {
+
+		if (( micros() - start ) <= CONFIG_MODE_GUARD )
+			break;
+		delay( 100 );
+		guard = micros() - start;
+	}
+
+	config_mode = ( guard > CONFIG_MODE_GUARD );
+}
+
 void AstroWeatherStation::display_banner()
 {
+	if ( debug_mode )
+		return;
+
 	uint8_t	*wifi_mac = network.get_wifi_mac();
 	
 	Serial.printf( "\n#############################################################################################\n" );
@@ -206,9 +228,9 @@ bool AstroWeatherStation::get_debug_mode( void )
 	return debug_mode;
 }
 
-AWSDome	*AstroWeatherStation::get_dome( void )
+Dome *AstroWeatherStation::get_dome( void )
 {
-	return dome;
+	return &dome;
 }
 
 byte AstroWeatherStation::get_eth_cidr_prefix( void )
@@ -363,7 +385,7 @@ void AstroWeatherStation::handle_rain_event( void )
 	time( &rain_event_timestamp );
 	sensor_manager.set_rain_event();
 	if ( config.get_has_dome() && config.get_close_dome_on_rain() )
-		dome->trigger_close();
+		dome.trigger_close();
 	catch_rain_event = false;
 }
 
@@ -379,21 +401,10 @@ bool AstroWeatherStation::has_rain_sensor( void )
 
 bool AstroWeatherStation::initialise( void )
 {
-	unsigned long			start = micros();
-	unsigned long			guard = 0;
 	std::array<char,64>		string;
 	std::array<uint8_t,6>	mac;
 
- 	pinMode( GPIO_DEBUG, INPUT );
-
-	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
-	while ( (( micros() - start ) <= CONFIG_MODE_GUARD ) && !( gpio_get_level( GPIO_DEBUG ))) {
-
-		delay( 100 );
-		guard = micros() - start;
-	}
-
-	config_mode = ( guard > CONFIG_MODE_GUARD );
+	determine_boot_mode();
 
 	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV, BUILD_DATE );
 
@@ -424,14 +435,6 @@ bool AstroWeatherStation::initialise( void )
 	if ( !network.initialise( &config, debug_mode ) && config.can_rollback() )
 		return config.rollback();
 
-	if ( config.get_has_sc16is750() ) {
-
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] Initialising SC16IS750.\n" );
-
-		sc16is750 = new I2C_SC16IS750( DEFAULT_SC16IS750_ADDR );
-	}
-
 	if ( solar_panel ) {
 
 		//FIXME: we already get this to cater for station uptime
@@ -448,15 +451,18 @@ bool AstroWeatherStation::initialise( void )
 	if ( !startup_sanity_check() && config.can_rollback() )
 		return config.rollback();
 
-	if ( debug_mode )
-		display_banner();
+	display_banner();
 
+	if ( config.get_has_sc16is750() )
+		sc16is750.set_address( DEFAULT_SC16IS750_ADDR );
+		
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
 	if ( config.get_has_dome() ) {
-		if ( config.get_has_sc16is750() )
-			dome = new AWSDome( sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+
+    if ( config.get_has_sc16is750() )
+			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
 		else
-			dome = new AWSDome( debug_mode );
+			dome.initialise( debug_mode );
 
 	}
 
@@ -468,33 +474,18 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( rain_event ) {
 
-		sensor_manager.initialise( sc16is750, &config, rain_event );
+		sensor_manager.initialise( &sc16is750, &config, rain_event );
 		handle_rain_event();
 		return true;
 	}
 
-	if ( !sensor_manager.initialise( sc16is750, &config, false ))
+	if ( !sensor_manager.initialise( &sc16is750, &config, false ))
 		return false;
 
 	if ( !solar_panel ) {
 
-		alpaca = new alpaca_server( debug_mode );
-		switch ( config.get_alpaca_iface() ) {
-
-			case aws_iface::wifi_sta:
-				alpaca->start( WiFi.localIP() );
-				break;
-
-			case aws_iface::wifi_ap:
-				alpaca->start( WiFi.softAPIP() );
-				break;
-
-			case aws_iface::eth:
-				alpaca->start( Ethernet.localIP() );
-				break;
-
-		}
-
+		start_alpaca_server();
+	
 		if ( config.get_has_rain_sensor() ) {
 
 			if ( debug_mode )
@@ -517,7 +508,7 @@ bool AstroWeatherStation::initialise( void )
 
 void AstroWeatherStation::initialise_sensors( void )
 {
-	sensor_manager.initialise_sensors( sc16is750 );
+	sensor_manager.initialise_sensors( &sc16is750 );
 }
 
 bool AstroWeatherStation::is_ntp_synced( void )
@@ -615,20 +606,31 @@ bool AstroWeatherStation::poll_sensors( void )
 	return sensor_manager.poll_sensors();
 }
 
-void AstroWeatherStation::print_config_string( const char *fmt, ... )
+template<typename... Args>
+etl::string<96> AstroWeatherStation::format_helper( const char *fmt, Args... args )
 {
-	std::array<char, 96>	string; 
- 	byte 	i;
-	va_list	args;
+	char buf[96];
+	snprintf( buf, 95, fmt, args... );
+	return etl::string<96>( buf );
+}
+
+template void AstroWeatherStation::print_config_string<>(const char* format);
+
+template<typename... Args>
+void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
+{
+	etl::string<96>	string; 
+ 	byte 			i;
+ 	int				l;
 
 	memset( string.data(), 0, string.size() );
-	va_start( args, fmt );
-	int l = vsnprintf( string.data(), 92, fmt, args );	// NOSONAR
 
-	va_end( args );
+	string = format_helper( fmt, args... );
+	l = string.size();
+	
 	if ( l >= 0 ) {
-		for( i = l; i < 92; string[ i++ ] = ' ' );
-		strlcat( string.data(), "#\n", string.size() - 1 );
+		for( i = l; i < string.capacity() - 1; string[ i++ ] = ' ' );
+		strlcat( string.data(), "#\n", string.capacity() );
 	}
 	Serial.printf( "%s", string.data() );
 }
@@ -859,10 +861,28 @@ void AstroWeatherStation::send_rain_event_alarm( const char *str )
 	send_alarm( "Rain event", msg );
 }
 
+void AstroWeatherStation::start_alpaca_server( void )
+{
+	switch ( config.get_alpaca_iface() ) {
+
+		case aws_iface::wifi_sta:
+			alpaca.start( WiFi.localIP(), debug_mode );
+			break;
+
+		case aws_iface::wifi_ap:
+			alpaca.start( WiFi.softAPIP(), debug_mode );
+			break;
+
+		case aws_iface::eth:
+			alpaca.start( Ethernet.localIP(), debug_mode );
+			break;
+
+	}
+}
+
 bool AstroWeatherStation::start_config_server( void )
 {
-	server = new AWSWebServer();
-	server->initialise( debug_mode );
+	server.initialise( debug_mode );
 	return true;
 }
 
@@ -925,7 +945,7 @@ bool AstroWeatherStation::sync_time( void )
 
 	configTzTime( config.get_tzname(), ntp_server );
 
-	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {
+	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
 
 		if ( debug_mode )
 			Serial.printf( "." );
@@ -1041,9 +1061,9 @@ bool AWSNetwork::connect_to_wifi()
 	}
 	WiFi.begin( ssid , password );
 
-	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {
+	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {	// NOSONAR
 
-		Serial.print( "." );
+    Serial.print( "." );
 		delay( 1000 );
 	}
 

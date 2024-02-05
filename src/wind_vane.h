@@ -26,7 +26,7 @@
 #define SEND	HIGH
 #define RECV	LOW
 
-class Wind_vane : public Sensor {
+class Wind_vane : public Device {
 
 	public:
 

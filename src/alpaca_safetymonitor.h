@@ -29,4 +29,16 @@
 #define SAFETYMONITOR_DRIVER_VERSION		"1.0"
 #define SAFETYMONITOR_INTERFACE_VERSION		1
 
+#include "alpaca_device.h"
+
+class alpaca_safetymonitor : public alpaca_device
+{
+	public:
+
+		explicit alpaca_safetymonitor( bool );
+
+		void issafe( AsyncWebServerRequest *, const char * );
+		void set_connected( AsyncWebServerRequest *, const char * );
+};
+
 #endif

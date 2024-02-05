@@ -24,7 +24,7 @@
 #include "config_server.h"
 #include "sensor_manager.h"
 #include "dome.h"
-#include "alpaca.h"
+#include "alpaca_server.h"
 
 constexpr size_t DATA_JSON_STRING_MAXLEN = 1024;
 
@@ -84,21 +84,22 @@ class AstroWeatherStation {
 
 	private:
 
-		alpaca_server		*alpaca = nullptr;
+		alpaca_server		alpaca;
 		aws_health_data_t	station_health_data;
 		AWSConfig			config;
 		bool				config_mode	= false;
 		bool				debug_mode	= false;
-		AWSDome				*dome		= nullptr;
+		Dome				dome;
 		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
 		bool				ntp_synced	= false;
 		char				*ota_board	= nullptr;
 		char				*ota_config	= nullptr;
 		char				*ota_device	= nullptr;
 		bool				rain_event	= false;
-		I2C_SC16IS750		*sc16is750	= nullptr;
+    I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
-		AWSWebServer 		*server;
+		AWSWebServer 		server;
+
 		bool				solar_panel;
 							// flawfinder: ignore
 		char				uptime[32];
@@ -107,31 +108,36 @@ class AstroWeatherStation {
 
 		AWSNetwork			network;
 
-		void		check_rain_event_guard_time( void );
-		IPAddress	cidr_to_mask( byte );
-		bool		connect_to_wifi( void );
-		void		compute_uptime( void );
-		bool		disconnect_from_wifi( void );
-		void		display_banner( void );
-		void		enter_config_mode( void );
-		bool		initialise_ethernet( void );
-		bool		initialise_network( void );
-		bool		initialise_wifi( void );
-		byte		mask_to_cidr( uint32_t );
-		const char	*OTA_message( int );
-		void		periodic_tasks( void * );
-		bool		post_content( const char *, const char * );
-		void		print_config_string( const char *, ... );
-		void		print_runtime_config( void );
-		void		send_backlog_data( void );
-		void		send_rain_event_alarm( const char * );
-		bool		shutdown_wifi( void );
-		bool		start_config_server( void );
-		bool		start_hotspot( void );
-		bool		startup_sanity_check( void );
-		bool		stop_hotspot( void );
-		bool		store_unsent_data( char * );
-		void		wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
+		void			check_rain_event_guard_time( void );
+		IPAddress		cidr_to_mask( byte );
+		bool			connect_to_wifi( void );
+		void			compute_uptime( void );
+		void 			determine_boot_mode( void );
+		bool			disconnect_from_wifi( void );
+		void			display_banner( void );
+		void			enter_config_mode( void );
+		template<typename... Args>
+		etl::string<96>	format_helper( const char *, Args... );
+		bool			initialise_ethernet( void );
+		bool			initialise_network( void );
+		bool			initialise_wifi( void );
+		byte			mask_to_cidr( uint32_t );
+		const char		*OTA_message( int );
+		void			periodic_tasks( void * );
+		bool			post_content( const char *, const char * );
+		template<typename... Args>
+		void			print_config_string( const char *, Args... );
+		void			print_runtime_config( void );
+		void			send_backlog_data( void );
+		void			send_rain_event_alarm( const char * );
+		bool			shutdown_wifi( void );
+		void			start_alpaca_server( void );
+		bool			start_config_server( void );
+		bool			start_hotspot( void );
+		bool			startup_sanity_check( void );
+		bool			stop_hotspot( void );
+		bool			store_unsent_data( char * );
+		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:
 
@@ -139,7 +145,8 @@ class AstroWeatherStation {
 		void            check_ota_updates( void );
 		const char		*get_anemometer_sensorname( void );
 		bool			get_debug_mode( void );
-		AWSDome			*get_dome( void );
+		Dome			*get_dome( void );
+
 		sensor_data_t   *get_sensor_data( void );
 		uint16_t        get_config_port( void );
         byte            get_eth_cidr_prefix( void );
