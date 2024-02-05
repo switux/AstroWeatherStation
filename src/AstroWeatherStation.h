@@ -96,9 +96,10 @@ class AstroWeatherStation {
 		char				*ota_config	= nullptr;
 		char				*ota_device	= nullptr;
 		bool				rain_event	= false;
-		I2C_SC16IS750		sc16is750;
+    I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
+
 		bool				solar_panel;
 							// flawfinder: ignore
 		char				uptime[32];
@@ -145,6 +146,7 @@ class AstroWeatherStation {
 		const char		*get_anemometer_sensorname( void );
 		bool			get_debug_mode( void );
 		Dome			*get_dome( void );
+
 		sensor_data_t   *get_sensor_data( void );
 		uint16_t        get_config_port( void );
         byte            get_eth_cidr_prefix( void );

@@ -34,9 +34,9 @@
 #include <stdarg.h>
 #include <FS.h>
 #include <SPIFFS.h>
+
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
-
 #include "defaults.h"
 #include "gpio_config.h"
 #include "SC16IS750.h"
@@ -414,7 +414,7 @@ bool AstroWeatherStation::initialise( void )
 	solar_panel = ( config.get_pwr_mode() == aws_pwr_src::panel );
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
-	
+
 	snprintf( string.data(), string.size(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota_board = strdup( string.data() );
 
@@ -458,10 +458,12 @@ bool AstroWeatherStation::initialise( void )
 		
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
 	if ( config.get_has_dome() ) {
-		if ( config.get_has_sc16is750() )
+
+    if ( config.get_has_sc16is750() )
 			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
 		else
 			dome.initialise( debug_mode );
+
 	}
 
 	if ( solar_panel ) {
@@ -483,7 +485,7 @@ bool AstroWeatherStation::initialise( void )
 	if ( !solar_panel ) {
 
 		start_alpaca_server();
-		
+	
 		if ( config.get_has_rain_sensor() ) {
 
 			if ( debug_mode )
@@ -1061,7 +1063,7 @@ bool AWSNetwork::connect_to_wifi()
 
 	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {	// NOSONAR
 
-		Serial.print( "." );
+    Serial.print( "." );
 		delay( 1000 );
 	}
 
