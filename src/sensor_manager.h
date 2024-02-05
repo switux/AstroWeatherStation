@@ -1,5 +1,5 @@
 /*
-  	AWSSensorManager.h
+  	sensor_manager.h
 
 	(c) 2023 F.Lesage
 
@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#ifndef _AWSSensorManager_H
-#define _AWSSensorManager_H
+#ifndef _sensor_manager_H
+#define _sensor_manager_H
 
 #include <Adafruit_BME280.h>
 #include <Adafruit_MLX90614.h>
@@ -29,30 +29,30 @@
 #include <TinyGPSPlus.h>
 
 #include "AWSGPS.h"
-#include "AWSConfig.h"
+#include "config_manager.h"
 #include "SQM.h"
+#include "sensor.h"
 #include "Hydreon.h"
-#include "AWSWind.h"
+#include "anemometer.h"
+#include "wind_vane.h"
 
-#define	GPS_SPEED		9600
+const byte LOW_BATTERY_COUNT_MIN = 5;
+const byte LOW_BATTERY_COUNT_MAX = 10;
 
-#define LOW_BATTERY_COUNT_MIN	5
-#define LOW_BATTERY_COUNT_MAX	10
-#define BAT_V_MAX				4200	// in mV
-#define BAT_V_MIN				3000	// in mV
-#define BAT_LEVEL_MIN			33		// in %, corresponds to ~3.4V for a typical Li-ion battery
-#define VCC						3300	// in mV
-#define V_DIV_R1				82000	// voltage divider R1 in ohms
-#define V_DIV_R2				300000	// voltage divider R2 in ohms
-#define ADC_MAX					4096	// 12 bits resolution
-#define V_MAX_IN				( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define V_MIN_IN				( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 )	// in mV
-#define ADC_V_MAX				( V_MAX_IN*ADC_MAX / VCC )
-#define ADC_V_MIN				( V_MIN_IN*ADC_MAX / VCC )
+const unsigned short 	BAT_V_MAX		= 4200;		// in mV
+const unsigned short	BAT_V_MIN		= 3000;		// in mV
+const byte 				BAT_LEVEL_MIN	= 33;		// in %, corresponds to ~3.4V for a typical Li-ion battery
+const unsigned short	VCC				= 3300;		// in mV
+const unsigned int		V_DIV_R1		= 82000;	// voltage divider R1 in ohms
+const unsigned int		V_DIV_R2		= 300000;	// voltage divider R2 in ohms
+const unsigned short	ADC_MAX			= 4096;		// 12 bits resolution
+const float				V_MAX_IN		= ( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
+const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
-#define	LUX_TO_IRRADIANCE_FACTOR	0.88
-#define	TSL_MAX_LUX					88000
-
+const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
+const unsigned int	TSL_MAX_LUX					= 88000;
 
 
 class AWSSensorManager {
@@ -62,25 +62,28 @@ class AWSSensorManager {
     Adafruit_BME280		*bme;
     Adafruit_MLX90614	*mlx;
     Adafruit_TSL2591	*tsl;
-    Hydreon				*rain_sensor;
+    Hydreon				rain_sensor;
     SQM					*sqm;
     AWSGPS				*gps;
-	AWSWindSensor		*wind_sensors;
-
-	AWSConfig 			*config;
+	Anemometer			anemometer;
+	Wind_vane			wind_vane;
 	
+	AWSConfig 			*config;
+	SoftwareSerial		rs485_bus;
+	
+	// flawfinder: ignore
     char 				hw_version[6];
     uint8_t 			available_sensors;
     sensor_data_t		sensor_data;
-    bool				debug_mode,
-						rain_event,
-						solar_panel;
+    bool				debug_mode	= false;
+	bool				rain_event;
+	bool				solar_panel	= false;
     TaskHandle_t		sensors_task_handle;
     SemaphoreHandle_t	i2c_mutex = NULL;
    	uint32_t			polling_ms_interval;
 
   public:
-    					AWSSensorManager( bool, bool );
+    					AWSSensorManager( void );
     bool				begin( void );
     uint8_t				get_available_sensors( void );
     bool				get_debug_mode( void );
@@ -96,7 +99,9 @@ class AWSSensorManager {
     void				read_rain_sensor( void );
     void				read_sensors( void );
     void				reset_rain_event( void );
+    void				set_debug_mode( bool );
     void				set_rain_event( void );
+	void				set_solar_panel( bool );
 
   private:
 

@@ -1,7 +1,7 @@
 /*	
   	Hydreon.h
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -21,43 +21,41 @@
 #ifndef _HYDREON_H
 #define _HYDREON_H
 
-#define HYDREON_SERIAL_SPEEDS	7
-#define HYDREON_PROBE_RETRIES	3
-
-#define RAIN_SENSOR_OK			0
-#define RAIN_SENSOR_FAIL		127
-#define RAIN_SENSOR_UART		1
-
 #include <Arduino.h>
+#include <HardwareSerial.h>
+#include "gpio_config.h"
 
-class Hydreon {
+class Hydreon : public Sensor {
 
 	private:
 
-		bool			debug_mode,
-						initialised;
-		uint8_t			uart_nr,
-						intensity,
-						reset_pin,
-						rx_pin,
-						tx_pin;
-		char			str[128],
-						status;
-				
-		HardwareSerial	*sensor;
-		SemaphoreHandle_t rg9_read_mutex;
+		static constexpr byte				HYDREON_PROBE_RETRIES	= 3;
+		static constexpr byte				RAIN_SENSOR_OK			= 0;
+		static constexpr byte 				RAIN_SENSOR_FAIL		= 127;
+		static const std::array<float,8>	rain_rates;
+		static const std::array<uint16_t,7> bps;
 
+		uint8_t				intensity;
+		uint8_t				reset_pin	= GPIO_RAIN_SENSOR_MCLR;
+		SemaphoreHandle_t 	rg9_read_mutex;
+		uint8_t				rx_pin		= GPIO_RAIN_SENSOR_RX;
+		uint8_t				tx_pin		= GPIO_RAIN_SENSOR_TX;
+		HardwareSerial		sensor		= HardwareSerial(1);
+		etl::string<128>	str;
+		char				status;
+
+		bool			initialise( void );
 		void			probe( uint16_t );
 		byte			read_string( void );
 
 	public:
 
-					Hydreon( uint8_t, uint8_t, uint8_t, uint8_t, bool );
-		bool 		initialise( void );
-		byte		rain_intensity( void  );
-		const char	*rain_intensity_str( void );
+					Hydreon( void );
+		bool 		initialise( HardwareSerial &, bool );
+		byte		get_rain_intensity( void  );
+		const char	*get_rain_intensity_str( void );
+		float		get_rain_rate( void );
 		const char	*reset_cause( void );
-
 };
 
 #endif

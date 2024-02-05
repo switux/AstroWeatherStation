@@ -23,7 +23,7 @@
 
 #define	DEFAULT_CLOSE_DOME_ON_RAIN		1
 #define	DEFAULT_CONFIG_PORT				80
-#define	DEFAULT_ETH_IP_MODE				dhcp
+#define	DEFAULT_ETH_IP_MODE				aws_ip_mode::dhcp
 #define	DEFAULT_HAS_BME					0
 #define	DEFAULT_HAS_DOME				0
 #define	DEFAULT_HAS_GPS					0
@@ -34,24 +34,20 @@
 #define	DEFAULT_HAS_WS					0
 #define	DEFAULT_HAS_WV					0
 #define	DEFAULT_MSAS_CORRECTION			-0.55
-#define	DEFAULT_PREF_IFACE				ap
+#define	DEFAULT_PREF_IFACE				aws_iface::ap
 #define	DEFAULT_RAIN_EVENT_GUARD_TIME	60
-#define	DEFAULT_WIFI_MODE				both
-#define	DEFAULT_WIFI_STA_IP_MODE		dhcp
+#define	DEFAULT_WIFI_MODE				aws_wifi_mode::both
+#define	DEFAULT_WIFI_STA_IP_MODE		aws_ip_mode::dhcp
 
 #define	DEFAULT_SC16IS750_ADDR		0x90
 
-#define	GPS_SPEED	9600
-
 #define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
 
-#define	LOW_BATTERY_COUNT_MIN	5
-#define	LOW_BATTERY_COUNT_MAX	10
 
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
-static const char DEFAULT_STA_SSID[]			= "AstroWeatherStation";
+static const char DEFAULT_WIFI_STA_SSID[]		= "AstroWeatherStation";
 static const char DEFAULT_WIFI_STA_PASSWORD[]	= "AWS2023!";
-static const char DEFAULT_AP_SSID[]				= "AstroWeatherStation";
+static const char DEFAULT_WIFI_AP_SSID[]		= "AstroWeatherStation";
 static const char DEFAULT_WIFI_AP_PASSWORD[]	= "AWS2023!";
 static const char DEFAULT_TZNAME[]				= "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00";
 static const char DEFAULT_URL_PATH[]			= "weather";

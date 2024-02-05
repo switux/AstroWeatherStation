@@ -1,7 +1,7 @@
-/*	
-  	dome.h
-  	
-	(c) 2023-2024 F.Lesage
+/*
+  	wind_vane.h
+
+	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -18,29 +18,34 @@
 */
 
 #pragma once
-#ifndef _DOME_H
-#define	_DOME_H
+#ifndef _wind_vane_H
+#define	_wind_vane_H
 
-class AWSDome {
+#include <SoftwareSerial.h>
 
-	private:
+#define SEND	HIGH
+#define RECV	LOW
 
-		bool				close_dome;
-		bool				is_connected;
-		bool				debug_mode;
-		I2C_SC16IS750		*sc16is750;
-		SemaphoreHandle_t	i2c_mutex;
-		TaskHandle_t		dome_task_handle;
+class Wind_vane : public Sensor {
 
 	public:
 
-		explicit AWSDome( bool );
-		AWSDome( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
-		void close( void * );
-		bool closed( void );
-		bool get_connected( void );
-		void start_control_task( void );
-		void trigger_close( void );
+		static const std::array<std::string, 3> _windvane_model;
+		static const std::array<std::string, 3> _windvane_description;
+		
+				Wind_vane( void );
+		bool			initialise( SoftwareSerial *, byte, bool );
+		int16_t			get_wind_direction( bool );
+
+	private:
+
+   		int16_t			wind_direction	= 0;
+   		uint16_t		bps				= 0;
+		uint8_t			answer[7];
+		uint8_t			cmd[8];
+		SoftwareSerial	*sensor_bus		= nullptr;
+
+		void uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array );
 };
 
 #endif

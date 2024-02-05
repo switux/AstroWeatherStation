@@ -1,6 +1,6 @@
-/*	
-  	AWSWeb.h
-  	
+/*
+  	config_server.h
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#ifndef _AWSWebServer_H
-#define _AWSWebServer_H
+#ifndef _config_server_H
+#define _config_server_H
 
 #define _ASYNC_WEBSERVER_LOGLEVEL_		0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_	0
@@ -36,8 +36,6 @@ class AWSWebServer {
 	public:
 
 		AWSWebServer( void );
-		~AWSWebServer( void );
-		
 		void get_configuration( AsyncWebServerRequest * );
 		void get_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );

@@ -1,9 +1,8 @@
 /*
    NXP SC16IS1750 UART Bridge driver
-   
-   (c) 2023 Lesage F. 
 
-		
+   (c) 2023 Lesage F.
+
    	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
 	Free Software Foundation, either version 3 of the License, or (at your option)
@@ -74,7 +73,7 @@
 // LCR register bits
 #define	LCR_WORD_LENGTH0			(1 << 0)
 #define	LCR_WORD_LENGTH1			(1 << 1)
-#define	LCR_STOP_BITS_15_OR_2		(1 << 2)	// 0 => 1 stop bit, 1 => 1.5 if word length==5, 2 otherwise 
+#define	LCR_STOP_BITS_15_OR_2		(1 << 2)	// 0 => 1 stop bit, 1 => 1.5 if word length==5, 2 otherwise
 #define	LCR_PARITY_ENABLE			(1 << 3)
 #define	LCR_PARITY_EVEN				(1 << 4)
 #define	LCR_PARITY_FORCE			(1 << 5)
@@ -142,24 +141,25 @@
 #define	EFR_nRTS_FLOWCONTROL_ENABLE	(1 << 6)
 #define	EFR_nCTS_FLOWCONTROL_ENABLE	(1 << 7)
 
-// EFCR register bits			
+// EFCR register bits
 #define	EFCR_RX_DISABLE		(1 << 1)
 #define	EFCR_TX_DISABLE		(1 << 2)
 
 #define	SC16IS750_XTAL_FREQ			(14745600UL)
-#define	SC16IS750_REG_ADDR_SHIFT	3
+#define	SC16IS750_REG_ADDR_SHIFT	( 3 )
 
-#define	NO_PARITY			0
-#define	ODD_PARITY			1
-#define	EVEN_PARITY			2
-#define	FORCE_1_PARITY		3
-#define	FORCE_0_PARITY		4
+#define	NO_PARITY			( 0 )
+#define	ODD_PARITY			( 1 )
+#define	EVEN_PARITY			( 2 )
+#define	FORCE_1_PARITY		( 3 )
+#define	FORCE_0_PARITY		( 4 )
 
 class I2C_SC16IS750
-{ 
+{
 	public:
-				I2C_SC16IS750( uint8_t );
-		bool	begin( uint32_t );                               
+				explicit I2C_SC16IS750( uint8_t );
+		bool	begin( uint32_t );
+		// flawfinder: ignore
 		int8_t	read( void );
 		uint8_t	write( uint8_t );
 		int		available( void );

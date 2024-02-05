@@ -1,6 +1,6 @@
-/*	
-  	AWSWeb.cpp
-  	
+/*
+  	config_server.cpp
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -26,24 +26,21 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+extern HardwareSerial Serial1;
+
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
+#include "common.h"
+#include "config_manager.h"
+#include "config_server.h"
 #include "AstroWeatherStation.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
-#include "AWS.h"
 
 
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
-AWSWebServer::AWSWebServer( void )
+AWSWebServer::AWSWebServer( void ) : server( nullptr ), debug_mode( false )
 {
-}
-
-AWSWebServer::~AWSWebServer( void )
-{
-	delete server;
 }
 
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
@@ -78,7 +75,10 @@ void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 {
-	request->send( 200, "text/plain", station.get_uptime() );
+	std::array<char,32> str;
+
+	station.get_uptime_str( str.data(), str.size() );
+	request->send( 200, "text/plain", str.data() );
 }
 
 void AWSWebServer::index( AsyncWebServerRequest *request )
@@ -113,17 +113,18 @@ bool AWSWebServer::initialise( bool _debug_mode )
 	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/reboot", HTTP_GET, std::bind( &AWSWebServer::reboot, this, std::placeholders::_1 ));
 	server->onNotFound( std::bind( &AWSWebServer::handle404, this, std::placeholders::_1 ));
-	server->begin();		
+	server->begin();
 	return true;
 }
 
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
 	char *filename = strdup( request->url().c_str() );
-	char msg[64];
-	
+
 	if ( !SPIFFS.exists( filename )) {
 
+		// flawfinder: ignore
+		char msg[64];
 		Serial.printf( "[ERROR] File [%s] not found.", filename );
 		snprintf( msg, 64, "[ERROR] File [%s] not found.", filename );
 		request->send( 500, "text/html", msg );
@@ -143,7 +144,7 @@ void AWSWebServer::reboot( AsyncWebServerRequest *request )
 	Serial.printf( "Rebooting...\n" );
 	request->send( 200, "text/plain", "OK\n" );
 	delay( 500 );
-	ESP.restart();	
+	ESP.restart();
 }
 
 void AWSWebServer::reset_config_parameter( AsyncWebServerRequest *request )

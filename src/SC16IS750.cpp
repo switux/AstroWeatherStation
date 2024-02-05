@@ -1,7 +1,7 @@
 /*
    NXP SC16IS1750 UART Bridge driver
-   
-   (c) 2023 Lesage F. 
+
+   (c) 2023 Lesage F.
 
 	Revisions
 		1.0.0	: Barebone version, polled mode operation, made to work with the AstroWeatherStation's GPS
@@ -24,20 +24,18 @@
 /*
  * Used the following documents
  * 		Product data sheet: https://www.nxp.com/docs/en/data-sheet/SC16IS740_750_760.pdf
- * 		
+ *
  * I2C mode only for the moment, SPI will come later :-)
- * 
+ *
  */
 
 #include <Arduino.h>
 #include <Wire.h>
 #include "SC16IS750.h"
 
-I2C_SC16IS750::I2C_SC16IS750( uint8_t _address )
+I2C_SC16IS750::I2C_SC16IS750( uint8_t _address ) : address( _address >> 1 ), has_peek( 0 ), peek_byte( -1 )
 {
-	address = _address >> 1;		// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
-	has_peek = 0;
-	peek_byte = -1;
+	// 8 bits addressing (address > 0x77, see Table 32 of data sheet), we have to drop the R/W bit
 }
 
 int I2C_SC16IS750::available( void )
@@ -100,12 +98,12 @@ void I2C_SC16IS750::toggle_sleep( bool sleep )
 
 void I2C_SC16IS750::enable_extra_features( void )
 {
-	uint8_t	tmp,
-			tmp2;
+	uint8_t	tmp;
+	uint8_t	tmp2;
 
 	tmp = read_register( SC16IS750_LCR );
 	write_register( SC16IS750_LCR, LCR_ACCESS_EFR );
-	
+
 	tmp2 = read_register( SC16IS750_EFR );
 	write_register( SC16IS750_EFR, tmp2 | EFR_ENHANCED_FUNC_ENABLE );
 
@@ -118,6 +116,7 @@ bool I2C_SC16IS750::test( void )
 	return ( read_register( SC16IS750_SPR ) == 0x41 );
 }
 
+// flawfinder: ignore
 int8_t I2C_SC16IS750::read( void )
 {
 	return read_byte();
@@ -143,9 +142,9 @@ int8_t I2C_SC16IS750::read_byte( void )
 void I2C_SC16IS750::set_baudrate( uint32_t baudrate )
 {
     ulong		divisor;
-    uint8_t		prescaler = 1,
-				tmp1,
-				tmp2;
+    uint8_t		prescaler = 1;
+	uint8_t		tmp1;
+	uint8_t		tmp2;
 
 	divisor = SC16IS750_XTAL_FREQ / ( 16 * baudrate );
 	if ( divisor > 0xffff ) {
@@ -267,6 +266,7 @@ int8_t I2C_SC16IS750::read_register( uint8_t register_address )
 	}
 	if ( ( n = Wire.requestFrom( address, 1 )) != 1 )
 		Serial.printf( "ERROR: SC16IS750 received %d bytes instead of 1 while addressing register 0x%02x\n", n, register_address );
+	// flawfinder: ignore
 	return Wire.read();
 }
 

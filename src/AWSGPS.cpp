@@ -1,6 +1,6 @@
-/*	
+/*
   	AWSGPS.cpp
-  	
+
 	(c) 2023 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -21,33 +21,33 @@
 #include "gpio_config.h"
 #include "AWSGPS.h"
 
-AWSGPS::AWSGPS( bool _debug_mode)
+const unsigned long	GPS_SPEED = 9600;
+
+AWSGPS::AWSGPS( bool _debug_mode ) : gps_task_handle( nullptr ), sc16is750( nullptr ), gps_serial( nullptr ), gps_data( nullptr ), debug_mode( _debug_mode ), update_rtc( false )
 {
-	debug_mode = _debug_mode;
-	update_rtc = false;
-	sc16is750 = NULL;
-	gps_task_handle = NULL;
 }
 
 void AWSGPS::read_GPS( void )
 {
-	unsigned long start = millis();
+	unsigned long _start = millis();
 
 	if ( sc16is750 ) {
 
 		do {
 			while( sc16is750->available() )
+				// flawfinder: ignore
 				gps.encode( sc16is750->read() );
 			delay( 5 );
-		} while( ( millis() - start ) < 1000 );
+		} while( ( millis() - _start ) < 1000 );
 
 	} else {
 
 		do {
 			while( gps_serial->available() )
+				// flawfinder: ignore
 				gps.encode( gps_serial->read() );
 			delay( 5 );
-		} while( ( millis() - start ) < 1000 );		
+		} while( ( millis() - _start ) < 1000 );
 	}
 }
 
@@ -64,7 +64,7 @@ void AWSGPS::feed( void *dummy )
 
 			} else
 				delay( 5000 );
-			
+
 		} else
 			read_GPS();
 
@@ -77,7 +77,7 @@ void AWSGPS::update_data( void )
 {
 	struct tm gpstime = {0};
 	time_t now;
-	
+
 	gps_data->fix = gps.location.isValid();
 
 	if ( gps_data->fix ) {

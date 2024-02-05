@@ -24,6 +24,7 @@
 <h1 style="font-size=14pt">AstroWeatherStation ASCOM ALPACA Server setup</h1>
 <form id="config" method="POST"></form>
 <table>
+	<tr><th></tr>
 	<tr><td>Name</td><td>AstroWeatherStation</td></tr>
 	<tr><td>Manufacturer</td><td>Lesage F. (lesage@datamancers.net)</td></tr>
 	<tr><td>WiFi Mode</td><td id="wifi_mode"><input id="ap" form="config" name="wifi_mode" value="AP" type="radio"/> AP <input id="client" form="config" name="wifi_mode" value="Client" type="radio"/> Client</td></tr>
@@ -35,6 +36,7 @@
 	<tr><td>ALPACA Discovery service</td><td id="discovery_svc"></td></tr>
 	<tr><td>ALPACA Discovery port </td><td id="discovery_port"></td></tr>
 	<tr><td>Information</td><td><a href="https://github.com/switux/AstroWeatherStation">GitHub page</a></td></tr>
+	<caption> </caption>
 </table>
 <button onclick="reboot()">Reboot station</button>
 <script>
