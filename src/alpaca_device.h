@@ -36,7 +36,6 @@ enum struct ascom_device_type : byte
 	Telescope,
 	Video
 };
-
 using ascom_device_t = ascom_device_type;
 
 enum struct ascom_driver_error_t : byte

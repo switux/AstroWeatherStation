@@ -101,5 +101,5 @@ void Dome::initialise( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, 
 
 void Dome::trigger_close( void )
 {
-	close_dome = true;
+  close_dome = true;
 }

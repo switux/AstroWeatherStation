@@ -460,9 +460,9 @@ bool AstroWeatherStation::initialise( void )
 	if ( config.get_has_dome() ) {
 
 	    if ( config.get_has_sc16is750() )
-			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
-		else
-			dome.initialise( debug_mode );
+  			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+	  	else
+	  		dome.initialise( debug_mode );
 
 	}
 
@@ -1063,7 +1063,7 @@ bool AWSNetwork::connect_to_wifi()
 
 	while (( WiFi.status() != WL_CONNECTED ) && ( --remaining_attempts > 0 )) {	// NOSONAR
 
-	    Serial.print( "." );
+    Serial.print( "." );
 		delay( 1000 );
 	}
 
