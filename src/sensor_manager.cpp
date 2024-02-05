@@ -91,7 +91,7 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
 		xTaskCreatePinnedToCore(
-			[](void *param) {
+			[](void *param) {	// NOSONAR
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
 			}, "SensorsTask", 3000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
@@ -242,7 +242,7 @@ bool AWSSensorManager::poll_sensors( void )
 	return false;
 }
 
-void AWSSensorManager::poll_sensors_task( void *dummy )
+void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 {
 	while( true ) {
 

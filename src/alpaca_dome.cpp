@@ -130,13 +130,13 @@ void alpaca_dome::set_connected( AsyncWebServerRequest *request, const char *tra
 
 	request->send( 400, "text/plain", "Missing Connected parameter" );
 }
-/*
+
 void alpaca_dome::slaved( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	snprintf( static_cast<char *>( message_str ), 255, "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":false,%s}", transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
 }
-*/
+
 void alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( is_connected ) {

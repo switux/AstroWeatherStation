@@ -31,7 +31,7 @@ Dome::Dome( void )
 	set_driver_version( "1.0" );
 }
 
-void Dome::close( void *dummy )
+void Dome::close( void *dummy ) // NOSONAR
 {
 	while( true ) {
 
@@ -86,7 +86,7 @@ void Dome::initialise( bool _debug_mode )
 
 	std::function<void(void *)> _close = std::bind( &Dome::close, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
-		[](void *param) {
+		[](void *param) {	// NOSONAR
             std::function<void(void*)>* close_proxy = static_cast<std::function<void(void*)>*>( param );
             (*close_proxy)( NULL );
 		}, "DomeControl", 2000, &_close, configMAX_PRIORITIES - 2, &dome_task_handle, 1 );

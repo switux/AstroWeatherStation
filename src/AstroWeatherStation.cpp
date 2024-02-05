@@ -159,7 +159,7 @@ void AstroWeatherStation::determine_boot_mode( void )
 
 void AstroWeatherStation::display_banner()
 {
-	if ( debug_mode )
+	if ( !debug_mode )
 		return;
 
 	uint8_t	*wifi_mac = network.get_wifi_mac();
@@ -623,14 +623,13 @@ void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
  	byte 			i;
  	int				l;
 
-	memset( string.data(), 0, string.size() );
-
 	string = format_helper( fmt, args... );
 	l = string.size();
 	
 	if ( l >= 0 ) {
-		for( i = l; i < string.capacity() - 1; string[ i++ ] = ' ' );
-		strlcat( string.data(), "#\n", string.capacity() );
+
+		string.append( string.capacity() - l - 4, ' ' );
+		string.append( "#\n" );
 	}
 	Serial.printf( "%s", string.data() );
 }

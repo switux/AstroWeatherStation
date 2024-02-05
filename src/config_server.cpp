@@ -26,8 +26,6 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
-extern HardwareSerial Serial1;
-
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "defaults.h"
@@ -36,7 +34,7 @@ extern HardwareSerial Serial1;
 #include "config_server.h"
 #include "AstroWeatherStation.h"
 
-
+extern HardwareSerial Serial1;
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
@@ -146,28 +144,6 @@ void AWSWebServer::reboot( AsyncWebServerRequest *request )
 	request->send( 200, "text/plain", "OK\n" );
 	delay( 500 );
 	ESP.restart();
-}
-
-void AWSWebServer::reset_config_parameter( AsyncWebServerRequest *request )
-{
-	//char		parameter[32];
-
-	//snprintf( parameter, 32, server->arg( "plain" ).c_str() );
-/*
-	if ( config.contains_parameter( parameter )) {
-
-		config.reset_parameter( parameter );
-		if ( config.save_runtime_configuration() ) {
-			server->send( 200, "text/plain", "OK\n" );
-			delay( 1000 );
-			return;
-		}
-		server->send( 500, "text/plain", "Cannot reset parameter." );
-	} else {
-		server->send( 400, "text/plain", "Parameter not found." );
-		return;
-	}
-	*/
 }
 
 void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVariant &json )

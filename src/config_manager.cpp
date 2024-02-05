@@ -22,12 +22,12 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
-extern HardwareSerial Serial1;
-
 #include "defaults.h"
 #include "common.h"
 #include "config_manager.h"
 #include "AstroWeatherStation.h"
+
+extern HardwareSerial Serial1;
 
 const unsigned long	MLX_SENSOR			= 0x00000001;
 const unsigned long TSL_SENSOR			= 0x00000002;
@@ -245,7 +245,7 @@ char *AWSConfig::get_json_string_config( void )
 
 		Serial.printf( "[ERROR] Reached configuration string limit. Please contact support\n" );
 		free( json_string );
-		return NULL;
+		return nullptr;
 	}
 	return json_string;
 }
@@ -671,21 +671,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 	return true;	
 }
 
-AWSNetworkConfig::AWSNetworkConfig( void ) : 
-	eth_dns( nullptr ),
-	eth_ip( nullptr ),
-	eth_gw( nullptr ),
-	wifi_sta_dns( nullptr ),
-	wifi_sta_ip( nullptr ),
-	wifi_sta_gw( nullptr ),
-	wifi_sta_ssid( nullptr ),
-	wifi_sta_password( nullptr ),
-	wifi_ap_ssid( nullptr ),
-	wifi_ap_dns( nullptr ),
-	wifi_ap_password( nullptr ),
-	wifi_ap_ip( nullptr ),
-	wifi_ap_gw( nullptr ),
-	root_ca( nullptr )
+AWSNetworkConfig::AWSNetworkConfig( void )
 {
 	wifi_mode = aws_wifi_mode::ap;
 	alpaca_iface = aws_iface::wifi_sta;
