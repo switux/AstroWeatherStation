@@ -34,6 +34,7 @@
 #include <SPIFFS.h>
 
 #include "common.h"
+#include "defaults.h"
 #include "device.h"
 #include "dome.h"
 #include "alpaca_dome.h"

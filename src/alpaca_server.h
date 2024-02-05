@@ -37,23 +37,6 @@
 #include "alpaca_observingconditions.h"
 #include "alpaca_telescope.h"
 
-enum struct ascom_device_type : byte
-{
-	Camera,
-	CoverCalibrator,
-	Dome,
-	FilterWheel,
-	Focuser,
-	ObservingConditions,
-	Rotator,
-	SafetyMonitor,
-	Switch,
-	Telescope,
-	Video
-};
-
-using ascom_device_t = ascom_device_type;
-
 typedef struct configured_device_t {
 
 	// flawfinder: ignore

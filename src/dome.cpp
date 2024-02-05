@@ -101,15 +101,5 @@ void Dome::initialise( I2C_SC16IS750 *_sc16is750, SemaphoreHandle_t _i2c_mutex, 
 
 void Dome::trigger_close( void )
 {
-	// Controlling the dome from an ISR just does not work because the wdt fires off
-	// during I2C communication with the SC16IS750
-	// Instead we just toggle a flag which is then read by a high prio task in charge of
-	// closing the dome.
-
-	std::function<void(void *)> _close = std::bind( &AWSDome::close, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore(
-		[](void *param) {
-            std::function<void(void*)>* close_proxy = static_cast<std::function<void(void*)>*>( param );
-            (*close_proxy)( NULL );
-		}, "DomeControl", 2000, &_close, configMAX_PRIORITIES - 2, &dome_task_handle, 1 );
+	close_dome = true;
 }

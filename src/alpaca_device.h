@@ -22,6 +22,23 @@
 #ifndef _ALPACA_DEVICE_H
 #define _ALPACA_DEVICE_H
 
+enum struct ascom_device_type : byte
+{
+	Camera,
+	CoverCalibrator,
+	Dome,
+	FilterWheel,
+	Focuser,
+	ObservingConditions,
+	Rotator,
+	SafetyMonitor,
+	Switch,
+	Telescope,
+	Video
+};
+
+using ascom_device_t = ascom_device_type;
+
 enum struct ascom_driver_error_t : byte
 {
 	NotAvailable,

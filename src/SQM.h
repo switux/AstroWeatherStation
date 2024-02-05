@@ -36,9 +36,9 @@ class SQM {
 		
 	private:
 		Adafruit_TSL2591 *tsl;
-		bool debug_mode;
-		float msas_calibration_offset;
-		sensor_data_t *sensor_data;
+		bool debug_mode					= false;
+		float msas_calibration_offset	= 0.F;
+		sensor_data_t *sensor_data	;
 		
 		float ch0_temperature_factor( float );
 		float ch1_temperature_factor( float );

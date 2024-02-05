@@ -96,7 +96,7 @@ class AstroWeatherStation {
 		char				*ota_config	= nullptr;
 		char				*ota_device	= nullptr;
 		bool				rain_event	= false;
-    I2C_SC16IS750		sc16is750;
+	    I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
 
