@@ -1,5 +1,5 @@
 /*
-  	AWSWeb.cpp
+  	config_server.cpp
 
 	(c) 2023 F.Lesage
 
@@ -26,12 +26,14 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+extern HardwareSerial Serial1;
+
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
+#include "common.h"
+#include "config_manager.h"
+#include "config_server.h"
 #include "AstroWeatherStation.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
-#include "AWS.h"
 
 
 extern AstroWeatherStation station;

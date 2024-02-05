@@ -1,5 +1,5 @@
 /*
-  	AWSConfig.h
+  	config.h
 
 	(c) 2023-2024 F.Lesage
 
@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#ifndef _AWSConfig_H
-#define _AWSConfig_H
+#ifndef _config_manager_H
+#define _config_manager_H
 
 #include <ArduinoJson.h>
 

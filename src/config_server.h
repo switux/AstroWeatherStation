@@ -1,5 +1,5 @@
 /*
-  	AWSWeb.h
+  	config_server.h
 
 	(c) 2023 F.Lesage
 
@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#ifndef _AWSWebServer_H
-#define _AWSWebServer_H
+#ifndef _config_server_H
+#define _config_server_H
 
 #define _ASYNC_WEBSERVER_LOGLEVEL_		0
 #define _ETHERNET_WEBSERVER_LOGLEVEL_	0

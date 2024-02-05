@@ -25,15 +25,17 @@
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "Hydreon.h"
 #include "SC16IS750.h"
 #include "AWSGPS.h"
-#include "AstroWeatherStation.h"
-#include "AWSConfig.h"
+#include "common.h"
+#include "config_manager.h"
 #include "SQM.h"
-#include "AWSWind.h"
-#include "AWSSensorManager.h"
-#include "AWS.h"
+#include "sensor.h"
+#include "Hydreon.h"
+#include "anemometer.h"
+#include "wind_vane.h"
+#include "sensor_manager.h"
+#include "AstroWeatherStation.h"
 
 RTC_DATA_ATTR uint16_t low_battery_event_count = 0;
 //RTC_DATA_ATTR byte	prev_available_sensors = 0;
@@ -47,10 +49,8 @@ AWSSensorManager::AWSSensorManager( void ) :
 	bme( new Adafruit_BME280() ),
 	mlx( new Adafruit_MLX90614() ),
 	tsl( new Adafruit_TSL2591( 2591 )),
-	rain_sensor( nullptr ),
 	sqm( new SQM( tsl, &sensor_data )),
 	gps( nullptr ),
-	wind_sensors( nullptr ),
 	config( nullptr ),
 	available_sensors( 0 ),
 	rain_event( false ),
@@ -181,35 +181,20 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 	if ( !rain_event &&  config->get_has_ws() ) {
 
-		wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
-		if ( !wind_sensors->initialise_anemometer( config->get_anemometer_model() )) {
+		if ( !anemometer.initialise( &rs485_bus, polling_ms_interval, config->get_anemometer_model(), debug_mode ))
 
-			if ( config->get_anemometer_model() == 0x02 )
-				available_sensors &= ~WIND_VANE_SENSOR;
 			available_sensors &= ~ANEMOMETER_SENSOR;
 
-		} else {
+		else {
 
-			if ( config->get_anemometer_model() == 0x02 ) {
-
-				Serial.printf( "[INFO] Found 2-in-1 wind vane and anemometer.\n" );
-				available_sensors |= WIND_VANE_SENSOR;
-
-			} else
-
-				Serial.printf( "[INFO] Found anemometer.\n" );
-
+			Serial.printf( "[INFO] Found anemometer.\n" );
 			available_sensors |= ANEMOMETER_SENSOR;
 		}
 	}
 
-	// Model 0x02 (VMS-3003-CFSFX-N01) is a 2-in-1 device
-	if ( !rain_event && config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))	{
+	if ( !rain_event && config->get_has_wv() ) {
 
-		if ( !wind_sensors )
-			wind_sensors = new AWSWindSensor( polling_ms_interval, debug_mode );
-
-		if ( !wind_sensors->initialise_wind_vane( config->get_wind_vane_model() ))
+		if ( !wind_vane.initialise( &rs485_bus, config->get_wind_vane_model(), debug_mode ))
 
 			available_sensors &= ~WIND_VANE_SENSOR;
 
@@ -219,6 +204,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 			available_sensors |= WIND_VANE_SENSOR;
 		}
 	}
+
 	if ( config->get_has_rain_sensor() && initialise_rain_sensor())
 		available_sensors |= RAIN_SENSOR;
 
@@ -228,8 +214,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 bool AWSSensorManager::initialise_rain_sensor( void )
 {
-	rain_sensor = new Hydreon( RAIN_SENSOR_UART, GPIO_RAIN_SENSOR_TX, GPIO_RAIN_SENSOR_RX, GPIO_RAIN_SENSOR_MCLR, debug_mode );
-	return rain_sensor->initialise();
+	return rain_sensor.initialise( Serial1, debug_mode );
 }
 
 void AWSSensorManager::initialise_TSL( void )
@@ -256,10 +241,7 @@ bool AWSSensorManager::poll_sensors( void )
 
 		retrieve_sensor_data();
 		xSemaphoreGive( sensors_read_mutex );
-		if ( wind_sensors )
-			sensor_data.wind_gust = wind_sensors->get_wind_gust();
-		else
-			sensor_data.wind_gust = 0.F;
+		sensor_data.wind_gust = anemometer.get_wind_gust();
 		return true;
 	}
 	return false;
@@ -274,7 +256,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
 			if ( config->get_has_ws() )
-				sensor_data.wind_gust = wind_sensors->get_wind_gust();
+				sensor_data.wind_gust = anemometer.get_wind_gust();
 			else
 				sensor_data.wind_gust = 0.F;
 
@@ -285,17 +267,17 @@ void AWSSensorManager::poll_sensors_task( void *dummy )
 
 const char *AWSSensorManager::rain_intensity_str( void )
 {
-	return rain_sensor->rain_intensity_str();
+	return rain_sensor.get_rain_intensity_str();
 }
 
 void AWSSensorManager::read_anemometer( void )
 {
 	float	x;
 
-	if ( !wind_sensors->anemometer_initialised() )
+	if ( !anemometer.get_initialised() )
 		return;
 
-	if ( ( x = wind_sensors->read_anemometer( true ) ) == -1 )
+	if ( ( x = anemometer.get_wind_speed( true ) ) == -1 )
 		return;
 
 	sensor_data.wind_speed = x;
@@ -404,7 +386,7 @@ void AWSSensorManager::read_MLX( void )
 
 void AWSSensorManager::read_rain_sensor( void )
 {
-	sensor_data.rain_intensity = rain_sensor->rain_intensity();
+	sensor_data.rain_intensity = rain_sensor.get_rain_intensity();
 }
 
 void AWSSensorManager::read_sensors( void )
@@ -466,10 +448,10 @@ void AWSSensorManager::read_wind_vane( void )
 {
 	int16_t	x;
 
-	if ( !wind_sensors->wind_vane_initialised() )
+	if ( !wind_vane.get_initialised() )
 		return;
 
-	if ( ( x = wind_sensors->read_wind_vane( true ) ) == -1 )
+	if ( ( x = wind_vane.get_wind_direction( true ) ) == -1 )
 		return;
 
 	sensor_data.wind_direction = x;
@@ -511,8 +493,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 		esp_task_wdt_reset();
 
-		// Wind direction has been read along with the wind speed as it is a 2-in-1 device
-		if ( config->get_has_wv() && ( config->get_wind_vane_model() != 0x02 ))
+		if ( config->get_has_wv() )
 			read_wind_vane();
 
 		esp_task_wdt_reset();
@@ -520,7 +501,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		xSemaphoreGive( i2c_mutex );
 
 		if ( config->get_has_rain_sensor() )
-			sensor_data.rain_intensity = rain_sensor->rain_intensity();
+			sensor_data.rain_intensity = rain_sensor.get_rain_intensity();
 
 		if ( config->get_has_gps() )
 			read_GPS();

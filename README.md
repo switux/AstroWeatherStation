@@ -4,15 +4,24 @@ ESP32 based weather station with features to help operate an astronomical observ
 
 ## GOAL
 
-This project aims to provide all the instructions that are needed to build a weather station for remote astronomical observatories. On top of the usual readings, rain events and cloud coverage are reported to allow the safe operation of the observatory.
+This project aims to provide all the instructions that are needed to build a weather station for remote astronomical observatories.
+On top of the usual environmental readings, rain events, cloud coverage and sky quality are reported to allow the safe operation of the observatory.
 
 ## PRE-REQUISITES (WIP)
 
 ## BUILD INSTRUCTIONS
 
-The ALPACA web server uses regular expressions that need to be enabled, add the following line to ~/.arduino15/packages/esp**xxxx**/hardware/esp**xxxx**/**{version}**/platform.local.txt:
+  - Arduino IDE ( add the lines in bold to ~/.arduino15/packages/esp**xxxx**/hardware/esp**xxxx**/**{version}**/platform.local.txt )
 
-**compiler.cpp.extra_flags=-DASYNCWEBSERVER_REGEX=1**
+    - The ALPACA web server uses regular expressions that need to be enabled, 
+
+    **compiler.cpp.extra_flags=-DASYNCWEBSERVER_REGEX=1**
+
+    - A sequential build number is embedded in the code every time a build is made (whether it is successful or not)
+
+    **recipe.hooks.prebuild.0.pattern={build.source.path}/../build_seq.sh {build.source.path}**
+
+    For the hook to work, you will also need to create a link (or copy the file) to the file "build.sh" from sketch directory to the path of the sketch book. Sorry for the mess ... if you have a better solution, you are most welcome!
 
 ## STATUS & DEVELOPMENT
 

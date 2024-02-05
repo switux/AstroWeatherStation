@@ -1,0 +1,151 @@
+/*
+  	anemometer.cpp
+
+	(c) 2023 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include <SoftwareSerial.h>
+#include <vector>
+
+#include "defaults.h"
+#include "gpio_config.h"
+#include "sensor.h"
+#include "anemometer.h"
+
+const std::array<std::string, 3> Anemometer::_anemometer_model = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3> Anemometer::_anemometer_description = { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
+const uint64_t _anemometer_cmd[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
+const uint16_t _anemometer_speed[3] = { 4800, 9600, 4800 };
+
+Anemometer::Anemometer( void )
+{
+	memset( cmd, 0, 8 );
+	memset( answer, 0, 7 );
+	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
+}
+
+bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model, bool _debug_mode )
+{
+	model = _model;
+	sensor_bus = bus;
+	set_debug_mode( _debug_mode );
+
+	wind_speeds_size = 2*60*1000 / interval;
+	wind_speeds.resize( wind_speeds_size );
+
+	set_name( _anemometer_model[ model ].c_str() );
+	set_description( _anemometer_description[ model ].c_str() );
+	
+	uint64_t_to_uint8_t_array( _anemometer_cmd[ model ], cmd );
+
+	if ( !bps )
+
+		bps = _anemometer_speed[ model ];
+
+	else {
+
+		if ( bps != _anemometer_speed[ model ] ) {
+
+			bps = _anemometer_speed[ model ];
+			sensor_bus->end();
+
+		} else
+
+			return set_initialised ( get_wind_speed( false ) >= 0 );
+	}
+
+	sensor_bus->begin( bps, EspSoftwareSerial::SWSERIAL_8N1, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX );
+	return set_initialised ( get_wind_speed( false ) >= 0 );
+}
+
+float Anemometer::get_wind_speed( bool verbose )
+{
+	byte	i = 0;
+	byte	j;
+
+	memset( answer, 0, 7 );
+
+	if ( get_debug_mode() ) {
+
+		if ( verbose ) {
+
+			Serial.printf( "[DEBUG] Sending command to the anemometer:" );
+			for ( j = 0; j < 8; Serial.printf( " %02x", cmd[ j++ ] ));
+			Serial.printf( "\n" );
+
+		} else
+
+			Serial.printf( "[DEBUG] Probing anemometer.\n" );
+	}
+
+	while ( answer[1] != 0x03 ) {
+
+		digitalWrite( GPIO_WIND_SENSOR_CTRL, SEND );
+		sensor_bus->write( cmd, 8 );
+		sensor_bus->flush();
+
+		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
+		sensor_bus->readBytes( answer, 7 );
+
+		if ( get_debug_mode() && verbose ) {
+
+			Serial.print( "[DEBUG] Anemometer answer: " );
+			for ( j = 0; j < 7; j++ )
+				Serial.printf( "%02x ", answer[j] );
+
+		}
+
+		if ( answer[1] == 0x03 ) {
+
+			wind_speed = static_cast<float>(answer[4]) / 10.F;
+
+			if ( get_debug_mode() && verbose )
+				Serial.printf( "\n[DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
+
+		} else {
+
+			if ( get_debug_mode() && verbose )
+				Serial.printf( "(Error).\n" );
+			delay( 500 );
+		}
+
+		if ( ++i == 3 ) {
+
+			if ( wind_speed_index == wind_speeds_size )
+				wind_speed_index = 0;
+			wind_speeds[ wind_speed_index++ ] = 0;
+			return ( wind_speed = -1.F );
+		}
+	}
+
+	if ( wind_speed_index == wind_speeds_size )
+		wind_speed_index = 0;
+	wind_speeds[ wind_speed_index++ ] = wind_speed;
+
+	return wind_speed;
+}
+
+float Anemometer::get_wind_gust( void )
+{
+	return ( wind_gust = *std::max_element( wind_speeds.begin(), wind_speeds.end() ));
+}
+
+void Anemometer::uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array )
+{
+	uint8_t i = 0;
+    for ( i = 0; i < 8; i++ )
+		cmd_array[ i ] = (uint8_t)( ( cmd >> (56-(8*i))) & 0xff );
+}

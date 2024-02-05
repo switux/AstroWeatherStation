@@ -1,5 +1,5 @@
 /*
-  	AWSSensorManager.h
+  	sensor_manager.h
 
 	(c) 2023 F.Lesage
 
@@ -18,8 +18,8 @@
 */
 
 #pragma once
-#ifndef _AWSSensorManager_H
-#define _AWSSensorManager_H
+#ifndef _sensor_manager_H
+#define _sensor_manager_H
 
 #include <Adafruit_BME280.h>
 #include <Adafruit_MLX90614.h>
@@ -29,10 +29,12 @@
 #include <TinyGPSPlus.h>
 
 #include "AWSGPS.h"
-#include "AWSConfig.h"
+#include "config_manager.h"
 #include "SQM.h"
+#include "sensor.h"
 #include "Hydreon.h"
-#include "AWSWind.h"
+#include "anemometer.h"
+#include "wind_vane.h"
 
 const byte LOW_BATTERY_COUNT_MIN = 5;
 const byte LOW_BATTERY_COUNT_MAX = 10;
@@ -52,6 +54,7 @@ const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
 const unsigned int	TSL_MAX_LUX					= 88000;
 
+
 class AWSSensorManager {
 
   private:
@@ -59,13 +62,15 @@ class AWSSensorManager {
     Adafruit_BME280		*bme;
     Adafruit_MLX90614	*mlx;
     Adafruit_TSL2591	*tsl;
-    Hydreon				*rain_sensor;
+    Hydreon				rain_sensor;
     SQM					*sqm;
     AWSGPS				*gps;
-	AWSWindSensor		*wind_sensors;
-
+	Anemometer			anemometer;
+	Wind_vane			wind_vane;
+	
 	AWSConfig 			*config;
-
+	SoftwareSerial		rs485_bus;
+	
 	// flawfinder: ignore
     char 				hw_version[6];
     uint8_t 			available_sensors;

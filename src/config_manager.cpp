@@ -1,5 +1,5 @@
 /*
-  	AWSConfig.cpp
+  	config_manager.cpp
 
 	(c) 2023-2024 F.Lesage
 
@@ -22,10 +22,12 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+extern HardwareSerial Serial1;
+
 #include "defaults.h"
+#include "common.h"
+#include "config_manager.h"
 #include "AstroWeatherStation.h"
-#include "AWSConfig.h"
-#include "AWS.h"
 
 const unsigned long	MLX_SENSOR			= 0x00000001;
 const unsigned long TSL_SENSOR			= 0x00000002;
@@ -83,7 +85,7 @@ uint8_t AWSConfig::get_anemometer_model( void )
 
 const char *AWSConfig::get_anemometer_model_str( void )
 {
-	return AWSWindSensor::_anemometer_model[ anemometer_model ].c_str();
+	return Anemometer::_anemometer_model[ anemometer_model ].c_str();
 }
 
 bool AWSConfig::get_close_dome_on_rain( void )
@@ -368,7 +370,7 @@ uint8_t AWSConfig::get_wind_vane_model( void )
 
 const char *AWSConfig::get_wind_vane_model_str( void )
 {
-	return AWSWindSensor::_windvane_model[ wind_vane_model ].c_str();
+	return Wind_vane::_windvane_model[ wind_vane_model ].c_str();
 }
 
 bool AWSConfig::load( bool _debug_mode  )

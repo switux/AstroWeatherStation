@@ -1,7 +1,7 @@
 /*
   	Hydreon.cpp
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -20,95 +20,89 @@
 #include <esp_task_wdt.h>
 #include <Arduino.h>
 #include <HardwareSerial.h>
+
+#include "sensor.h"
 #include "Hydreon.h"
 
-RTC_DATA_ATTR uint16_t baud=0;
+RTC_DATA_ATTR uint16_t rain_sensor_baud = 0;	// NOSONAR
 
-constexpr byte HYDREON_SERIAL_SPEEDS = 7;
+const std::array<float,8>	Hydreon::rain_rates	= {
+															0.F,			// No rain
+															0.1F,			// Rain drops
+															1.0F,			// Very light
+															2.0F,			// Light
+															2.5F,			// Medium light
+															5.0F,			// Medium
+															10.0F,			// Heavy
+															50.1F			// Violent
+														};
+const std::array<uint16_t,7>	Hydreon::bps 		= { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
 
-static constexpr int bps[ HYDREON_SERIAL_SPEEDS ] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
-
-constexpr byte HYDREON_PROBE_RETRIES = 3;
-
-constexpr byte RAIN_SENSOR_OK	= 0;
-constexpr byte RAIN_SENSOR_FAIL	= 127;
-const byte RAIN_SENSOR_UART	= 1;
-
-Hydreon::Hydreon( uint8_t _uart_nr, uint8_t tx, uint8_t rx, uint8_t reset, bool _debug_mode ) :
-	debug_mode( _debug_mode ),
-	initialised( false ),
-	uart_nr( _uart_nr ),
-	intensity( 0 ),
-	reset_pin( reset ),
-	rx_pin( rx ),
-	tx_pin( tx ),
-	status( ' ' ),
-	sensor( nullptr ),
-	rg9_read_mutex( xSemaphoreCreateMutex() )
+Hydreon::Hydreon( void ) : rg9_read_mutex( xSemaphoreCreateMutex() )
 {
-	memset( str, 0, 128 );
+	set_name( "Hydreon RG-9" );
+	set_description( "The Hydreon RG-9 Solid State Rain Sensor is a rainfall sensing device." );
+	str.clear();
 }
 
 void Hydreon::probe( uint16_t baudrate )
 {
 	status = RAIN_SENSOR_FAIL;
 
-	sensor->begin( baudrate, SERIAL_8N1, rx_pin, tx_pin );
-	sensor->println();
-	sensor->println();
+	sensor.begin( baudrate, SERIAL_8N1, rx_pin, tx_pin );
+	sensor.println();
+	sensor.println();
 
-	if ( debug_mode ) {
+	if ( get_debug_mode() ) {
 
 		Serial.printf( " @ %dbps: got [", baudrate );
 		Serial.flush();
 	}
 
-	sensor->println( "B" );
+	sensor.println( "B" );
 	read_string();
 
-	if ( debug_mode )
-		Serial.printf( "%s] ", str );
+	if ( get_debug_mode() )
+		Serial.printf( "%s] ", str.data() );
 
-	if ( !strncmp( str, "Baud ", 5 )) {
+	if ( !strncmp( str.data(), "Baud ", 5 )) {
 
-		Serial.printf( "%s[INFO] Found rain sensor @ %d bps\n", debug_mode?"\n":"", baudrate );
+		Serial.printf( "%s[INFO] Found rain sensor @ %d bps\n", get_debug_mode()?"\n":"", baudrate );
 		status = RAIN_SENSOR_OK;
-		baud = baudrate;
+		rain_sensor_baud = baudrate;
 
-	} else if ( !strncmp( str, "Reset " , 6 )) {
+	} else if ( !strncmp( str.data(), "Reset " , 6 )) {
 
 		status = str[6];
-		Serial.printf( "%s[INFO] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO] Rain sensor boot message:\n", debug_mode?"\n":"", baudrate, reset_cause() );
+		Serial.printf( "%s[INFO] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO] Rain sensor boot message:\n", get_debug_mode()?"\n":"", baudrate, reset_cause() );
 
 		while ( read_string() )
-			Serial.printf( "%s", str );
+			Serial.printf( "%s", str.data() );
 
-		baud = baudrate;
+		rain_sensor_baud = baudrate;
 	}
 }
 
 bool Hydreon::initialise( void )
 {
-	sensor = new HardwareSerial( uart_nr );
+	if ( rain_sensor_baud ) {
 
-	if ( baud ) {
-
-		if ( debug_mode )
+		if ( get_debug_mode() )
 			Serial.printf( "[DEBUG] Probing rain sensor using previous birate " );
-		probe( baud );
+		probe( rain_sensor_baud );
 
 	} else
 		for ( byte i = 0; i < HYDREON_PROBE_RETRIES; i++ ) {
 
-			if ( debug_mode )
+			if ( get_debug_mode() )
 				Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
 
-			for ( byte j = 0; j < HYDREON_SERIAL_SPEEDS; j++ ) {
+			for ( byte j = 0; j < bps.size(); j++ ) {
 
 				esp_task_wdt_reset();
 				probe( bps[j] );
 				if ( status == RAIN_SENSOR_FAIL )
-					sensor->end();
+					sensor.end();
 				else
 					break;
 			}
@@ -130,51 +124,57 @@ bool Hydreon::initialise( void )
 	switch( status ) {
 
 		case RAIN_SENSOR_OK:
-			initialised = true;
+			set_initialised( true );
 			break;
 		case RAIN_SENSOR_FAIL:
-			initialised = false;
+			set_initialised( false );
 			break;
 		case 'B':
-			initialised = true;
-//			send_alarm( runtime_config, "Rain sensor low voltage", "", debug_mode );
+			set_initialised( true );
+//			send_alarm( runtime_config, "Rain sensor low voltage", "", get_debug_mode() );
 			break;
 		case 'O':
-			initialised = true;
-	//		send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack overflow, report problem to support.", debug_mode );
+			set_initialised( true );
+	//		send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack overflow, report problem to support.", get_debug_mode() );
 			break;
 		case 'U':
-			initialised = true;
-		//	send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack underflow, report problem to support.", debug_mode );
+			set_initialised( true );
+		//	send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack underflow, report problem to support.", get_debug_mode() );
 			break;
 		default:
 			Serial.printf( "[INFO] Unhandled rain sensor reset code: %d. Report to support.\n", status );
-			initialised = false;
+			set_initialised( false );
 			break;
 	}
-	return initialised;
+	return get_initialised();
 }
 
-byte Hydreon::rain_intensity( void )
+bool Hydreon::initialise( HardwareSerial &bus, bool b )
 {
-	if ( !initialised && !initialise() ) {
+	set_debug_mode( b );
+	sensor = bus;
+	return initialise();
+}
+
+byte Hydreon::get_rain_intensity( void )
+{
+	if ( !get_initialised() && !initialise() ) {
 
 		Serial.printf( "[ERROR] Cannot initialise rain sensor. Not returning rain data.\n" );
 		return -1;
 	}
 
-	sensor->println( "R" );
+	sensor.println( "R" );
 	read_string();
-
 	intensity = static_cast<byte>( str[2] - '0' );
 
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str, intensity );
+	if ( get_debug_mode() )
+		Serial.printf( "[DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str.data(), intensity );
 
 	return intensity;
 }
 
-const char *Hydreon::rain_intensity_str( void )
+const char *Hydreon::get_rain_intensity_str( void )
 {
 	// As described in RG-9 protocol
 	switch( intensity ) {
@@ -191,15 +191,20 @@ const char *Hydreon::rain_intensity_str( void )
 	return "Unknown";
 }
 
+float Hydreon::get_rain_rate( void )
+{
+	return Hydreon::rain_rates[ intensity ];
+}
+
 byte Hydreon::read_string( void )
 {
-	memset( str, 0, 128 );
+	str.clear();
 	//FIXME: check if really needed
 	delay( 500 );
 
-	if ( sensor->available() > 0 ) {
+	if ( sensor.available() > 0 ) {
 
-		uint8_t i = sensor->readBytes( str, 128 );
+		uint8_t i = sensor.readBytes( str.data(), str.capacity() );
 		if ( i >= 2 )
 			str[ i-2 ] = 0;	// trim trailing \n
 

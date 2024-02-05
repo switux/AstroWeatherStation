@@ -22,10 +22,10 @@
 
 #include "defaults.h"
 #include "gpio_config.h"
-#include "AstroWeatherStation.h"
+#include "common.h"
 #include "alpaca.h"
 #include "alpaca_safetymonitor.h"
-#include "AWS.h"
+#include "AstroWeatherStation.h"
 
 extern AstroWeatherStation station;
 

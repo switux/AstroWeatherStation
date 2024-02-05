@@ -1,5 +1,5 @@
 /*
-  	AWS.cpp
+  	AstroWeatherStation.cpp
 
 	(c) 2023-2024 F.Lesage
 
@@ -38,13 +38,13 @@
 #include "defaults.h"
 #include "gpio_config.h"
 #include "SC16IS750.h"
-#include "AstroWeatherStation.h"
-#include "AWSSensorManager.h"
-#include "AWSConfig.h"
-#include "AWSWeb.h"
+#include "common.h"
+#include "sensor_manager.h"
+#include "config_manager.h"
+#include "config_server.h"
 #include "dome.h"
 #include "alpaca.h"
-#include "AWS.h"
+#include "AstroWeatherStation.h"
 
 extern void IRAM_ATTR		_handle_rain_event( void );
 
