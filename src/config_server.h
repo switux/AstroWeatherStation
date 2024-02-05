@@ -27,7 +27,6 @@
 #include <AsyncTCP.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
-//#include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 #include <ArduinoJson.h>
 
@@ -50,7 +49,6 @@ class AWSWebServer {
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );
 		void		reboot( AsyncWebServerRequest * );
-		void		reset_config_parameter( AsyncWebServerRequest * );
 		const char 	*save_configuration( const char *json_string );
 		void 		set_configuration( AsyncWebServerRequest *, JsonVariant & );
 		void		send_file( AsyncWebServerRequest * );
