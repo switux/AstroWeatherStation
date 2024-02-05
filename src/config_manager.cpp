@@ -55,17 +55,9 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
-AWSConfig::AWSConfig( void ) : 	remote_server( nullptr ), tzname( nullptr ), url_path( nullptr )
+AWSConfig::AWSConfig( void )
 {
-	close_dome_on_rain = true;
-	config_port = DEFAULT_CONFIG_PORT;
-	debug_mode = false;
-	devices = 0;
-	initialised = false;
-	msas_calibration_offset = 0.F;
 	pcb_version[ 0 ] = 0;
-	pwr_mode = aws_pwr_src::dc12v;
-	rain_event_guard_time = 60;
 }
 
 bool AWSConfig::can_rollback( void )

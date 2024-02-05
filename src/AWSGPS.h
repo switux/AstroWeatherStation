@@ -21,12 +21,12 @@ class AWSGPS
 	private:
 		TaskHandle_t		gps_task_handle;
 		TinyGPSPlus			gps;
-		I2C_SC16IS750		*sc16is750;
-		SemaphoreHandle_t	i2c_mutex = NULL;
-		HardwareSerial		*gps_serial;
-		gps_data_t			*gps_data;
-		bool				debug_mode;
-		bool				update_rtc;
+		I2C_SC16IS750		*sc16is750		= nullptr;
+		SemaphoreHandle_t	i2c_mutex		= nullptr;
+		HardwareSerial		*gps_serial		= nullptr;
+		gps_data_t			*gps_data		= nullptr;
+		bool				debug_mode		= false;
+		bool				update_rtc		= false;
 
 		void update_data( void );
 		void feed( void * );

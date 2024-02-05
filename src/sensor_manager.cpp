@@ -50,12 +50,7 @@ AWSSensorManager::AWSSensorManager( void ) :
 	mlx( new Adafruit_MLX90614() ),
 	tsl( new Adafruit_TSL2591( 2591 )),
 	sqm( new SQM( tsl, &sensor_data )),
-	gps( nullptr ),
-	config( nullptr ),
-	available_sensors( 0 ),
-	rain_event( false ),
-	i2c_mutex( xSemaphoreCreateMutex() ),
-	polling_ms_interval( DEFAULT_SENSOR_POLLING_MS_INTERVAL )
+	i2c_mutex( xSemaphoreCreateMutex() )
 {
 	hw_version[ 0 ] = 0;
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));

@@ -70,26 +70,26 @@ class AWSNetworkConfig {
 
 	private:
 
-		aws_iface		alpaca_iface;
-		aws_iface		config_iface;
-		char			*eth_dns;
-		char			*eth_ip;
-		aws_ip_mode		eth_ip_mode;
-		char			*eth_gw;
-		aws_iface		pref_iface;
-		char			*root_ca;
-		char			*wifi_ap_dns;
-		char			*wifi_ap_gw;
-		char			*wifi_ap_ip;
-		char			*wifi_ap_password;
-		char			*wifi_ap_ssid;
-		aws_wifi_mode	wifi_mode;
-		char			*wifi_sta_dns;
-		char			*wifi_sta_gw;
-		char			*wifi_sta_ip;
-		aws_ip_mode		wifi_sta_ip_mode;
-		char			*wifi_sta_password;
-		char			*wifi_sta_ssid;
+		aws_iface		alpaca_iface		= aws_iface::wifi_ap;
+		aws_iface		config_iface		= aws_iface::wifi_ap;
+		char			*eth_dns			= nullptr;
+		char			*eth_ip				= nullptr;
+		aws_ip_mode		eth_ip_mode			= aws_ip_mode::dhcp;
+		char			*eth_gw				= nullptr;
+		aws_iface		pref_iface			= aws_iface::wifi_ap;
+		char			*root_ca			= nullptr;
+		char			*wifi_ap_dns		= nullptr;
+		char			*wifi_ap_gw			= nullptr;
+		char			*wifi_ap_ip			= nullptr;
+		char			*wifi_ap_password	= nullptr;
+		char			*wifi_ap_ssid		= nullptr;
+		aws_wifi_mode	wifi_mode			= aws_wifi_mode::ap;
+		char			*wifi_sta_dns		= nullptr;
+		char			*wifi_sta_gw		= nullptr;
+		char			*wifi_sta_ip		= nullptr;
+		aws_ip_mode		wifi_sta_ip_mode	= aws_ip_mode::dhcp;
+		char			*wifi_sta_password	= nullptr;
+		char			*wifi_sta_ssid		= nullptr;
 
 		bool	set_parameter( JsonDocument &, const char *, char **, const char * );
 
@@ -177,23 +177,22 @@ class AWSConfig {
 		
 	private:
 
-		uint8_t 			anemometer_model;
-		bool				close_dome_on_rain;
-		uint16_t			config_port;
-		bool				debug_mode;
-		uint32_t			devices;
-		bool				initialised;
-		float				msas_calibration_offset;
+		uint8_t 			anemometer_model		= 255;
+		bool				close_dome_on_rain		= true;
+		uint16_t			config_port				= DEFAULT_CONFIG_PORT;
+		bool				debug_mode				= false;
+		uint32_t			devices					= 0;
+		bool				initialised				= false;
+		float				msas_calibration_offset	= 0.F;
 		AWSNetworkConfig	network_config;
 		// flawfinder: ignore
 		char	  			pcb_version[8];
-		aws_pwr_src			pwr_mode;
-		uint16_t			rain_event_guard_time;
-		char				*remote_server;
-		char				*tzname;
-		char				*url_path;
-		uint8_t				wind_vane_model;
-
+		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
+		uint16_t			rain_event_guard_time	= 60;
+		char				*remote_server			= nullptr;
+		char				*tzname					= nullptr;
+		char				*url_path				= nullptr;
+		uint8_t				wind_vane_model			= 255;
 
 		bool	read_config( void );
 		bool	read_file( const char *, JsonDocument & );

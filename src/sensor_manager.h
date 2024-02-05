@@ -59,28 +59,28 @@ class AWSSensorManager {
 
   private:
 
-    Adafruit_BME280		*bme;
-    Adafruit_MLX90614	*mlx;
-    Adafruit_TSL2591	*tsl;
+    Adafruit_BME280		*bme				= nullptr;
+    Adafruit_MLX90614	*mlx				= nullptr;
+    Adafruit_TSL2591	*tsl				= nullptr;
     Hydreon				rain_sensor;
-    SQM					*sqm;
-    AWSGPS				*gps;
+    SQM					*sqm				= nullptr;
+    AWSGPS				*gps				= nullptr;
 	Anemometer			anemometer;
 	Wind_vane			wind_vane;
 	
-	AWSConfig 			*config;
+	AWSConfig 			*config				= nullptr;
 	SoftwareSerial		rs485_bus;
 	
 	// flawfinder: ignore
     char 				hw_version[6];
-    uint8_t 			available_sensors;
+    uint8_t 			available_sensors	= 0;
     sensor_data_t		sensor_data;
-    bool				debug_mode	= false;
-	bool				rain_event;
-	bool				solar_panel	= false;
+    bool				debug_mode			= false;
+	bool				rain_event			= false;
+	bool				solar_panel			= false;
     TaskHandle_t		sensors_task_handle;
-    SemaphoreHandle_t	i2c_mutex = NULL;
-   	uint32_t			polling_ms_interval;
+    SemaphoreHandle_t	i2c_mutex			= nullptr;
+   	uint32_t			polling_ms_interval	= DEFAULT_SENSOR_POLLING_MS_INTERVAL;
 
   public:
     					AWSSensorManager( void );

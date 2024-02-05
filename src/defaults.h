@@ -22,7 +22,7 @@
 #define _defaults_H
 
 #define	DEFAULT_CLOSE_DOME_ON_RAIN		1
-#define	DEFAULT_CONFIG_PORT				80
+const	int DEFAULT_CONFIG_PORT			= 80;
 #define	DEFAULT_ETH_IP_MODE				aws_ip_mode::dhcp
 #define	DEFAULT_HAS_BME					0
 #define	DEFAULT_HAS_DOME				0

@@ -30,6 +30,7 @@ extern HardwareSerial Serial1;
 
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
+#include "defaults.h"
 #include "common.h"
 #include "config_manager.h"
 #include "config_server.h"

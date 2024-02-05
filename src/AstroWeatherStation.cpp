@@ -459,10 +459,10 @@ bool AstroWeatherStation::initialise( void )
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
 	if ( config.get_has_dome() ) {
 
-    if ( config.get_has_sc16is750() )
-			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
-		else
-			dome.initialise( debug_mode );
+	    if ( config.get_has_sc16is750() )
+  			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+	  	else
+	  		dome.initialise( debug_mode );
 
 	}
 
