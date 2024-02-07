@@ -1,7 +1,7 @@
 /*
   	config_server.cpp
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -49,7 +49,6 @@ void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 	if ( json_string ) {
 
 		request->send( 200, "application/json", json_string );
-		free( json_string );
 
 	} else
 

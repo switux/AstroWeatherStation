@@ -52,7 +52,7 @@ extern void IRAM_ATTR		_handle_rain_event( void );
 
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
-const std::array<std::string, 3> pwr_mode_str = { "Solar panel", "12V DC", "PoE" };
+const std::array<std::string, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
 
 const bool				FORMAT_SPIFFS_IF_FAILED = true;
 const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
@@ -68,6 +68,7 @@ AstroWeatherStation::AstroWeatherStation( void )
 	station_health_data.init_heap_size = xPortGetFreeHeapSize();
 	station_health_data.current_heap_size = station_health_data.init_heap_size;
 	station_health_data.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
+	location = DEFAULT_LOCATION;
 	uptime[ 0 ] = 0;
 }
 
@@ -82,11 +83,10 @@ void AstroWeatherStation::check_ota_updates( void )
 	ota.OverrideBoard( string.data() );
 	snprintf( string.data(), string.size(), "%02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
 	ota.OverrideDevice( string.data() );
-	snprintf( string.data(), string.size(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version(), REV, BUILD_DATE );
-	ota.SetConfig( string.data() );
+	ota.SetConfig( unique_build_id.data() );
 	ota.SetCallback( OTA_callback );
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
-	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV );
+	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV.data() );
 	Serial.printf( "[INFO] Firmware OTA update result: %s.\n", OTA_message( ret_code ));
 }
 
@@ -173,7 +173,7 @@ void AstroWeatherStation::display_banner()
 
 	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
 	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	print_config_string( "# Power Mode        : %s", pwr_mode_str[ static_cast<byte>( config.get_pwr_mode() ) ].c_str() );
+	print_config_string( "# Power Mode        : %s", PWR_MODE_STR[ static_cast<byte>( config.get_pwr_mode() ) ].c_str() );
 	print_config_string( "# PCB version       : %s", config.get_pcb_version() );
 	print_config_string( "# Ethernet present  : %s", config.get_has_ethernet() ? "Yes" : "No" );
 	print_config_string( "# GPIO ext. present : %s", config.get_has_sc16is750() ? "Yes" : "No" );
@@ -316,6 +316,11 @@ char *AstroWeatherStation::get_json_string_config( void )
 	return config.get_json_string_config();
 }
 
+etl::string_view AstroWeatherStation::get_location( void ) const
+{
+	return location;
+}
+
 char* AstroWeatherStation::get_root_ca( void )
 {
 	return config.get_root_ca();
@@ -324,6 +329,11 @@ char* AstroWeatherStation::get_root_ca( void )
 sensor_data_t *AstroWeatherStation::get_sensor_data( void )
 {
 	return sensor_manager.get_sensor_data();
+}
+
+etl::string_view AstroWeatherStation::get_unique_build_id( void ) const
+{
+	return unique_build_id;
 }
 
 uint32_t AstroWeatherStation::get_uptime( void )
@@ -401,7 +411,7 @@ bool AstroWeatherStation::has_rain_sensor( void )
 
 bool AstroWeatherStation::initialise( void )
 {
-	std::array<char,64>		string;
+	etl::string<64>			string;
 	std::array<uint8_t,6>	mac;
 
 	determine_boot_mode();
@@ -415,18 +425,21 @@ bool AstroWeatherStation::initialise( void )
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
-	snprintf( string.data(), string.size(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+	// FIXME: all this OTA setup is messy, use etl::string and drop strdup()
+	snprintf( string.data(), string.capacity(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota_board = strdup( string.data() );
 
 	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
 		boot_timestamp = 0;
 
+	snprintf( unique_build_id.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version(), REV, BUILD_DATE );
+
 	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
-	snprintf( string.data(), string.size(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+	snprintf( string.data(), string.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 	ota_device = strdup( string.data() );
 
-	snprintf( string.data(), string.size(), "%d-%s-%s-%s",config.get_pwr_mode(), config.get_pcb_version(), REV, BUILD_DATE );
-	ota_config = strdup( string.data() );
+	snprintf( string.data(), string.capacity(), "%d-%s-%s-%s",config.get_pwr_mode(), config.get_pcb_version(), REV, BUILD_DATE );
+	ota_config = strdup( unique_build_id.data() );
 
 	if ( solar_panel )
 		sensor_manager.read_battery_level();
@@ -459,11 +472,14 @@ bool AstroWeatherStation::initialise( void )
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
 	if ( config.get_has_dome() ) {
 
-	    if ( config.get_has_sc16is750() )
-  			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
-	  	else
-	  		dome.initialise( debug_mode );
+	    if ( config.get_has_sc16is750() ) {
 
+  			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+
+	    } else {
+
+		  	dome.initialise( debug_mode );
+	    }
 	}
 
 	if ( solar_panel ) {
@@ -614,7 +630,7 @@ etl::string<96> AstroWeatherStation::format_helper( const char *fmt, Args... arg
 	return etl::string<96>( buf );
 }
 
-template void AstroWeatherStation::print_config_string<>(const char* format);
+template void AstroWeatherStation::print_config_string<>( const char *fmt );
 
 template<typename... Args>
 void AstroWeatherStation::print_config_string( const char *fmt, Args... args )

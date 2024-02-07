@@ -1,7 +1,7 @@
 /*	
   	defaults.h
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@ const	int DEFAULT_CONFIG_PORT			= 80;
 #define	DEFAULT_HAS_TSL					0
 #define	DEFAULT_HAS_WS					0
 #define	DEFAULT_HAS_WV					0
+#define	DEFAULT_LOCATION				"Somewhere on Earth"
 #define	DEFAULT_MSAS_CORRECTION			-0.55
 #define	DEFAULT_PREF_IFACE				aws_iface::ap
 #define	DEFAULT_RAIN_EVENT_GUARD_TIME	60

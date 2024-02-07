@@ -1,7 +1,7 @@
 /*
 	alpaca_device.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -22,21 +22,8 @@
 #ifndef _ALPACA_DEVICE_H
 #define _ALPACA_DEVICE_H
 
-enum struct ascom_device_type : byte
-{
-	Camera,
-	CoverCalibrator,
-	Dome,
-	FilterWheel,
-	Focuser,
-	ObservingConditions,
-	Rotator,
-	SafetyMonitor,
-	Switch,
-	Telescope,
-	Video
-};
-using ascom_device_t = ascom_device_type;
+#include "Embedded_Template_Library.h"
+#include "etl/string.h"
 
 enum struct ascom_driver_error_t : byte
 {
@@ -46,37 +33,51 @@ enum struct ascom_driver_error_t : byte
 };
 using ascom_driver_error = ascom_driver_error_t;
 
+using alpaca_device_description_t	= etl::string<128>;
+using alpaca_driver_info_t			= etl::string<128>;
+using alpaca_driver_version_t		= etl::string<3>;
+using alpaca_device_name_t			= etl::string<64>;
+using alpaca_supported_actions_t	= etl::string<128>;
+using alpaca_interface_version_t	= short;
+
 class alpaca_device {
 
-	protected:
+	private:
 
-		// flawfinder: ignore
-		char			message_str[ 256 ];
-		bool			debug_mode			= false;
-		bool			is_connected		= false;
-		const char		*_description		= nullptr;
-		const char		*devicetype			= nullptr;
-		const char		*_driverinfo		= nullptr;
-		const char		*_driverversion		= nullptr;
-		const char		*_name				= nullptr;
-		const char		*_supportedactions	= nullptr;
-		short			_interfaceversion	= 0;
+		bool						debug_mode			= false;
+		bool						is_connected		= false;
+		alpaca_device_description_t	description;
+		alpaca_driver_info_t		driverinfo;
+		alpaca_driver_version_t		driverversion;
+		alpaca_device_name_t		name;
+		alpaca_supported_actions_t	supportedactions;
+		alpaca_interface_version_t	interfaceversion	= 0;
 
 	public:
 
-			alpaca_device( void );
-		void default_bool( AsyncWebServerRequest *, const char *, bool );
-		void description( AsyncWebServerRequest *, const char * );
+			alpaca_device( short );
 		void device_error( AsyncWebServerRequest *, const char *, ascom_driver_error_t , char * );
-		void driverinfo( AsyncWebServerRequest *, const char * );
-		void driverversion( AsyncWebServerRequest *, const char * );
-		void get_connected( AsyncWebServerRequest *, const char * );
-		void interfaceversion( AsyncWebServerRequest *, const char * );
-		void name( AsyncWebServerRequest *, const char * );
+		bool get_debug_mode( void );
+		bool get_is_connected( void );
 		void not_implemented( AsyncWebServerRequest *, const char *, const char * );
-		void return_value( AsyncWebServerRequest *, const char *, byte  );
-		void return_value( AsyncWebServerRequest *, const char *, double  );
-		void supportedactions( AsyncWebServerRequest *, const char * );
+		void send_connected( AsyncWebServerRequest *, const char * );
+		void send_description( AsyncWebServerRequest *, const char * );
+		void send_driverinfo( AsyncWebServerRequest *, const char * );
+		void send_driverversion( AsyncWebServerRequest *, const char * );
+		void send_interfaceversion( AsyncWebServerRequest *, const char * );
+		void send_name( AsyncWebServerRequest *, const char * );
+		void send_supportedactions( AsyncWebServerRequest *, const char * );
+		void send_value( AsyncWebServerRequest *, const char *, bool );
+		void send_value( AsyncWebServerRequest *, const char *, byte );
+		void send_value( AsyncWebServerRequest *, const char *, double );
+		void set_debug_mode( bool );
+		void set_description( char * );
+		void set_driver_info( char * );
+		void set_driver_version( char * );
+		void set_device_name( char * );
+		void set_is_connected( bool );
+		void set_supported_actions( char * );
+
 };
 
 #endif

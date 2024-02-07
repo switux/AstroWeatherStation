@@ -1,5 +1,5 @@
 /*
-  	config.h
+  	config_manager.h
 
 	(c) 2023-2024 F.Lesage
 

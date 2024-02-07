@@ -35,7 +35,7 @@
 
 extern char			catch_rain_event;
 
-const char					*REV 				= "3.0.0.0";
+const etl::string<12>		REV 				= "3.0.0.0";
 const unsigned long 		US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
@@ -45,7 +45,7 @@ void setup()
 {
 	Serial.begin( 115200 );
 
-	delay( 500 );	// TODO: not sure we really need it, except maybe after a firmware update via USB, to give some time to the serial monitor
+	delay( 500 );	// TO CHECK: not sure we really need it, except maybe after a firmware update via USB, to give some time to the serial monitor
 
 	if ( !station.initialise()) {
 		

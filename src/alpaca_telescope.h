@@ -1,7 +1,7 @@
 /*
 	alpaca_telescope.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -35,14 +35,16 @@
 class alpaca_telescope : public alpaca_device
 {
 	private:
-			SiderealPlanets	astro_lib;
 
-			double	forced_latitude = -1;
-			double	forced_longitude = -1;
-			double	forced_altitude = -1;
+			SiderealPlanets		astro_lib;
+			double				forced_latitude		= -1;
+			double				forced_longitude	= -1;
+			double				forced_altitude		= -1;
+			etl::string<256>	message_str;
+
 	public:
 
-		explicit alpaca_telescope( bool );
+		explicit alpaca_telescope( void );
 		void set_connected( AsyncWebServerRequest *, const char * );
 		void siderealtime( AsyncWebServerRequest *, const char * );
 		void siteelevation( AsyncWebServerRequest *, const char * );

@@ -91,6 +91,7 @@ class AstroWeatherStation {
 		bool				debug_mode	= false;
 		Dome				dome;
 		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
+		etl::string<128>	location;
 		bool				ntp_synced	= false;
 		char				*ota_board	= nullptr;
 		char				*ota_config	= nullptr;
@@ -99,8 +100,8 @@ class AstroWeatherStation {
    		I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
-
 		bool				solar_panel;
+		etl::string<32>		unique_build_id;
 							// flawfinder: ignore
 		char				uptime[32];
 
@@ -155,8 +156,10 @@ class AstroWeatherStation {
 		IPAddress       *get_eth_ip( void );
         char            *get_json_sensor_data( void );
         char            *get_json_string_config( void );
+		etl::string_view get_location( void ) const;
         bool			get_location_coordinates( double *, double * );
         char            *get_root_ca( void );
+		etl::string_view get_unique_build_id( void ) const;
 		uint32_t        get_uptime( void );
 		char            *get_uptime_str( char *, size_t );
         byte            get_wifi_sta_cidr_prefix( void );

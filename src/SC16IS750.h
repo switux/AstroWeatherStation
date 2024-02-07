@@ -1,7 +1,7 @@
 /*
    NXP SC16IS1750 UART Bridge driver
 
-   (c) 2023 Lesage F.
+   (c) 2023-2024 Lesage F.
 
    	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -157,7 +157,7 @@
 class I2C_SC16IS750
 {
 	public:
-				explicit I2C_SC16IS750( void );
+				explicit I2C_SC16IS750( void ) = default;
 		bool	begin( uint32_t );
 		// flawfinder: ignore
 		int8_t	read( void );
