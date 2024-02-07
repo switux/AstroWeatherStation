@@ -32,8 +32,8 @@ class Hydreon : public Device {
 		static constexpr byte				HYDREON_PROBE_RETRIES	= 3;
 		static constexpr byte				RAIN_SENSOR_OK			= 0;
 		static constexpr byte 				RAIN_SENSOR_FAIL		= 127;
-		static const std::array<float,8>	rain_rates;
-		static const std::array<uint16_t,7> bps;
+		static const std::array<float,8>	RAIN_RATES;
+		static const std::array<uint16_t,7> BPS;
 
 		uint8_t				intensity;
 		uint8_t				reset_pin	= GPIO_RAIN_SENSOR_MCLR;

@@ -1,7 +1,7 @@
 /*
   	SQM.cpp
 
-  	(c) 2023 F.Lesage
+  	(c) 2023-2024 F.Lesage
 
 	1.0.0 - Initial version, derived from AWS 2.0
 

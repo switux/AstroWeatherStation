@@ -1,7 +1,7 @@
 /*
 	alpaca_observingconditions.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@
 #include "alpaca_device.h"
 
 // Attempt to convert RG-9 rain scale to ASCOM's ...
-const float rain_rate[] = {
+const std::array<float,8> rain_rate = {
 	0.F,			// No rain
 	0.1F,			// Rain drops
 	1.0F,			// Very light
@@ -45,10 +45,12 @@ const float rain_rate[] = {
 
 class alpaca_observingconditions : public alpaca_device
 {
+	private:
+			etl::string<256>		message_str;
+
 	public:
 
-			explicit alpaca_observingconditions( bool );
-
+			explicit alpaca_observingconditions( void );
 		void set_connected( AsyncWebServerRequest *request, const char * );
 		void get_averageperiod( AsyncWebServerRequest *request, const char * );
 		void set_averageperiod( AsyncWebServerRequest *request, const char * );

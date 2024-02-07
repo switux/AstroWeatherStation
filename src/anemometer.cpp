@@ -1,7 +1,7 @@
 /*
   	anemometer.cpp
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -25,10 +25,10 @@
 #include "device.h"
 #include "anemometer.h"
 
-const std::array<std::string, 3> Anemometer::_anemometer_model = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
-const std::array<std::string, 3> Anemometer::_anemometer_description = { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
-const uint64_t _anemometer_cmd[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
-const uint16_t _anemometer_speed[3] = { 4800, 9600, 4800 };
+const std::array<std::string, 3> Anemometer::ANEMOMETER_MODEL = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3> Anemometer::ANEMOMETER_DESCRIPTION = { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
+const uint64_t ANEMOMETER_CMD[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
+const uint16_t ANEMOMETER_SPEED[3] = { 4800, 9600, 4800 };
 
 Anemometer::Anemometer( void )
 {
@@ -47,20 +47,20 @@ bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model
 	wind_speeds_size = 2*60*1000 / interval;
 	wind_speeds.resize( wind_speeds_size );
 
-	set_name( _anemometer_model[ model ].c_str() );
-	set_description( _anemometer_description[ model ].c_str() );
+	set_name( ANEMOMETER_DESCRIPTION[ model ].c_str() );
+	set_description( ANEMOMETER_DESCRIPTION[ model ].c_str() );
 	
-	uint64_t_to_uint8_t_array( _anemometer_cmd[ model ], cmd );
+	uint64_t_to_uint8_t_array( ANEMOMETER_CMD[ model ], cmd );
 
 	if ( !bps )
 
-		bps = _anemometer_speed[ model ];
+		bps = ANEMOMETER_SPEED[ model ];
 
 	else {
 
-		if ( bps != _anemometer_speed[ model ] ) {
+		if ( bps != ANEMOMETER_SPEED[ model ] ) {
 
-			bps = _anemometer_speed[ model ];
+			bps = ANEMOMETER_SPEED[ model ];
 			sensor_bus->end();
 
 		} else

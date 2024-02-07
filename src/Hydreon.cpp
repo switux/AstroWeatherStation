@@ -26,7 +26,7 @@
 
 RTC_DATA_ATTR uint16_t rain_sensor_baud = 0;	// NOSONAR
 
-const std::array<float,8>	Hydreon::rain_rates	= {
+const std::array<float,8>	Hydreon::RAIN_RATES	= {
 															0.F,			// No rain
 															0.1F,			// Rain drops
 															1.0F,			// Very light
@@ -36,7 +36,7 @@ const std::array<float,8>	Hydreon::rain_rates	= {
 															10.0F,			// Heavy
 															50.1F			// Violent
 														};
-const std::array<uint16_t,7>	Hydreon::bps 		= { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
+const std::array<uint16_t,7>	Hydreon::BPS 		= { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
 
 Hydreon::Hydreon( void ) : rg9_read_mutex( xSemaphoreCreateMutex() )
 {
@@ -177,7 +177,7 @@ const char *Hydreon::get_rain_intensity_str( void )
 
 float Hydreon::get_rain_rate( void )
 {
-	return Hydreon::rain_rates[ intensity ];
+	return Hydreon::RAIN_RATES[ intensity ];
 }
 
 byte Hydreon::read_string( void )
@@ -221,10 +221,10 @@ void Hydreon::try_baudrates( void )
 		if ( get_debug_mode() )
 			Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
 
-		for ( byte j = 0; j < bps.size(); j++ ) {
+		for ( byte j = 0; j < BPS.size(); j++ ) {
 
 			esp_task_wdt_reset();
-			probe( bps[j] );
+			probe( BPS[j] );
 			if ( status == RAIN_SENSOR_FAIL )
 				sensor.end();
 			else

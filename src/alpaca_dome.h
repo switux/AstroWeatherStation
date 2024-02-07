@@ -1,7 +1,7 @@
 /*
 	alpaca_dome.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -52,11 +52,12 @@ class alpaca_dome : public alpaca_device
 {
 	private:
 
-		dome_shutter_status_t	dome_shutter_status;
+		dome_shutter_status_t	dome_shutter_status	= dome_shutter_status_t::Error;
+		etl::string<256>		message_str;
 
 	public:
 
-		explicit	alpaca_dome( bool );
+		explicit	alpaca_dome( void );
 		void		abortslew( AsyncWebServerRequest *, const char * );
 		void		cansetshutter( AsyncWebServerRequest *, const char * );
 		void		closeshutter( AsyncWebServerRequest *, const char * );

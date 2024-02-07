@@ -1,7 +1,7 @@
 /*
   	wind_vane.h
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -30,8 +30,8 @@ class Wind_vane : public Device {
 
 	public:
 
-		static const std::array<std::string, 3> _windvane_model;
-		static const std::array<std::string, 3> _windvane_description;
+		static const std::array<std::string, 3> WIND_VANE_MODEL;
+		static const std::array<std::string, 3> WIND_VANE_DESCRIPTION;
 		
 				Wind_vane( void );
 		bool			initialise( SoftwareSerial *, byte, bool );

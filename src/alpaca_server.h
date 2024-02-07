@@ -1,7 +1,7 @@
 /*
 	alpaca_server.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -84,10 +84,10 @@ class alpaca_server {
 		AsyncWebServer 	*server			= nullptr;
 		AsyncUDP		ascom_discovery;
 
-		alpaca_dome					*dome;
-		alpaca_observingconditions	*observing_conditions;
-		alpaca_safetymonitor		*safety_monitor;
-		alpaca_telescope			*telescope;
+		alpaca_dome					dome;
+		alpaca_observingconditions	observing_conditions;
+		alpaca_safetymonitor		safety_monitor;
+		alpaca_telescope			telescope;
 
 		ascom_error		transaction_status	= ascom_error_t::NotConnected;
 

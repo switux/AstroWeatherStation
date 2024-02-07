@@ -1,7 +1,7 @@
 /*
 	alpaca_safetymonitor.h
 
-	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023 F.Lesage
+	ASCOM ALPACA Server for the AstroWeatherStation (c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -33,9 +33,11 @@
 
 class alpaca_safetymonitor : public alpaca_device
 {
+	private:
+			etl::string<256>		message_str;
 	public:
 
-		explicit alpaca_safetymonitor( bool );
+		explicit alpaca_safetymonitor( void );
 
 		void issafe( AsyncWebServerRequest *, const char * );
 		void set_connected( AsyncWebServerRequest *, const char * );

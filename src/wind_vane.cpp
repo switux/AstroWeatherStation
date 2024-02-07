@@ -1,7 +1,7 @@
 /*
   	wind_vane.cpp
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -24,10 +24,10 @@
 #include "device.h"
 #include "wind_vane.h"
 
-const std::array<std::string, 3> Wind_vane::_windvane_model = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
-const std::array<std::string, 3> Wind_vane::_windvane_description = { "Mechanical wind vane", "Mechanical wind vane", "Ultrasonic wind vane" };
-const uint64_t _windvane_cmd[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
-const uint16_t _windvane_speed[3] = { 4800, 9600, 4800 };
+const std::array<std::string, 3> Wind_vane::WIND_VANE_MODEL = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3> Wind_vane::WIND_VANE_DESCRIPTION = { "Mechanical wind vane", "Mechanical wind vane", "Ultrasonic wind vane" };
+const uint64_t WIND_VANE_CMD[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
+const uint16_t WIND_VANE_SPEED[3] = { 4800, 9600, 4800 };
 
 Wind_vane::Wind_vane()
 {
@@ -40,21 +40,21 @@ bool Wind_vane::initialise( SoftwareSerial *bus, byte model, bool _debug_mode )
 {
 	sensor_bus = bus;
 	set_debug_mode( _debug_mode );
-	set_name( _windvane_model[ model ].c_str() );
-	set_description( _windvane_description[ model ].c_str() );
+	set_name( WIND_VANE_MODEL[ model ].c_str() );
+	set_description( WIND_VANE_DESCRIPTION[ model ].c_str() );
 	set_driver_version( "1.0");
 
-	uint64_t_to_uint8_t_array( _windvane_cmd[ model ], cmd );
+	uint64_t_to_uint8_t_array( WIND_VANE_CMD[ model ], cmd );
 
 	if ( !bps )
 
-		bps = _windvane_speed[ model ];
+		bps = WIND_VANE_SPEED[ model ];
 
 	else {
 
-		if ( bps != _windvane_speed[ model ] ) {
+		if ( bps != WIND_VANE_SPEED[ model ] ) {
 
-			bps = _windvane_speed[ model ];
+			bps = WIND_VANE_SPEED[ model ];
 			sensor_bus->end();
 
 		} else

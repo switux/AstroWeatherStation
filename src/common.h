@@ -1,5 +1,5 @@
 /*
-	AstroWeatherStation.h
+	common.h
 
 	(c) 2023-2024 F.Lesage
 
@@ -22,22 +22,18 @@
 #ifndef _common_H
 #define _common_H
 
+#include "Embedded_Template_Library.h"
+#include "etl/string.h"
+
 #include "build_seq.h"
+#include "AWSGPS.h"
 
 // Force DEBUG output even if not activated by external button
 const byte DEBUG_MODE = 1;
 
-extern const unsigned long 	US_SLEEP;
-extern const char			*REV;
-extern HardwareSerial		Serial1;
-
-// ------------------------------------------------------------------------------
-//
-// DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING!
-//
-// ------------------------------------------------------------------------------
-
-#include "AWSGPS.h"
+extern const unsigned long 		US_SLEEP;
+extern const etl::string<12>	REV;
+extern HardwareSerial			Serial1;
 
 struct aws_health_data_t {
 
@@ -89,4 +85,4 @@ struct sensor_data_t {
 void loop( void );
 void setup( void );
 
-#endif // _AstroWeatherStation_H
+#endif // _common_H

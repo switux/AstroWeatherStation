@@ -1,7 +1,7 @@
 /*	
   	alpaca_safetymonitor.cpp
   	
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -30,23 +30,14 @@
 
 extern AstroWeatherStation station;
 
-alpaca_safetymonitor::alpaca_safetymonitor( bool _debug_mode )
+alpaca_safetymonitor::alpaca_safetymonitor( void ): alpaca_device( SAFETYMONITOR_INTERFACE_VERSION )
 {
-	is_connected = false;
-	debug_mode = _debug_mode;
-	devicetype = "Sensor";
-	_supportedactions = SAFETYMONITOR_SUPPORTED_ACTIONS;
-	_driverinfo = SAFETYMONITOR_DRIVER_INFO;
-	_name = SAFETYMONITOR_NAME;
-	_description = SAFETYMONITOR_DESCRIPTION;
-	_driverversion = SAFETYMONITOR_DRIVER_VERSION;
-	_interfaceversion = SAFETYMONITOR_INTERFACE_VERSION;
 }
 
 void alpaca_safetymonitor::issafe( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( static_cast<char *>( message_str ), 255, "{\"Value\":%s,%s}", station.is_rain_event()?"true":"false", transaction_details );
-	request->send( 200, "application/json", static_cast<const char *>( message_str ) );
+	snprintf( message_str.data(), message_str.capacity(), "{\"Value\":%s,%s}", station.is_rain_event()?"true":"false", transaction_details );
+	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
 void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
@@ -55,21 +46,21 @@ void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const 
 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
 
-			is_connected = true;
-			snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
+			set_is_connected( true );
+			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 		} else {
 
 			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
 
-				is_connected = false;
-				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
+				set_is_connected( false );
+				snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
 			} else
 
-				snprintf( static_cast<char *>( message_str ), 255, R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+				snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
 		}
-		request->send( 200, "application/json", static_cast<const char *>( message_str ) );
+		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 		return;
 	}
 

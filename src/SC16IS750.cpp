@@ -1,7 +1,7 @@
 /*
    NXP SC16IS1750 UART Bridge driver
 
-   (c) 2023 Lesage F.
+   (c) 2023-2024 Lesage F.
 
 	Revisions
 		1.0.0	: Barebone version, polled mode operation, made to work with the AstroWeatherStation's GPS
@@ -32,10 +32,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "SC16IS750.h"
-
-I2C_SC16IS750::I2C_SC16IS750( void )
-{
-}
 
 int I2C_SC16IS750::available( void )
 {

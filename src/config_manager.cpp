@@ -43,9 +43,9 @@ const unsigned long	ETHERNET_DEVICE		= 0x00000100;
 const unsigned long	SC16IS750_DEVICE	= 0x00000200;
 
 extern AstroWeatherStation station;
-extern const std::array<std::string, 3> _anemometer_model;
+extern const std::array<std::string, 3> ANEMOMETER_MODEL;
 
-RTC_DATA_ATTR char _can_rollback = 0;
+RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
 //
 // Credits to: https://stackoverflow.com/a/16388610
@@ -77,7 +77,7 @@ uint8_t AWSConfig::get_anemometer_model( void )
 
 const char *AWSConfig::get_anemometer_model_str( void )
 {
-	return Anemometer::_anemometer_model[ anemometer_model ].c_str();
+	return Anemometer::ANEMOMETER_MODEL[ anemometer_model ].c_str();
 }
 
 bool AWSConfig::get_close_dome_on_rain( void )
@@ -168,22 +168,20 @@ bool AWSConfig::get_has_wv( void )
 char *AWSConfig::get_json_string_config( void )
 {
 	DynamicJsonDocument	aws_json_config(1024);
-	// FIXME: unless free()'d by caller this is a memory leak
-	char *json_string = static_cast<char *>( malloc( 1024 ) );
-	// flawfinder: ignore
-	char buf[64];
+	static etl::string<1024>	json_string;
+	etl::string<64>		buf;
 
 	aws_json_config["tzname"] = tzname;
 	aws_json_config["pref_iface"] = static_cast<byte>( network_config.get_pref_iface() );
     aws_json_config["eth_ip_mode"] = static_cast<byte>( network_config.get_eth_ip_mode() );
 	if ( network_config.get_eth_ip_mode() == aws_ip_mode::dhcp ) {
 
-		snprintf( buf, 64, "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
-		aws_json_config["eth_ip"] = buf;
-		snprintf( buf, 64, "%s",  station.get_eth_gw()->toString().c_str() );
-		aws_json_config["eth_gw"] = buf;
-		snprintf( buf, 64, "%s",  station.get_eth_dns()->toString().c_str() );
-		aws_json_config["eth_dns"] = buf;
+		snprintf( buf.data(), buf.capacity(), "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
+		aws_json_config["eth_ip"] = buf.data();
+		snprintf( buf.data(), buf.capacity(), "%s",  station.get_eth_gw()->toString().c_str() );
+		aws_json_config["eth_gw"] = buf.data();
+		snprintf( buf.data(), buf.capacity(), "%s",  station.get_eth_dns()->toString().c_str() );
+		aws_json_config["eth_dns"] = buf.data();
 
 	} else {
 
@@ -198,12 +196,12 @@ char *AWSConfig::get_json_string_config( void )
 
 	if ( network_config.get_wifi_sta_ip_mode() == aws_ip_mode::dhcp ) {
 
-		snprintf( buf, 64, "%s/%d", station.get_wifi_sta_ip()->toString().c_str(), station.get_wifi_sta_cidr_prefix() );
-		aws_json_config["wifi_sta_ip"] = buf;
-		snprintf( buf, 64, "%s",  station.get_wifi_sta_gw()->toString().c_str() );
-		aws_json_config["wifi_sta_gw"] = buf;
-		snprintf( buf, 64, "%s",  station.get_wifi_sta_dns()->toString().c_str() );
-		aws_json_config["wifi_sta_dns"] = buf;
+		snprintf( buf.data(), buf.capacity(), "%s/%d", station.get_wifi_sta_ip()->toString().c_str(), station.get_wifi_sta_cidr_prefix() );
+		aws_json_config["wifi_sta_ip"] = buf.data();
+		snprintf( buf.data(), buf.capacity(), "%s",  station.get_wifi_sta_gw()->toString().c_str() );
+		aws_json_config["wifi_sta_gw"] = buf.data();
+		snprintf( buf.data(), buf.capacity(), "%s",  station.get_wifi_sta_dns()->toString().c_str() );
+		aws_json_config["wifi_sta_dns"] = buf.data();
 
 	} else {
 
@@ -241,13 +239,12 @@ char *AWSConfig::get_json_string_config( void )
 	
 	aws_json_config["has_ethernet"] = get_has_ethernet();
 	
-	if ( serializeJson( aws_json_config, json_string, 1024 ) >= 1024 ) {
+	if ( serializeJson( aws_json_config, json_string.data(), json_string.capacity() ) >= json_string.capacity() ) {
 
 		Serial.printf( "[ERROR] Reached configuration string limit. Please contact support\n" );
-		free( json_string );
 		return nullptr;
 	}
-	return json_string;
+	return json_string.data();
 }
 
 float AWSConfig::get_msas_calibration_offset( void )
@@ -362,7 +359,7 @@ uint8_t AWSConfig::get_wind_vane_model( void )
 
 const char *AWSConfig::get_wind_vane_model_str( void )
 {
-	return Wind_vane::_windvane_model[ wind_vane_model ].c_str();
+	return Wind_vane::WIND_VANE_MODEL[ wind_vane_model ].c_str();
 }
 
 bool AWSConfig::load( bool _debug_mode  )

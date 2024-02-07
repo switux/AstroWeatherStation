@@ -1,7 +1,7 @@
 /*
   	anemometer.h
 
-	(c) 2023 F.Lesage
+	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -31,8 +31,8 @@ class Anemometer : public Device {
 
 	public:
 
-		static const std::array<std::string, 3> _anemometer_model;
-		static const std::array<std::string, 3> _anemometer_description;
+		static const std::array<std::string, 3> ANEMOMETER_MODEL;
+		static const std::array<std::string, 3> ANEMOMETER_DESCRIPTION;
 		
 				Anemometer( void );
 		bool			initialise( SoftwareSerial *, uint32_t, byte, bool );
