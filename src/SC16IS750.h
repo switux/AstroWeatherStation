@@ -23,6 +23,8 @@
 
 #include <Arduino.h>
 
+const uint8_t			DEFAULT_SC16IS750_ADDR				= 0x90;
+
 #define	SC16IS750_RHR		(0x00)		// RX FIFO
 #define	SC16IS750_THR		(0X00)		// TX FIFO
 #define	SC16IS750_IER		(0X01)		// Interrupt enable

@@ -33,6 +33,8 @@ class Anemometer : public Device {
 
 		static const std::array<std::string, 3> ANEMOMETER_MODEL;
 		static const std::array<std::string, 3> ANEMOMETER_DESCRIPTION;
+		static const std::array<uint64_t,3>		ANEMOMETER_CMD;
+		static const std::array<uint16_t,3>		ANEMOMETER_SPEED;
 		
 				Anemometer( void );
 		bool			initialise( SoftwareSerial *, uint32_t, byte, bool );
@@ -41,19 +43,17 @@ class Anemometer : public Device {
 
 	private:
 
-	   	byte			model;
-	   	byte			wind_speed_index	= 0;
-   		byte			wind_speeds_size	= 0;
-  	 	float			wind_gust			= 0.F;
-  	 	float			wind_speed			= 0.F;
-  	 	std::vector<float>	wind_speeds;
-   		uint16_t		bps					= 0;
-		uint8_t			cmd[8];
-		uint8_t			answer[7];
-		uint32_t		polling_ms_interval	= 0;
-		SoftwareSerial	*sensor_bus			= nullptr;
-
-		void uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array );
+		std::array<uint8_t,7>	answer;
+   		uint16_t				bps					= 0;
+		std::array<uint8_t,8>	cmd;
+	   	byte					model;
+		uint32_t				polling_ms_interval	= 0;
+		SoftwareSerial			*sensor_bus			= nullptr;
+	   	byte					wind_speed_index	= 0;
+   		byte					wind_speeds_size	= 0;
+  	 	float					wind_gust			= 0.F;
+  	 	float					wind_speed			= 0.F;
+  	 	std::vector<float>		wind_speeds;
 };
 
 #endif

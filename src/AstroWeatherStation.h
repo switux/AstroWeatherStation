@@ -48,7 +48,7 @@ class AWSNetwork {
 		IPAddress			wifi_ap_gw;
 		IPAddress			wifi_ap_ip;
 		IPAddress			wifi_ap_subnet;
-		uint8_t				wifi_mac[6];
+		uint8_t				wifi_mac[6];		// NOSONAR
 		IPAddress			wifi_sta_dns;
 		IPAddress			wifi_sta_gw;
 		IPAddress			wifi_sta_ip;
@@ -102,8 +102,7 @@ class AstroWeatherStation {
 		AWSWebServer 		server;
 		bool				solar_panel;
 		etl::string<32>		unique_build_id;
-							// flawfinder: ignore
-		char				uptime[32];
+		etl::string<32>		uptime_str;
 
 		TaskHandle_t		aws_periodic_task_handle;
 
@@ -161,7 +160,7 @@ class AstroWeatherStation {
         char            *get_root_ca( void );
 		etl::string_view get_unique_build_id( void ) const;
 		uint32_t        get_uptime( void );
-		char            *get_uptime_str( char *, size_t );
+		etl::string_view	get_uptime_str( void );
         byte            get_wifi_sta_cidr_prefix( void );
 		IPAddress       *get_wifi_sta_dns( void );
 		IPAddress       *get_wifi_sta_gw( void );

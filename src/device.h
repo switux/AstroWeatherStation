@@ -27,8 +27,9 @@
 class Device {
 
 	public:
-				Device( void );
+				Device( void ) = default;
 		bool	get_initialised( void );
+		void	uint64_t_to_uint8_t_array( uint64_t, std::array<uint8_t,8> & );
 
 	protected:
 	

@@ -25,15 +25,13 @@
 #include "device.h"
 #include "anemometer.h"
 
-const std::array<std::string, 3> Anemometer::ANEMOMETER_MODEL = { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
-const std::array<std::string, 3> Anemometer::ANEMOMETER_DESCRIPTION = { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
-const uint64_t ANEMOMETER_CMD[3] = { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
-const uint16_t ANEMOMETER_SPEED[3] = { 4800, 9600, 4800 };
+const std::array<std::string, 3>	Anemometer::ANEMOMETER_MODEL		= { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3>	Anemometer::ANEMOMETER_DESCRIPTION	= { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
+const std::array<uint64_t,3>		Anemometer::ANEMOMETER_CMD			= { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
+const std::array<uint16_t,3>		Anemometer::ANEMOMETER_SPEED		= { 4800, 9600, 4800 };
 
 Anemometer::Anemometer( void )
 {
-	memset( cmd, 0, 8 );
-	memset( answer, 0, 7 );
 	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
 	set_driver_version( "1.0" );
 }
@@ -77,7 +75,7 @@ float Anemometer::get_wind_speed( bool verbose )
 	byte	i = 0;
 	byte	j;
 
-	memset( answer, 0, 7 );
+	answer.fill( 0 );
 
 	if ( get_debug_mode() ) {
 
@@ -95,11 +93,11 @@ float Anemometer::get_wind_speed( bool verbose )
 	while ( answer[1] != 0x03 ) {
 
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, SEND );
-		sensor_bus->write( cmd, 8 );
+		sensor_bus->write( cmd.data(), cmd.max_size() );
 		sensor_bus->flush();
 
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
-		sensor_bus->readBytes( answer, 7 );
+		sensor_bus->readBytes( answer.data(), answer.max_size() );
 
 		if ( get_debug_mode() && verbose ) {
 
@@ -142,11 +140,4 @@ float Anemometer::get_wind_speed( bool verbose )
 float Anemometer::get_wind_gust( void )
 {
 	return ( wind_gust = *std::max_element( wind_speeds.begin(), wind_speeds.end() ));
-}
-
-void Anemometer::uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array )
-{
-	uint8_t i = 0;
-    for ( i = 0; i < 8; i++ )
-		cmd_array[ i ] = (uint8_t)( ( cmd >> (56-(8*i))) & 0xff );
 }

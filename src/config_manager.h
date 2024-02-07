@@ -23,9 +23,6 @@
 
 #include <ArduinoJson.h>
 
-// flawfinder: ignore
-extern const char *_windvane_model[3];
-
 extern const unsigned long MLX_SENSOR;
 extern const unsigned long TSL_SENSOR;
 extern const unsigned long BME_SENSOR;
@@ -66,6 +63,25 @@ enum struct aws_ip_mode : byte {
 
 };
 
+
+const bool				DEFAULT_CLOSE_DOME_ON_RAIN			= true;
+const int				DEFAULT_CONFIG_PORT					= 80;
+const aws_ip_mode		DEFAULT_ETH_IP_MODE					= aws_ip_mode::dhcp;
+const uint8_t			DEFAULT_HAS_BME						= 0;
+const uint8_t			DEFAULT_HAS_DOME					= 0;
+const uint8_t			DEFAULT_HAS_GPS						= 0;
+const uint8_t			DEFAULT_HAS_MLX						= 0;
+const uint8_t			DEFAULT_HAS_RAIN_SENSOR				= 0;
+const uint8_t			DEFAULT_HAS_SC16IS750				= 1;
+const uint8_t			DEFAULT_HAS_TSL						= 0;
+const uint8_t			DEFAULT_HAS_WS						= 0;
+const uint8_t			DEFAULT_HAS_WV						= 0;
+const float				DEFAULT_MSAS_CORRECTION				= -0.55;
+const aws_iface			DEFAULT_PREF_IFACE					= aws_iface::wifi_ap;
+const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME		= 60;
+const aws_wifi_mode		DEFAULT_WIFI_MODE					= aws_wifi_mode::both;
+const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE			= aws_ip_mode::dhcp;
+
 class AWSNetworkConfig {
 
 	private:
@@ -74,20 +90,20 @@ class AWSNetworkConfig {
 		aws_iface		config_iface		= aws_iface::wifi_ap;
 		char			*eth_dns			= nullptr;
 		char			*eth_ip				= nullptr;
-		aws_ip_mode		eth_ip_mode			= aws_ip_mode::dhcp;
+		aws_ip_mode		eth_ip_mode			= DEFAULT_ETH_IP_MODE;
 		char			*eth_gw				= nullptr;
-		aws_iface		pref_iface			= aws_iface::wifi_ap;
+		aws_iface		pref_iface			= DEFAULT_PREF_IFACE;
 		char			*root_ca			= nullptr;
 		char			*wifi_ap_dns		= nullptr;
 		char			*wifi_ap_gw			= nullptr;
 		char			*wifi_ap_ip			= nullptr;
 		char			*wifi_ap_password	= nullptr;
 		char			*wifi_ap_ssid		= nullptr;
-		aws_wifi_mode	wifi_mode			= aws_wifi_mode::ap;
+		aws_wifi_mode	wifi_mode			= DEFAULT_WIFI_MODE;
 		char			*wifi_sta_dns		= nullptr;
 		char			*wifi_sta_gw		= nullptr;
 		char			*wifi_sta_ip		= nullptr;
-		aws_ip_mode		wifi_sta_ip_mode	= aws_ip_mode::dhcp;
+		aws_ip_mode		wifi_sta_ip_mode	= DEFAULT_WIFI_STA_IP_MODE;
 		char			*wifi_sta_password	= nullptr;
 		char			*wifi_sta_ssid		= nullptr;
 
@@ -123,7 +139,7 @@ class AWSConfig {
 
 	public:
 
-						AWSConfig( void );
+						AWSConfig( void ) = default;
 		bool			can_rollback( void );
 		aws_iface		get_alpaca_iface( void );
 		uint8_t			get_anemometer_model( void );
@@ -147,7 +163,7 @@ class AWSConfig {
 		bool			get_has_wv( void );
 		char *			get_json_string_config( void );
 		float			get_msas_calibration_offset( void );
-		char *			get_pcb_version( void );
+		etl::string_view	get_pcb_version( void ) const;
 		aws_iface		get_pref_iface( void );
 		aws_pwr_src		get_pwr_mode( void );
 		uint16_t 		get_rain_event_guard_time( void );
@@ -185,8 +201,7 @@ class AWSConfig {
 		bool				initialised				= false;
 		float				msas_calibration_offset	= 0.F;
 		AWSNetworkConfig	network_config;
-		// flawfinder: ignore
-		char	  			pcb_version[8];
+		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		uint16_t			rain_event_guard_time	= 60;
 		char				*remote_server			= nullptr;

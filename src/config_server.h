@@ -21,8 +21,8 @@
 #ifndef _config_server_H
 #define _config_server_H
 
-#define _ASYNC_WEBSERVER_LOGLEVEL_		0
-#define _ETHERNET_WEBSERVER_LOGLEVEL_	0
+#define _ASYNC_WEBSERVER_LOGLEVEL_		0	// NOSONAR
+#define _ETHERNET_WEBSERVER_LOGLEVEL_	0	// NOSONAR
 
 #include <AsyncTCP.h>
 #include <Ethernet.h>

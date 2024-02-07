@@ -37,7 +37,7 @@
 #include "sensor_manager.h"
 #include "AstroWeatherStation.h"
 
-RTC_DATA_ATTR uint16_t low_battery_event_count = 0;
+RTC_DATA_ATTR uint16_t low_battery_event_count = 0;		// NOSONAR
 //RTC_DATA_ATTR byte	prev_available_sensors = 0;
 //RTC_DATA_ATTR byte	available_sensors = 0;
 
@@ -52,7 +52,6 @@ AWSSensorManager::AWSSensorManager( void ) :
 	sqm( new SQM( tsl, &sensor_data )),
 	i2c_mutex( xSemaphoreCreateMutex() )
 {
-	hw_version[ 0 ] = 0;
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 }
 
@@ -346,9 +345,9 @@ void AWSSensorManager::read_GPS( void )
 		if ( debug_mode ) {
 
 			// flawfinder: ignore
-			char buf[32];
-			strftime( buf, 32, "%Y-%m-%d %H:%M:%S", localtime( &sensor_data.gps.time.tv_sec ) );
-			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", sensor_data.gps.latitude, sensor_data.gps.longitude, sensor_data.gps.altitude, buf );
+			etl::string<32> buf;
+			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime( &sensor_data.gps.time.tv_sec ) );
+			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", sensor_data.gps.latitude, sensor_data.gps.longitude, sensor_data.gps.altitude, buf.data() );
 		}
 
 	} else
@@ -396,16 +395,15 @@ void AWSSensorManager::read_sensors( void )
 
 		if ( sensor_data.battery_level <= BAT_LEVEL_MIN ) {
 
-			// flawfinder: ignore
-			char string[64] = {0};
-			snprintf( string, 64, "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
+			etl::string<64> string;
+			snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
 
 			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
 			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
-				station.send_alarm( "Low battery", string );
+				station.send_alarm( "Low battery", string.data() );
 
 			if ( debug_mode )
-				Serial.printf( "[DEBUG] %s", string );
+				Serial.printf( "[DEBUG] %s", string.data() );
 		}
 
 	} else

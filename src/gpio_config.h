@@ -63,10 +63,10 @@
 #define	GPIO_SPI_CS_SD			GPIO_NUM_2
 
 // Dome control
-#define	GPIO_DOME_1				0
-#define	GPIO_DOME_2				1
-#define	GPIO_DOME_1_DIRECT		12
-#define	GPIO_DOME_2_DIRECT		14
+const	uint8_t	GPIO_DOME_1			= 0;
+const	uint8_t	GPIO_DOME_2			= 1;
+const	uint8_t	GPIO_DOME_1_DIRECT	= 12;
+const	uint8_t	GPIO_DOME_2_DIRECT	= 14;
 
 #define	GPIO_DOME_STATUS		GPIO_NUM_39
 #define	GPIO_DOME_OPENING		GPIO_NUM_36

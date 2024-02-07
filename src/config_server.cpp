@@ -73,10 +73,7 @@ void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 {
-	std::array<char,32> str;
-
-	station.get_uptime_str( str.data(), str.size() );
-	request->send( 200, "text/plain", str.data() );
+	request->send( 200, "text/plain", station.get_uptime_str().data() );
 }
 
 void AWSWebServer::index( AsyncWebServerRequest *request )
@@ -121,11 +118,10 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 
 	if ( !SPIFFS.exists( filename )) {
 
-		// flawfinder: ignore
-		char msg[64];
+		etl::string<64> msg;
 		Serial.printf( "[ERROR] File [%s] not found.", filename );
-		snprintf( msg, 64, "[ERROR] File [%s] not found.", filename );
-		request->send( 500, "text/html", msg );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", filename );
+		request->send( 500, "text/html", msg.data() );
 		free( filename );
 		return;
 	}

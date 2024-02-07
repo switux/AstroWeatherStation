@@ -55,29 +55,28 @@ class alpaca_device {
 
 	public:
 
-			alpaca_device( short );
-		void device_error( AsyncWebServerRequest *, const char *, ascom_driver_error_t , char * );
-		bool get_debug_mode( void );
-		bool get_is_connected( void );
-		void not_implemented( AsyncWebServerRequest *, const char *, const char * );
-		void send_connected( AsyncWebServerRequest *, const char * );
-		void send_description( AsyncWebServerRequest *, const char * );
-		void send_driverinfo( AsyncWebServerRequest *, const char * );
-		void send_driverversion( AsyncWebServerRequest *, const char * );
-		void send_interfaceversion( AsyncWebServerRequest *, const char * );
-		void send_name( AsyncWebServerRequest *, const char * );
-		void send_supportedactions( AsyncWebServerRequest *, const char * );
-		void send_value( AsyncWebServerRequest *, const char *, bool );
-		void send_value( AsyncWebServerRequest *, const char *, byte );
-		void send_value( AsyncWebServerRequest *, const char *, double );
-		void set_debug_mode( bool );
-		void set_description( char * );
-		void set_driver_info( char * );
-		void set_driver_version( char * );
-		void set_device_name( char * );
-		void set_is_connected( bool );
-		void set_supported_actions( char * );
-
+		explicit 	alpaca_device( short );
+		void		device_error( AsyncWebServerRequest *, const char *, ascom_driver_error_t , char * );
+		bool		get_debug_mode( void );
+		bool		get_is_connected( void );
+		void		not_implemented( AsyncWebServerRequest *, const char *, const char * );
+		void		send_connected( AsyncWebServerRequest *, const char * );
+		void		send_description( AsyncWebServerRequest *, const char * );
+		void		send_driverinfo( AsyncWebServerRequest *, const char * );
+		void		send_driverversion( AsyncWebServerRequest *, const char * );
+		void		send_interfaceversion( AsyncWebServerRequest *, const char * );
+		void		send_name( AsyncWebServerRequest *, const char * );
+		void		send_supportedactions( AsyncWebServerRequest *, const char * );
+		void		send_value( AsyncWebServerRequest *, const char *, bool );
+		void		send_value( AsyncWebServerRequest *, const char *, byte );
+		void		send_value( AsyncWebServerRequest *, const char *, double );
+		void		set_debug_mode( bool );
+		void		set_description( char * );
+		void		set_device_name( char * );
+		void		set_driver_info( char * );
+		void		set_driver_version( char * );
+		void		set_is_connected( bool );
+		void		set_supported_actions( char * );
 };
 
 #endif
