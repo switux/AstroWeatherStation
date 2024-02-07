@@ -32,6 +32,8 @@ class Wind_vane : public Device {
 
 		static const std::array<std::string, 3> WIND_VANE_MODEL;
 		static const std::array<std::string, 3> WIND_VANE_DESCRIPTION;
+		static const std::array<uint64_t,3>		WIND_VANE_CMD;
+		static const std::array<uint16_t,3>		WIND_VANE_SPEED;
 		
 				Wind_vane( void );
 		bool			initialise( SoftwareSerial *, byte, bool );
@@ -39,13 +41,11 @@ class Wind_vane : public Device {
 
 	private:
 
-   		int16_t			wind_direction	= 0;
-   		uint16_t		bps				= 0;
-		uint8_t			answer[7];
-		uint8_t			cmd[8];
-		SoftwareSerial	*sensor_bus		= nullptr;
-
-		void uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array );
+		std::array<uint8_t,7>	answer;
+   		uint16_t				bps				= 0;
+		std::array<uint8_t,8>	cmd;
+		SoftwareSerial			*sensor_bus		= nullptr;
+   		int16_t					wind_direction	= 0;
 };
 
 #endif

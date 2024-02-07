@@ -21,29 +21,12 @@
 #ifndef _defaults_H
 #define _defaults_H
 
-#define	DEFAULT_CLOSE_DOME_ON_RAIN		1
-const	int DEFAULT_CONFIG_PORT			= 80;
-#define	DEFAULT_ETH_IP_MODE				aws_ip_mode::dhcp
-#define	DEFAULT_HAS_BME					0
-#define	DEFAULT_HAS_DOME				0
-#define	DEFAULT_HAS_GPS					0
-#define	DEFAULT_HAS_MLX					0
-#define	DEFAULT_HAS_RAIN_SENSOR			0
-#define	DEFAULT_HAS_SC16IS750			1
-#define	DEFAULT_HAS_TSL					0
-#define	DEFAULT_HAS_WS					0
-#define	DEFAULT_HAS_WV					0
-#define	DEFAULT_LOCATION				"Somewhere on Earth"
-#define	DEFAULT_MSAS_CORRECTION			-0.55
-#define	DEFAULT_PREF_IFACE				aws_iface::ap
-#define	DEFAULT_RAIN_EVENT_GUARD_TIME	60
-#define	DEFAULT_WIFI_MODE				aws_wifi_mode::both
-#define	DEFAULT_WIFI_STA_IP_MODE		aws_ip_mode::dhcp
+#include "Embedded_Template_Library.h"
+#include "etl/string.h"
 
-const uint8_t	DEFAULT_SC16IS750_ADDR	=	0x90;
+const etl::string<128>	DEFAULT_LOCATION					= "Somewhere on Earth";
 
-#define	DEFAULT_SENSOR_POLLING_MS_INTERVAL	15000
-
+const uint32_t			DEFAULT_SENSOR_POLLING_MS_INTERVAL	= 15000;
 
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_WIFI_STA_SSID[]		= "AstroWeatherStation";

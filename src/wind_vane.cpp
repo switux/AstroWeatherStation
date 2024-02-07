@@ -24,15 +24,13 @@
 #include "device.h"
 #include "wind_vane.h"
 
-const std::array<std::string, 3> Wind_vane::WIND_VANE_MODEL = { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
-const std::array<std::string, 3> Wind_vane::WIND_VANE_DESCRIPTION = { "Mechanical wind vane", "Mechanical wind vane", "Ultrasonic wind vane" };
-const uint64_t WIND_VANE_CMD[3] = { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
-const uint16_t WIND_VANE_SPEED[3] = { 4800, 9600, 4800 };
+const std::array<std::string, 3>	Wind_vane::WIND_VANE_MODEL			= { "PR-3000-FXJT-N01", "GD-FX-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3>	Wind_vane::WIND_VANE_DESCRIPTION	= { "Mechanical wind vane", "Mechanical wind vane", "Ultrasonic wind vane" };
+const std::array<uint64_t,3>		Wind_vane::WIND_VANE_CMD			= { 0x010300000002c40b, 0x020300000002c438, 0x010300000002c40b };
+const std::array<uint16_t,3>		Wind_vane::WIND_VANE_SPEED			= { 4800, 9600, 4800 };
 
 Wind_vane::Wind_vane()
 {
-	memset( cmd, 0, 8 );
-	memset( answer, 0, 7 );
 	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
 }
 
@@ -71,7 +69,7 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 	byte	i = 0;
 	byte	j;
 
-	memset( answer, 0, 7 );
+	answer.fill( 0 );
 
 	if ( get_debug_mode() ) {
 
@@ -90,11 +88,11 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, SEND );
 
-		sensor_bus->write( cmd, 8 );
+		sensor_bus->write( cmd.data(), cmd.max_size() );
 		sensor_bus->flush();
 
 		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
-		sensor_bus->readBytes( answer, 7 );
+		sensor_bus->readBytes( answer.data(), answer.max_size() );
 
 		if ( get_debug_mode() && verbose ) {
 
@@ -121,11 +119,4 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 			return ( wind_direction = -1 );
 	}
 	return wind_direction;
-}
-
-void Wind_vane::uint64_t_to_uint8_t_array( uint64_t cmd, uint8_t *cmd_array )
-{
-	uint8_t i = 0;
-    for ( i = 0; i < 8; i++ )
-		cmd_array[ i ] = (uint8_t)( ( cmd >> (56-(8*i))) & 0xff );
 }

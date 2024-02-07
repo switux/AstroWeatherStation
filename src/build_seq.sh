@@ -16,5 +16,4 @@ rm -f $1/*.seq
 echo $seq > $1/${dat}.seq
 seq=$(printf "%03d" $seq)
 build=${dat}_${seq}
-echo '#define BUILD_DATE "'$build'"' > ${1}/build_seq.h
-echo '#define BUILD_DATE "'$build'"'
+echo 'const etl::string<12> BUILD_DATE = "'$build'"' > ${1}/build_seq.h

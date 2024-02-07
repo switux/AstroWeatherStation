@@ -24,6 +24,7 @@
 
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
+#include "etl/string_utilities.h"
 
 #include "build_seq.h"
 #include "AWSGPS.h"

@@ -55,11 +55,6 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
-AWSConfig::AWSConfig( void )
-{
-	pcb_version[ 0 ] = 0;
-}
-
 bool AWSConfig::can_rollback( void )
 {
 	return _can_rollback;
@@ -252,9 +247,9 @@ float AWSConfig::get_msas_calibration_offset( void )
 	return msas_calibration_offset;
 }
 
-char *AWSConfig::get_pcb_version( void )
+etl::string_view AWSConfig::get_pcb_version( void ) const
 {
-	return pcb_version;
+	return etl::string_view( pcb_version );
 }
 
 aws_iface AWSConfig::get_pref_iface( void )
@@ -466,7 +461,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 	
 	Serial.printf( "[INFO] Reading NVS values.\n" );
 	nvs.begin( "aws", false );
-	if ( !nvs.getString( "pcb_version", pcb_version, 8 )) {
+	if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
 
 		Serial.printf( "[PANIC] Could not get PCB version from NVS. Please contact support.\n" );
 		nvs.end();
@@ -499,7 +494,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 
 bool AWSConfig::rollback()
 {
-	uint8_t	buf[ 4096 ];
+	std::array<uint8_t,4096>	buf;
 
 	if ( !_can_rollback ) {
 
@@ -523,8 +518,8 @@ bool AWSConfig::rollback()
 
 	while( filebak.available() ) {
 
-		size_t	i = filebak.readBytes( reinterpret_cast<char *>( buf ), 4096 );
-		file.write( buf, i );
+		size_t	i = filebak.readBytes( reinterpret_cast<char *>( buf.data() ), buf.max_size() );
+		file.write( buf.data(), i );
 	}
 
 	file.close();
@@ -537,7 +532,7 @@ bool AWSConfig::rollback()
 
 bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 {
-	uint8_t	buf[ 4096 ];
+	std::array<uint8_t,4096>	buf;
 
 	if ( !verify_entries( json_config ))
 		return false;
@@ -556,8 +551,8 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 
 	while( file.available() ) {
 
-		size_t	i = file.readBytes( reinterpret_cast<char *>( buf ), 4096 );
-		filebak.write( buf, i );
+		size_t	i = file.readBytes( reinterpret_cast<char *>( buf.data() ), buf.max_size() );
+		filebak.write( buf.data(), i );
 	}
 	file.close();
 	filebak.close();

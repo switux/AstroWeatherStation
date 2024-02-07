@@ -115,8 +115,8 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 	tsl2591Gain_t				gain_idx;
 	tsl2591IntegrationTime_t	int_time_idx;
 
-	const uint16_t	gain_factor[4]		= { 1, 25, 428, 9876 };
-	const uint16_t	integration_time[6]	= { 100, 200, 300, 400, 500, 600 };
+	const std::array<uint16_t,4>	gain_factor			= { 1, 25, 428, 9876 };
+	const std::array<uint16_t,6>	integration_time	= { 100, 200, 300, 400, 500, 600 };
 
 	gain_idx = tsl->getGain();
 	int_time_idx = tsl->getTiming();

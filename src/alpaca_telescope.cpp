@@ -175,10 +175,9 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, const char *tran
 			now = time( nullptr );
 			struct tm	dummy;
 			struct tm 	*utc_time = gmtime_r( &now, &dummy );
-			// flawfinder: ignore
-			char tmp[64];
-			strftime( tmp, 63, "%FT%TZ", utc_time );
-			snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", tmp, transaction_details );
+			etl::string<64> tmp;
+			strftime( tmp.data(), tmp.capacity(), "%FT%TZ", utc_time );
+			snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", tmp.data(), transaction_details );
 		}
 
 	} else
