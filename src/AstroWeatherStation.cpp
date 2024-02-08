@@ -473,8 +473,9 @@ bool AstroWeatherStation::initialise( void )
 
 	    } else {
 
-			dome.initialise( debug_mode );
-	    }
+  			dome.initialise( debug_mode );
+
+      }
 	}
 
 	if ( solar_panel ) {

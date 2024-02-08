@@ -46,7 +46,10 @@ const std::array<float,8> rain_rate = {
 class alpaca_observingconditions : public alpaca_device
 {
 	private:
-			etl::string<256>		message_str;
+		etl::string<256>		message_str;
+
+		void build_property_description_answer( char *, const char *, const char * );
+		void build_timesincelastupdate_answer( char *, const char *, const char * );
 
 		void build_property_description_answer( char *, const char *, const char * );
 		void build_timesincelastupdate_answer( char *, const char *, const char * );
