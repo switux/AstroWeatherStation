@@ -38,10 +38,6 @@ extern HardwareSerial Serial1;
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
-AWSWebServer::AWSWebServer( void )
-{
-}
-
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 {
 	if ( station.get_json_string_config().size() ) {
@@ -112,24 +108,18 @@ bool AWSWebServer::initialise( bool _debug_mode )
 
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
-	char *filename = strdup( request->url().c_str() );
-
-	if ( !SPIFFS.exists( filename )) {
+	if ( !SPIFFS.exists( request->url().c_str() )) {
 
 		etl::string<64> msg;
-		Serial.printf( "[ERROR] File [%s] not found.", filename );
-		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", filename );
+		Serial.printf( "[ERROR] File [%s] not found.", request->url().c_str() );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", request->url().c_str() );
 		request->send( 500, "text/html", msg.data() );
-		free( filename );
 		return;
 	}
 
-	request->send( SPIFFS, filename );
+	request->send( SPIFFS, request->url().c_str() );
 	delay(500);
-	free( filename );
 }
-
-
 
 void AWSWebServer::reboot( AsyncWebServerRequest *request )
 {
@@ -145,6 +135,7 @@ void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVarian
 
 		request->send( 200, "text/plain", "OK\n" );
 		station.reboot();
+
 	}
 	else
 		request->send( 500, "text/plain", "ERROR\n" );

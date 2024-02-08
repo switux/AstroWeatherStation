@@ -619,7 +619,7 @@ bool AstroWeatherStation::poll_sensors( void )
 template<typename... Args>
 etl::string<96> AstroWeatherStation::format_helper( const char *fmt, Args... args )
 {
-	char buf[96];
+	char buf[96];	// NOSONAR
 	snprintf( buf, 95, fmt, args... );
 	return etl::string<96>( buf );
 }

@@ -99,7 +99,7 @@ void alpaca_observingconditions::build_timesincelastupdate_answer( char *sensor_
 					station.is_sensor_initialised( RAIN_SENSOR ) ||
 					station.is_sensor_initialised( MLX_SENSOR ) ||
 					station.is_sensor_initialised( TSL_SENSOR ) ||
-					station.is_sensor_initialised( MLX_SENSOR ))
+					station.is_sensor_initialised( BME_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			else
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"No sensor is available",%s})json", transaction_details );
