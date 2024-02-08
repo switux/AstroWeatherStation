@@ -77,6 +77,7 @@ class alpaca_device {
 		void		set_driver_version( char * );
 		void		set_is_connected( bool );
 		void		set_supported_actions( char * );
+
 };
 
 #endif

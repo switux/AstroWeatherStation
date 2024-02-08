@@ -85,7 +85,7 @@ class AstroWeatherStation {
 	private:
 
 		alpaca_server		alpaca;
-		aws_health_data_t	station_health_data;
+		TaskHandle_t		aws_periodic_task_handle;
 		AWSConfig			config;
 		bool				config_mode	= false;
 		bool				debug_mode	= false;
@@ -101,10 +101,10 @@ class AstroWeatherStation {
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
 		bool				solar_panel;
+		aws_health_data_t	station_health_data;
 		etl::string<32>		unique_build_id;
 		etl::string<32>		uptime_str;
 
-		TaskHandle_t		aws_periodic_task_handle;
 
 		AWSNetwork			network;
 
@@ -141,32 +141,32 @@ class AstroWeatherStation {
 
 	public:
 
-						AstroWeatherStation( void );
-		void            check_ota_updates( void );
-		const char		*get_anemometer_sensorname( void );
-		bool			get_debug_mode( void );
-		Dome			*get_dome( void );
-
-		sensor_data_t   *get_sensor_data( void );
-		uint16_t        get_config_port( void );
-        byte            get_eth_cidr_prefix( void );
-        IPAddress       *get_eth_dns( void );
-        IPAddress       *get_eth_gw( void );
-		IPAddress       *get_eth_ip( void );
-        char            *get_json_sensor_data( void );
-        char            *get_json_string_config( void );
-		etl::string_view get_location( void ) const;
-        bool			get_location_coordinates( double *, double * );
-        char            *get_root_ca( void );
-		etl::string_view get_unique_build_id( void ) const;
-		uint32_t        get_uptime( void );
+							AstroWeatherStation( void );
+		void				check_ota_updates( void );
+		etl::string_view	get_anemometer_sensorname( void );
+		bool				get_debug_mode( void );
+		Dome				*get_dome( void );
+		sensor_data_t		*get_sensor_data( void );
+		uint16_t			get_config_port( void );
+		byte				get_eth_cidr_prefix( void );
+		IPAddress			*get_eth_dns( void );
+		IPAddress			*get_eth_gw( void );
+		IPAddress			*get_eth_ip( void );
+		char				*get_json_sensor_data( void );
+		etl::string_view	get_json_string_config( void );
+		etl::string_view	get_location( void );
+		bool				get_location_coordinates( double *, double * );
+        etl::string_view	get_root_ca( void );
+		etl::string_view	get_unique_build_id( void );
+		uint32_t			get_uptime( void );
 		etl::string_view	get_uptime_str( void );
-        byte            get_wifi_sta_cidr_prefix( void );
-		IPAddress       *get_wifi_sta_dns( void );
-		IPAddress       *get_wifi_sta_gw( void );
-        IPAddress       *get_wifi_sta_ip( void );
-		const char		*get_wind_vane_sensorname( void );
-		void            handle_rain_event( void );
+		byte				get_wifi_sta_cidr_prefix( void );
+		IPAddress			*get_wifi_sta_dns( void );
+		IPAddress			*get_wifi_sta_gw( void );
+		IPAddress			*get_wifi_sta_ip( void );
+		etl::string_view	get_wind_vane_sensorname( void );
+
+		void				handle_rain_event( void );
 		bool			has_gps( void );
 		bool			has_rain_sensor( void );
 		bool            initialise( void );
