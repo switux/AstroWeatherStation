@@ -24,11 +24,10 @@
 
 			<form method="post" action="" id="config"/>
 
-			<table>
+			<table aria-describedby="General config">
 				<tr><th/></tr>
 				<tr><td>TZ Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
 				<tr><td>Dome control</td><td><input id="has_dome" form="config" name="has_dome" type="checkbox"/></td></tr>
-				<caption> </caption>
 			</table>
 
 		</div>
@@ -36,7 +35,7 @@
 		<div id="network" style="flex-direction:line">
 
 			<div>
-				<table>
+				<table aria-describedby="Network config">
 					<tr><th/></tr>
 					<tr id="iface_option" style="display:none">
 						<td>Preferred interface</td>
@@ -151,14 +150,13 @@
 						<td>ROOT CA</td>
 						<td><textarea form="config" name="root_ca" id="root_ca" type="text" value="" style="height:544px;width:475px"></textarea></td>
 					</tr>
-				<caption> </caption>
 				</table>
 			</div>
 		</div>
 		
 		<div id="sensors">
 	
-			<table>
+			<table aria-describedby="Sensors config">
 				<tr><th/></tr>
 				<tr>
 					<td>Temperature/Pressure/Humidity</td>
@@ -208,13 +206,12 @@
 					<td>GPS</td>
 					<td><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
 				</tr>
-				<caption> </caption>
 			</table>
 		</div>
 
 		<div style="flex-direction: column" id="controls">
 
-			<table style="width: 30%">
+			<table style="width: 30%" aria-describedby="Controls config">
 				<tr><th>Criteria</th><th>Active</th><th>Value</th></tr>
 				<tr>
 					<td>Wind speed</td>
@@ -253,7 +250,6 @@
 					<td id="safety_monitor">Safety monitor enabled</td>
 					<td><input form="config" type="checkbox" name="safety_on" onclick="toggle_safety_monitor();"></td>
 				</tr>
-				<caption> </caption>
 			</table>
 			<br><p>When the active criteria are met, the conditions are <b>safe</b></p>
 		</div>

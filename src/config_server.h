@@ -34,7 +34,7 @@ class AWSWebServer {
 
 	public:
 
-		AWSWebServer( void );
+				AWSWebServer( void ) = default;
 		void get_configuration( AsyncWebServerRequest * );
 		void get_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );

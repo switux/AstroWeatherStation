@@ -122,7 +122,7 @@ void alpaca_dome::set_connected( AsyncWebServerRequest *request, const char *tra
 
 void alpaca_dome::slaved( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	snprintf( message_str.data(), message_str.capacity(), "{\"ErrorNumber\":0,\"ErrorMessage\":\"\",\"Value\":false,%s}", transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":false,%s})json", transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
