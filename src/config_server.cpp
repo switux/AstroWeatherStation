@@ -44,11 +44,9 @@ AWSWebServer::AWSWebServer( void )
 
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 {
-	char *json_string = station.get_json_string_config();
+	if ( station.get_json_string_config().size() ) {
 
-	if ( json_string ) {
-
-		request->send( 200, "application/json", json_string );
+		request->send( 200, "application/json", station.get_json_string_config().data() );
 
 	} else
 
@@ -68,7 +66,7 @@ void AWSWebServer::get_data( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 {
-	request->send( 200, "text/plain", station.get_root_ca() );
+	request->send( 200, "text/plain", station.get_root_ca().data() );
 }
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )

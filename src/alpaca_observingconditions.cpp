@@ -307,6 +307,7 @@ void alpaca_observingconditions::set_averageperiod( AsyncWebServerRequest *reque
 						snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"Only providing live data, please set to 0.",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details );
 
 				}
+
 			} else {
 
 				request->send( 400, "text/plain", "Missing AveragePeriod parameter" );

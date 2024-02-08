@@ -70,9 +70,9 @@ uint8_t AWSConfig::get_anemometer_model( void )
 	return anemometer_model;
 }
 
-const char *AWSConfig::get_anemometer_model_str( void )
+etl::string_view AWSConfig::get_anemometer_model_str( void )
 {
-	return Anemometer::ANEMOMETER_MODEL[ anemometer_model ].c_str();
+	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ anemometer_model ].c_str() );
 }
 
 bool AWSConfig::get_close_dome_on_rain( void )
@@ -90,19 +90,19 @@ uint16_t AWSConfig::get_config_port( void )
 	return config_port;
 }
 
-char *AWSConfig::get_eth_dns( void )
+etl::string_view AWSConfig::get_eth_dns( void )
 {
-	return network_config.get_eth_dns();
+	return etl::string_view( network_config.get_eth_dns() );
 }
 
-char *AWSConfig::get_eth_gw( void )
+etl::string_view AWSConfig::get_eth_gw( void )
 {
-	return network_config.get_eth_gw();
+	return etl::string_view( network_config.get_eth_gw() );
 }
 
-char *AWSConfig::get_eth_ip( void )
+etl::string_view AWSConfig::get_eth_ip( void )
 {
-	return network_config.get_eth_ip();
+	return etl::string_view( network_config.get_eth_ip() );
 }
 
 aws_ip_mode AWSConfig::get_eth_ip_mode( void )
@@ -160,7 +160,7 @@ bool AWSConfig::get_has_wv( void )
 	return ( devices & WIND_VANE_SENSOR );
 }
 
-char *AWSConfig::get_json_string_config( void )
+etl::string_view AWSConfig::get_json_string_config( void )
 {
 	DynamicJsonDocument	aws_json_config(1024);
 	static etl::string<1024>	json_string;
@@ -237,9 +237,9 @@ char *AWSConfig::get_json_string_config( void )
 	if ( serializeJson( aws_json_config, json_string.data(), json_string.capacity() ) >= json_string.capacity() ) {
 
 		Serial.printf( "[ERROR] Reached configuration string limit. Please contact support\n" );
-		return nullptr;
+		return etl::string_view( "" );
 	}
-	return json_string.data();
+	return etl::string_view( json_string.data());
 }
 
 float AWSConfig::get_msas_calibration_offset( void )
@@ -247,7 +247,7 @@ float AWSConfig::get_msas_calibration_offset( void )
 	return msas_calibration_offset;
 }
 
-etl::string_view AWSConfig::get_pcb_version( void ) const
+etl::string_view AWSConfig::get_pcb_version( void )
 {
 	return etl::string_view( pcb_version );
 }
@@ -267,44 +267,44 @@ uint16_t AWSConfig::get_rain_event_guard_time( void )
 	return rain_event_guard_time;
 }
 
-char *AWSConfig::get_remote_server( void )
+etl::string_view AWSConfig::get_remote_server( void )
 {
-	return remote_server;
+	return etl::string_view( remote_server );
 }
 
-char *AWSConfig::get_root_ca( void )
+etl::string_view AWSConfig::get_root_ca( void )
 {
 	return network_config.get_root_ca();
 }
 
-char *AWSConfig::get_tzname( void )
+etl::string_view AWSConfig::get_tzname( void )
 {
-	return tzname;
+	return etl::string_view( tzname );
 }
 
-char *AWSConfig::get_url_path( void )
+etl::string_view AWSConfig::get_url_path( void )
 {
-	return url_path;
+	return etl::string_view( url_path );
 }
 
-char *AWSConfig::get_wifi_ap_dns( void )
+etl::string_view AWSConfig::get_wifi_ap_dns( void )
 {
-	return network_config.get_wifi_ap_dns();
+	return etl::string_view( network_config.get_wifi_ap_dns() );
 }
 
-char *AWSConfig::get_wifi_ap_gw( void )
+etl::string_view AWSConfig::get_wifi_ap_gw( void )
 {
-	return network_config.get_wifi_ap_gw();
+	return etl::string_view( network_config.get_wifi_ap_gw() );
 }
 
-char *AWSConfig::get_wifi_ap_ip( void )
+etl::string_view AWSConfig::get_wifi_ap_ip( void )
 {
-	return network_config.get_wifi_ap_ip();
+	return etl::string_view( network_config.get_wifi_ap_ip() );
 }
 
-char *AWSConfig::get_wifi_ap_ssid( void )
+etl::string_view AWSConfig::get_wifi_ap_ssid( void )
 {
-	return network_config.get_wifi_ap_ssid();
+	return etl::string_view( network_config.get_wifi_ap_ssid() );
 }
 
 aws_wifi_mode AWSConfig::get_wifi_mode( void )
@@ -312,24 +312,24 @@ aws_wifi_mode AWSConfig::get_wifi_mode( void )
 	return network_config.get_wifi_mode();
 }
 
-char *AWSConfig::get_wifi_ap_password( void )
+etl::string_view AWSConfig::get_wifi_ap_password( void )
 {
-	return network_config.get_wifi_ap_password();
+	return etl::string_view( network_config.get_wifi_ap_password() );
 }
 
-char *AWSConfig::get_wifi_sta_dns( void )
+etl::string_view AWSConfig::get_wifi_sta_dns( void )
 {
-	return network_config.get_wifi_sta_dns();
+	return etl::string_view( network_config.get_wifi_sta_dns() );
 }
 
-char *AWSConfig::get_wifi_sta_gw( void )
+etl::string_view AWSConfig::get_wifi_sta_gw( void )
 {
-	return network_config.get_wifi_sta_gw();
+	return etl::string_view( network_config.get_wifi_sta_gw() );
 }
 
-char *AWSConfig::get_wifi_sta_ip( void )
+etl::string_view AWSConfig::get_wifi_sta_ip( void ) 
 {
-	return network_config.get_wifi_sta_ip();
+	return etl::string_view( network_config.get_wifi_sta_ip() );
 }
 
 aws_ip_mode AWSConfig::get_wifi_sta_ip_mode( void )
@@ -337,14 +337,14 @@ aws_ip_mode AWSConfig::get_wifi_sta_ip_mode( void )
 	return network_config.get_wifi_sta_ip_mode();
 }
 
-char *AWSConfig::get_wifi_sta_password( void )
+etl::string_view AWSConfig::get_wifi_sta_password( void )
 {
-	return network_config.get_wifi_sta_password();
+	return etl::string_view( network_config.get_wifi_sta_password() );
 }
 
-char *AWSConfig::get_wifi_sta_ssid( void )
+etl::string_view AWSConfig::get_wifi_sta_ssid( void )
 {
-	return network_config.get_wifi_sta_ssid();
+	return etl::string_view( network_config.get_wifi_sta_ssid() );
 }
 
 uint8_t AWSConfig::get_wind_vane_model( void )
@@ -352,9 +352,9 @@ uint8_t AWSConfig::get_wind_vane_model( void )
 	return wind_vane_model;
 }
 
-const char *AWSConfig::get_wind_vane_model_str( void )
+etl::string_view AWSConfig::get_wind_vane_model_str( void )
 {
-	return Wind_vane::WIND_VANE_MODEL[ wind_vane_model ].c_str();
+	return etl::string_view( Wind_vane::WIND_VANE_MODEL[ wind_vane_model ].c_str() );
 }
 
 bool AWSConfig::load( bool _debug_mode  )
@@ -391,9 +391,9 @@ bool AWSConfig::read_config( void )
 	anemometer_model = aws_json_config.containsKey( "anemometer_model" ) ? aws_json_config["anemometer_model"] : 0;
 	config_port = aws_json_config.containsKey( "config_port" ) ? aws_json_config["config_port"] : DEFAULT_CONFIG_PORT;
 
-	set_parameter( aws_json_config, "remote_server", &remote_server, DEFAULT_SERVER );
-	set_parameter( aws_json_config, "url_path", &url_path, DEFAULT_URL_PATH );
-	set_parameter( aws_json_config, "tzname", &tzname, DEFAULT_TZNAME );
+	set_parameter( aws_json_config, "remote_server", remote_server, DEFAULT_SERVER );
+	set_parameter( aws_json_config, "url_path", url_path, DEFAULT_URL_PATH );
+	set_parameter( aws_json_config, "tzname", tzname, DEFAULT_TZNAME );
 
 	msas_calibration_offset = aws_json_config.containsKey( "msas_calibration_offset" ) ? atof( aws_json_config["msas_calibration_offset"] ) : DEFAULT_MSAS_CORRECTION;
 	close_dome_on_rain = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
@@ -566,34 +566,32 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	return true;
 }
 
-bool AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, char **config_item, const char *default_value )
+template <std::size_t sz>
+void AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, etl::string<sz> &config_item, const char *default_value )
 {
+	size_t len;
+
 	if ( aws_json_config.containsKey( config_key ) ) {
+		
+		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {
 
-		if ( *config_item ) {
+			len = strlen( aws_json_config[config_key] );
+			if ( len > config_item.capacity() )
+				config_item.resize( len );
+			config_item.assign( aws_json_config[config_key].as<const char *>() );
 
-			if ( strcmp( *config_item, aws_json_config[config_key] )) {
-
-				if ( *config_item != default_value )
-					free( *config_item );
-				*config_item = strdup( aws_json_config[config_key] );
-				return true;
-			}
-
-		} else {
-
-			*config_item = strdup( aws_json_config[config_key] );
-			return true;
 		}
-
+		
 	} else {
 
-		if ( *config_item && ( *config_item != default_value ))
-			free( *config_item );
-		*config_item = const_cast<char *>( default_value );
-		return true;
+		if ( config_item.compare( default_value )) {
+
+			len = strlen( default_value );
+			if ( len > config_item.capacity() )
+			config_item.resize( len );
+			config_item.assign( default_value );
+		}
 	}
-	return false;
 }
 
 bool AWSConfig::verify_entries( JsonVariant &proposed_config )
@@ -678,30 +676,30 @@ void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
 	pref_iface = aws_json_config.containsKey( "pref_iface" ) ? static_cast<aws_iface>( aws_json_config["pref_iface"].as<byte>() ) : aws_iface::wifi_ap;
 	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["eth_ip_mode"].as<byte>() ) : DEFAULT_ETH_IP_MODE;
 
-	set_parameter( aws_json_config, "eth_ip", &eth_ip, DEFAULT_ETH_IP );
-	set_parameter( aws_json_config, "eth_gw", &eth_gw, DEFAULT_ETH_GW );
-	set_parameter( aws_json_config, "eth_dns", &eth_dns, DEFAULT_ETH_DNS );
+	set_parameter( aws_json_config, "eth_ip", eth_ip, DEFAULT_ETH_IP );
+	set_parameter( aws_json_config, "eth_gw", eth_gw, DEFAULT_ETH_GW );
+	set_parameter( aws_json_config, "eth_dns", eth_dns, DEFAULT_ETH_DNS );
 
 	wifi_mode = aws_json_config.containsKey( "wifi_mode" ) ? static_cast<aws_wifi_mode>( aws_json_config["wifi_mode"].as<byte>() ) : DEFAULT_WIFI_MODE;
 		
-	set_parameter( aws_json_config, "sta_ssid", &wifi_sta_ssid, DEFAULT_WIFI_STA_SSID );
-	set_parameter( aws_json_config, "wifi_sta_password", &wifi_sta_password, DEFAULT_WIFI_STA_PASSWORD );
+	set_parameter( aws_json_config, "sta_ssid", wifi_sta_ssid, DEFAULT_WIFI_STA_SSID );
+	set_parameter( aws_json_config, "wifi_sta_password", wifi_sta_password, DEFAULT_WIFI_STA_PASSWORD );
 
 	wifi_sta_ip_mode = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["wifi_sta_ip_mode"].as<byte>() ) : DEFAULT_WIFI_STA_IP_MODE;
 
-	set_parameter( aws_json_config, "wifi_sta_ip", &wifi_sta_ip, DEFAULT_WIFI_STA_IP );
-	set_parameter( aws_json_config, "wifi_sta_gw", &wifi_sta_gw, DEFAULT_WIFI_STA_GW );
-	set_parameter( aws_json_config, "wifi_sta_dns", &wifi_sta_dns, DEFAULT_WIFI_STA_DNS );
+	set_parameter( aws_json_config, "wifi_sta_ip", wifi_sta_ip, DEFAULT_WIFI_STA_IP );
+	set_parameter( aws_json_config, "wifi_sta_gw", wifi_sta_gw, DEFAULT_WIFI_STA_GW );
+	set_parameter( aws_json_config, "wifi_sta_dns", wifi_sta_dns, DEFAULT_WIFI_STA_DNS );
 
-	set_parameter( aws_json_config, "ap_ssid", &wifi_ap_ssid, DEFAULT_WIFI_AP_SSID );
-	set_parameter( aws_json_config, "wifi_ap_password", &wifi_ap_password, DEFAULT_WIFI_AP_PASSWORD );
-	set_parameter( aws_json_config, "wifi_ap_ip", &wifi_ap_ip, DEFAULT_WIFI_AP_IP );
-	set_parameter( aws_json_config, "wifi_ap_gw", &wifi_ap_gw, DEFAULT_WIFI_AP_GW );
-	set_parameter( aws_json_config, "wifi_ap_dns", &wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
+	set_parameter( aws_json_config, "ap_ssid", wifi_ap_ssid, DEFAULT_WIFI_AP_SSID );
+	set_parameter( aws_json_config, "wifi_ap_password", wifi_ap_password, DEFAULT_WIFI_AP_PASSWORD );
+	set_parameter( aws_json_config, "wifi_ap_ip", wifi_ap_ip, DEFAULT_WIFI_AP_IP );
+	set_parameter( aws_json_config, "wifi_ap_gw", wifi_ap_gw, DEFAULT_WIFI_AP_GW );
+	set_parameter( aws_json_config, "wifi_ap_dns", wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
 
 	config_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["config_iface"].as<byte>() ));
 	
-	set_parameter( aws_json_config, "root_ca", &root_ca, DEFAULT_ROOT_CA );
+	set_parameter( aws_json_config, "root_ca", root_ca, DEFAULT_ROOT_CA );
 }
 
 aws_iface AWSNetworkConfig::get_alpaca_iface( void )
@@ -714,19 +712,19 @@ aws_iface AWSNetworkConfig::get_config_iface( void )
 	return config_iface;
 }
 
-char *AWSNetworkConfig::get_eth_dns( void )
+etl::string_view AWSNetworkConfig::get_eth_dns( void )
 {
-	return eth_dns;
+	return etl::string_view( eth_dns );
 }
 
-char *AWSNetworkConfig::get_eth_gw( void )
+etl::string_view AWSNetworkConfig::get_eth_gw( void )
 {
-	return eth_gw;
+	return etl::string_view( eth_gw );
 }
 
-char *AWSNetworkConfig::get_eth_ip( void )
+etl::string_view AWSNetworkConfig::get_eth_ip( void )
 {
-	return eth_ip;
+	return etl::string_view( eth_ip );
 }
 
 aws_ip_mode AWSNetworkConfig::get_eth_ip_mode( void )
@@ -739,9 +737,9 @@ aws_iface AWSNetworkConfig::get_pref_iface( void )
 	return pref_iface;
 }
 
-char *AWSNetworkConfig::get_root_ca( void )
+etl::string_view AWSNetworkConfig::get_root_ca( void )
 {
-	return root_ca;
+	return etl::string_view( root_ca );
 }
 
 aws_wifi_mode AWSNetworkConfig::get_wifi_mode( void )
@@ -749,44 +747,44 @@ aws_wifi_mode AWSNetworkConfig::get_wifi_mode( void )
 	return wifi_mode;
 }
 
-char *AWSNetworkConfig::get_wifi_ap_dns( void )
+etl::string_view AWSNetworkConfig::get_wifi_ap_dns( void )
 {
-	return wifi_ap_dns;
+	return etl::string_view( wifi_ap_dns );
 }
 
-char *AWSNetworkConfig::get_wifi_ap_gw( void )
+etl::string_view AWSNetworkConfig::get_wifi_ap_gw( void )
 {
-	return wifi_ap_gw;
+	return etl::string_view( wifi_ap_gw );
 }
 
-char *AWSNetworkConfig::get_wifi_ap_ip( void )
+etl::string_view AWSNetworkConfig::get_wifi_ap_ip( void )
 {
-	return wifi_ap_ip;
+	return etl::string_view( wifi_ap_ip );
 }
 
-char *AWSNetworkConfig::get_wifi_ap_password( void )
+etl::string_view AWSNetworkConfig::get_wifi_ap_password( void )
 {
-	return wifi_ap_password;
+	return etl::string_view( wifi_ap_password );
 }
 
-char *AWSNetworkConfig::get_wifi_ap_ssid( void )
+etl::string_view AWSNetworkConfig::get_wifi_ap_ssid( void )
 {
-	return wifi_ap_ssid;
+	return etl::string_view( wifi_ap_ssid );
 }
 
-char *AWSNetworkConfig::get_wifi_sta_dns( void )
+etl::string_view AWSNetworkConfig::get_wifi_sta_dns( void )
 {
-	return wifi_sta_dns;
+	return etl::string_view( wifi_sta_dns );
 }
 
-char *AWSNetworkConfig::get_wifi_sta_gw( void )
+etl::string_view AWSNetworkConfig::get_wifi_sta_gw( void )
 {
-	return wifi_sta_gw;
+	return etl::string_view( wifi_sta_gw );
 }
 
-char *AWSNetworkConfig::get_wifi_sta_ip( void )
+etl::string_view AWSNetworkConfig::get_wifi_sta_ip( void )
 {
-	return wifi_sta_ip;
+	return etl::string_view( wifi_sta_ip );
 }
 
 aws_ip_mode AWSNetworkConfig::get_wifi_sta_ip_mode( void )
@@ -794,42 +792,40 @@ aws_ip_mode AWSNetworkConfig::get_wifi_sta_ip_mode( void )
 	return wifi_sta_ip_mode;
 }
 
-char *AWSNetworkConfig::get_wifi_sta_password( void )
+etl::string_view AWSNetworkConfig::get_wifi_sta_password( void )
 {
-	return wifi_sta_password;
+	return etl::string_view( wifi_sta_password );
 }
 
-char *AWSNetworkConfig::get_wifi_sta_ssid( void )
+etl::string_view AWSNetworkConfig::get_wifi_sta_ssid( void )
 {
-	return wifi_sta_ssid;
+	return etl::string_view( wifi_sta_ssid );
 }
 
-bool AWSNetworkConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, char **config_item, const char *default_value )
+template <std::size_t sz>
+void AWSNetworkConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, etl::string<sz> &config_item, const char *default_value )
 {
+	size_t len;
+
 	if ( aws_json_config.containsKey( config_key ) ) {
+		
+		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {
 
-		if ( *config_item ) {
+			len = strlen( aws_json_config[config_key] );
+			if ( len > config_item.capacity() )
+				config_item.resize( len );
+			config_item.assign( aws_json_config[config_key].as<const char *>() );
 
-			if ( strcmp( *config_item, aws_json_config[config_key] )) {
-
-				if ( *config_item != default_value )
-					free( *config_item );
-				*config_item = strdup( aws_json_config[config_key] );
-				return true;
-			}
-
-		} else {
-
-			*config_item = strdup( aws_json_config[config_key] );
-			return true;
 		}
-
+		
 	} else {
 
-		if ( *config_item && ( *config_item != default_value ))
-			free( *config_item );
-		*config_item = const_cast<char *>( default_value );
-		return true;
+		if ( config_item.compare( default_value )) {
+
+			len = strlen( default_value );
+			if ( len > config_item.capacity() )
+			config_item.resize( len );
+			config_item.assign( default_value );
+		}
 	}
-	return false;
 }

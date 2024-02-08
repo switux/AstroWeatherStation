@@ -81,41 +81,38 @@ alpaca_server::alpaca_server( void )
 
 void alpaca_server::alpaca_getapiversions( AsyncWebServerRequest *request )
 {
-	// flawfinder: ignore
-	char str[256];
+	etl::string<128> str;
 
 	server_transaction_id++;
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		snprintf( static_cast<char *>( str ), 256, "{\"Value\":[1],%s}", transaction_details );
-		request->send( 200, "application/json", static_cast<const char *>( str ) );
+		snprintf( static_cast<char *>( str.data() ), str.capacity(), "{\"Value\":[1],%s}", transaction_details );
+		request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	} else {
 
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", static_cast<const char *>( str ) );
+			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	}
 }
 
 void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request )
 {
-	// flawfinder: ignore
-	char 	str[1024] = {0};
+	etl::string<1024> str;
 
 	server_transaction_id++;
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		if ( get_configured_devices( str, 960 )) {
+		if ( get_configured_devices( str.data(), 960 )) {
 
-			// flawfinder: ignore
-			char str2[2048] = {0};
-			snprintf( str2, 2047, "{\"Value\":%s,%s}", str, transaction_details );
-			request->send( 200, "application/json", static_cast<const char *>( str2 ) );
+			etl::string<2048> str2;
+			snprintf( str2.data(), str2.capacity(), "{\"Value\":%s,%s}", str.data(), transaction_details );
+			request->send( 200, "application/json", static_cast<const char *>( str2.data() ) );
 
 		} else
 
@@ -126,18 +123,17 @@ void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request 
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", static_cast<const char *>( str ) );
+			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 	}
 }
 
 void alpaca_server::alpaca_getdescription( AsyncWebServerRequest *request )
 {
 	server_transaction_id++;
-	// flawfinder: ignore
-	char str[256];
+	etl::string<256> str;
 
-	snprintf( static_cast<char *>( str ), 256, R"json({"Value":{"ServerName":"AWS","Manufacturer":"L-OpenAstroDevices","ManufacturerVersion":"%s","Location":"%s"},%s})json", station.get_unique_build_id().data() , station.get_location().data(), R"json("ClientTransactionID":0,"ServerTransactionID":0)json");
-	request->send( 200, "application/json", static_cast<const char *>( str ) );
+	snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({"Value":{"ServerName":"AWS","Manufacturer":"L-OpenAstroDevices","ManufacturerVersion":"%s","Location":"%s"},%s})json", station.get_unique_build_id().data() , station.get_location().data(), R"json("ClientTransactionID":0,"ServerTransactionID":0)json");
+	request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 }
 
 void alpaca_server::alpaca_getsetup( AsyncWebServerRequest *request )
@@ -882,12 +878,12 @@ void alpaca_server::does_not_exist( AsyncWebServerRequest *request )
 
 void alpaca_server::get_config( AsyncWebServerRequest *request )
 {
-	char *json_string = station.get_json_string_config();
+	etl::string_view json_string = station.get_json_string_config();
 
 	server_transaction_id++;
-	if ( json_string ) {
+	if ( json_string.size() ) {
 
-		request->send( 200, "application/json", json_string );
+		request->send( 200, "application/json", json_string.data() );
 
 	} else
 
@@ -896,8 +892,7 @@ void alpaca_server::get_config( AsyncWebServerRequest *request )
 
 bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 {
-	// flawfinder: ignore
-	char	buff[256];
+	etl::string<256> buff;
 	size_t	l = 1;
 	size_t	l2;
 
@@ -906,9 +901,9 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 
 	for( uint8_t i = 0; i < CONFIGURED_DEVICES; i++ ) {
 
-		l += snprintf( buff, 255, R"json({"DeviceName":"%s","DeviceType":"%s","DeviceNumber":%d,"UniqueID":"%s"},)json", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
+		l += snprintf( buff.data(), buff.capacity(), R"json({"DeviceName":"%s","DeviceType":"%s","DeviceNumber":%d,"UniqueID":"%s"},)json", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
 		if ( l <= len )
-			l2 = strlcat( json_string, buff, len );
+			l2 = strlcat( json_string, buff.data(), len );
 		else {
 			return false;
 		}
@@ -972,24 +967,23 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char *msg )
 {
-	// flawfinder: ignore
-	char str[256];
+	etl::string<256> str;
 	server_transaction_id++;
-
+	
 	if ( debug_mode )
 		Serial.printf( "\n[DEBUG] Alpaca : not implemented endpoint: %s\n", request->url().c_str());
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		snprintf( static_cast<char *>( str ), 256, R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
-		request->send( 200, "application/json", static_cast<const char *>( str ) );
+		snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
+		request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	} else {
 
 		if ( bad_request )
 			request->send( 400, "text/plain", transaction_details );
 		else
-			request->send( 200, "application/json", static_cast<const char *>( str ) );
+			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	}
 }
@@ -1026,17 +1020,16 @@ void alpaca_server::send_file( AsyncWebServerRequest *request )
 
 	if ( !SPIFFS.exists( filename )) {
 
-		// flawfinder: ignore
-		char msg[64];
+		etl::string<64> msg;
 		Serial.printf( "[ERROR] File [%s] not found.", filename );
-		snprintf( msg, 64, "[ERROR] File [%s] not found.", filename );
-		request->send( 500, "text/html", msg );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", filename );
+		request->send( 500, "text/html", msg.data() );
 		free( filename );
 		return;
 	}
 
 	request->send( SPIFFS, filename );
-	delay(500);
+	delay( 500 );
 	free( filename );
 }
 	
