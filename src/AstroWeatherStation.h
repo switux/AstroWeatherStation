@@ -166,25 +166,26 @@ class AstroWeatherStation {
 		IPAddress			*get_wifi_sta_ip( void );
 		etl::string_view	get_wind_vane_sensorname( void );
 
-		void				handle_rain_event( void );
-		bool			has_gps( void );
-		bool			has_rain_sensor( void );
-		bool            initialise( void );
-		bool			is_sensor_initialised( uint8_t );
-		bool            is_rain_event( void );
-		bool			issafe( void );
-		bool			is_ntp_synced( void );
-		bool            on_solar_panel();
-		bool			poll_sensors( void );
-		bool			rain_sensor_available( void );
-		void            reboot( void );
-		void            read_sensors( void );
-		void			report_unavailable_sensors( void );
-		void			send_alarm( const char *, const char * );
-		void            send_data( void );
-		bool			sync_time( void );
-		void            initialise_sensors( void );
-		bool            update_config( JsonVariant & );
+		void handle_dome_shutter_is_moving( void );
+		void handle_rain_event( void );
+		bool has_gps( void );
+		bool has_rain_sensor( void );
+		bool initialise( void );
+		bool is_sensor_initialised( uint8_t );
+		bool is_rain_event( void );
+		bool issafe( void );
+		bool is_ntp_synced( void );
+		bool on_solar_panel();
+		bool poll_sensors( void );
+		bool rain_sensor_available( void );
+		void reboot( void );
+		void read_sensors( void );
+		void report_unavailable_sensors( void );
+		void send_alarm( const char *, const char * );
+		void send_data( void );
+		bool sync_time( void );
+		void initialise_sensors( void );
+		bool update_config( JsonVariant & );
 };
 
 #endif

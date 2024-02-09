@@ -289,7 +289,7 @@ void AWSSensorManager::read_battery_level( void )
 
 		adc_value += analogRead( GPIO_BAT_ADC );
 	}
-	adc_value = static_cast<int>( adc_value / 5 );
+	adc_value = adc_value / 5;
 	sensor_data.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 
 	if ( debug_mode ) {

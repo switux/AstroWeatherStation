@@ -412,8 +412,8 @@ bool AWSConfig::read_config( void )
 
 bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 {
-	etl::string<3000>	json_string;
-	int					s = 0;
+	etl::string<5120>	json_string;
+	int					s;
 
 	// flawfinder: ignore
 	File file = SPIFFS.open( filename, FILE_READ );
@@ -429,6 +429,20 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Empty config file [%s]\n", filename );
 		return false;
+	}
+
+	if ( s > json_string.capacity() ) {
+
+			Serial.printf( "[ERROR] Configuration file is too big and will be truncated. Trying to rollback configuration. Please contact support!\n" );
+			if ( can_rollback() && rollback() ) {
+					
+					station.send_alarm( "Configuration error", "Configuration file is too big. Rolled back configuration and rebooting." );
+					station.reboot();
+
+			}
+
+			station.send_alarm( "Configuration error", "Configuration file is too big. Could not roll back configuration, falling back to default configuration." );
+			return false;
 	}
 
 	file.readBytes( json_string.data() , s );
@@ -491,8 +505,6 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 
 bool AWSConfig::rollback()
 {
-	std::array<uint8_t,4096>	buf;
-
 	if ( !_can_rollback ) {
 
 		if ( debug_mode )
@@ -508,20 +520,9 @@ bool AWSConfig::rollback()
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
-	// flawfinder: ignore
-	File file = SPIFFS.open( "/aws.conf", FILE_WRITE );
-	// flawfinder: ignore
-	File filebak = SPIFFS.open( "/aws.conf.bak" );
 
-	while( filebak.available() ) {
-
-		size_t	i = filebak.readBytes( reinterpret_cast<char *>( buf.data() ), buf.max_size() );
-		file.write( buf.data(), i );
-	}
-
-	file.close();
-	filebak.close();
-	SPIFFS.remove( "/aws.conf.bak" );
+	SPIFFS.remove( "/aws.conf" );
+	SPIFFS.rename( "/aws.conf.bak", "/aws.conf" );
 	Serial.printf( "[INFO] Rollback successful.\n" );
 	_can_rollback = 0;
 	return true;
@@ -529,8 +530,8 @@ bool AWSConfig::rollback()
 
 bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 {
-	std::array<uint8_t,4096>	buf;
-
+	size_t	s;
+	
 	if ( !verify_entries( json_config ))
 		return false;
 
@@ -542,22 +543,23 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 		return false;
 	}
 	// flawfinder: ignore
-	File file = SPIFFS.open( "/aws.conf" );
+	SPIFFS.rename( "/aws.conf", "/aws.conf.bak.try" );
+
 	// flawfinder: ignore
-	File filebak = SPIFFS.open( "/aws.conf.bak", FILE_WRITE );
+	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
+	s = serializeJson( json_config, file );
+	file.close();
+	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
-	while( file.available() ) {
+		SPIFFS.remove( "/aws.conf" );
+		SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		Serial.printf( "[ERROR] Configuration file is too big [%d bytes].\n" );
+		station.send_alarm( "Configuration error", "Configuration file is too big. Not applying changes!" );
+		return false;
 
-		size_t	i = file.readBytes( reinterpret_cast<char *>( buf.data() ), buf.max_size() );
-		filebak.write( buf.data(), i );
 	}
-	file.close();
-	filebak.close();
-
-	// flawfinder: ignore
-	file = SPIFFS.open( "/aws.conf", FILE_WRITE );
-	serializeJson( json_config, file );
-	file.close();
+	SPIFFS.rename( "/aws.conf.try", "/aws.conf" );
+	SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
 	Serial.printf( "[INFO] Save successful.\n" );
 	_can_rollback = 1;
 	return true;
@@ -807,19 +809,20 @@ void AWSNetworkConfig::set_parameter( JsonDocument &aws_json_config, const char 
 
 			len = strlen( aws_json_config[config_key] );
 			if ( len > config_item.capacity() )
-				config_item.resize( len );
-			config_item.assign( aws_json_config[config_key].as<const char *>() );
+				Serial.printf( "[ERROR] Size of configuration key [%s] is too big [%d > %d]. Using default value.\n", config_key, len, config_item.capacity() );
+			else
+				config_item.assign( aws_json_config[config_key].as<const char *>() );
 
-		}
-		
-	} else {
+		} else
+			return;
+	}
 
-		if ( config_item.compare( default_value )) {
+	if ( config_item.compare( default_value )) {
 
-			len = strlen( default_value );
-			if ( len > config_item.capacity() )
-			config_item.resize( len );
+		len = strlen( default_value );
+		if ( len > config_item.capacity() )
+			Serial.printf( "[BUG] Size of [%s] is too big [%d > %d].\n", config_key, len, config_item.capacity() );
+		else
 			config_item.assign( default_value );
-		}
 	}
 }
