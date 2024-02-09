@@ -133,7 +133,6 @@ void alpaca_server::alpaca_getdescription( AsyncWebServerRequest *request )
 	etl::string<256> str;
 
 	snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({"Value":{"ServerName":"AWS","Manufacturer":"L-OpenAstroDevices","ManufacturerVersion":"%s","Location":"%s"},%s})json", station.get_unique_build_id().data() , station.get_location().data(), R"json("ClientTransactionID":0,"ServerTransactionID":0)json");
-Serial.printf("DESC=[%s]\n",str.data());
 	request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 }
 
