@@ -68,6 +68,7 @@ void Dome::close( void )
 
 		xSemaphoreGive( i2c_mutex );
 
+
 	} else {
 
 		digitalWrite( GPIO_DOME_1_DIRECT, LOW );
