@@ -42,9 +42,6 @@ void Dome::close( void *dummy ) // NOSONAR
 
 				while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 
-				sc16is750->digitalWrite( GPIO_DOME_1, HIGH );
-				sc16is750->digitalWrite( GPIO_DOME_2, HIGH );
-				delay( 2000 );
 				sc16is750->digitalWrite( GPIO_DOME_1, LOW );
 				sc16is750->digitalWrite( GPIO_DOME_2, LOW );
 
@@ -52,9 +49,6 @@ void Dome::close( void *dummy ) // NOSONAR
 
 			} else {
 
-				digitalWrite( GPIO_DOME_1, HIGH );
-				digitalWrite( GPIO_DOME_2, HIGH );
-				delay( 2000 );
 				digitalWrite( GPIO_DOME_1, LOW );
 				digitalWrite( GPIO_DOME_2, LOW );
 

@@ -22,12 +22,7 @@
 #ifndef _ALPACA_TELESCOPE_H
 #define _ALPACA_TELESCOPE_H
 
-#define	TELESCOPE_SUPPORTED_ACTIONS	"[]"
-#define TELESCOPE_DRIVER_INFO		"OpenAstroDevices driver for fake telescope to get GPS time and coordinates / v1.0.0"
-#define	TELESCOPE_NAME				"OpenAstroDevices fake telescope to get GPS time and coordinates / v1.0.0"
-#define	TELESCOPE_DESCRIPTION		"OpenAstroDevices driver for fake telescope to get GPS time and coordinates / v1.0.0"
-#define TELESCOPE_DRIVER_VERSION	"1.0"
-#define	TELESCOPE_INTERFACE_VERSION	3
+const alpaca_interface_version_t	TELESCOPE_INTERFACE_VERSION	= 3;
 
 #include <SiderealPlanets.h>
 #include "alpaca_device.h"

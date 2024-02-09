@@ -22,12 +22,7 @@
 #ifndef _ALPACA_OBSERVINGCONDITIONS_H
 #define _ALPACA_OBSERVINGCONDITIONS_H
 
-#define	OBSERVINGCONDITIONS_SUPPORTED_ACTIONS	"[]"
-#define OBSERVINGCONDITIONS_DRIVER_INFO			"OpenAstroDevices AWS Environmental and SQM sensors driver / v1.0.0"
-#define OBSERVINGCONDITIONS_DESCRIPTION			"OpenAstroDevices AWS Environmental and SQM sensors / v1.0.0"
-#define OBSERVINGCONDITIONS_NAME				"OpenAstroDevices AWS Environmental and SQM sensors driver / v1.0.0"
-#define OBSERVINGCONDITIONS_DRIVER_VERSION		"1.0"
-#define	OBSERVINGCONDITIONS_INTERFACE_VERSION	1
+const alpaca_interface_version_t	OBSERVINGCONDITIONS_INTERFACE_VERSION	= 1;
 
 #include "alpaca_device.h"
 
@@ -47,9 +42,6 @@ class alpaca_observingconditions : public alpaca_device
 {
 	private:
 			etl::string<256>		message_str;
-
-		void build_property_description_answer( char *, const char *, const char * );
-		void build_timesincelastupdate_answer( char *, const char *, const char * );
 
 		void build_property_description_answer( char *, const char *, const char * );
 		void build_timesincelastupdate_answer( char *, const char *, const char * );

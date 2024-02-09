@@ -24,10 +24,6 @@
 
 const unsigned long	GPS_SPEED = 9600;
 
-AWSGPS::AWSGPS( bool _debug_mode ) : debug_mode( _debug_mode )
-{
-}
-
 void AWSGPS::read_GPS( void )
 {
 	unsigned long _start = millis();

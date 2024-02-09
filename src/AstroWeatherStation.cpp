@@ -414,7 +414,7 @@ bool AstroWeatherStation::initialise( void )
 
 	determine_boot_mode();
 
-	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV, BUILD_DATE );
+	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_DATE );
 
 	if ( !config.load( debug_mode ) )
 		return false;
@@ -430,7 +430,7 @@ bool AstroWeatherStation::initialise( void )
 	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
 		boot_timestamp = 0;
 
-	snprintf( unique_build_id.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV, BUILD_DATE );
+	snprintf( unique_build_id.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV.data(), BUILD_DATE );
 
 	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
 	snprintf( string.data(), string.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
@@ -767,7 +767,7 @@ void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 	content["message"] = message;
 
 	serializeJson( content, jsonString );
-	network.post_content( "alarm.php", jsonString );
+	network.post_content( "alarm.php", strlen( "alarm.php" ), jsonString );
 }
 
 void AstroWeatherStation::send_backlog_data( void )
@@ -796,7 +796,7 @@ void AstroWeatherStation::send_backlog_data( void )
 		if ( !i )
 			break;
 		line[i] = '\0';
-		if ( !network.post_content( "newData.php",  line.data() )) {
+		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
 			empty = false;
 			// flawfinder: ignore
@@ -850,7 +850,7 @@ void AstroWeatherStation::send_data( void )
 	if ( debug_mode )
     	Serial.printf( "[DEBUG] Sensor data: %s\n", json_sensor_data );
 
-	if ( network.post_content( "newData.php",  json_sensor_data ))
+	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data ))
 		send_backlog_data();
 	else
 		store_unsent_data( json_sensor_data );
@@ -1263,39 +1263,39 @@ byte AWSNetwork::mask_to_cidr( uint32_t subnet )
 	return cidr;
 }
 
-bool AWSNetwork::post_content( const char *endpoint, const char *jsonString )
+bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const char *jsonString )
 {
-	const char	*remote_server = config->get_remote_server().data();
-	const char	*url_path = config->get_url_path().data();
-	char		*url;
-	bool		sent = false;
+	uint8_t				fe_len;
+	etl::string<128>	final_endpoint;
+	HTTPClient 			http;
+	int 				l;
+	const char			*remote_server = config->get_remote_server().data();
+	bool				sent = false;
+	uint8_t				status;
+	etl::string<128>	url;
+	uint8_t 			url_len = 8 + config->get_remote_server().size() + 1 + config->get_url_path().size() + 1;
+	const char			*url_path = config->get_url_path().data();
+	WiFiClientSecure	wifi_client;
 
-	WiFiClientSecure wifi_client;
-	HTTPClient http;
-
-	uint8_t status;
-	// flawfinder: ignore
-	uint8_t url_len = 7 + strlen( remote_server ) + 1 + strlen( url_path ) + 3;
-	uint8_t fe_len;
-
-	char *final_endpoint;
-
-	url = static_cast<char *>( malloc( url_len ) );
-	int l = snprintf( url, url_len, "https://%s/%s/", remote_server, url_path );
+	if ( url_len > 128 )
+		url.resize( url_len );
+		
+	 l = snprintf( url.data(), url_len, "https://%s/%s/", remote_server, url_path );
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Connecting to server [%s:443] ...", remote_server );
 
-	// flawfinder: ignore
-	fe_len = l + strlen( endpoint ) + 2;
-	final_endpoint = static_cast<char *>( malloc( fe_len ) );
-	strlcpy( final_endpoint, url, fe_len );
-	strlcat( final_endpoint, endpoint, fe_len );
+	fe_len = l + endpoint_len + 2;
+	if ( fe_len > 128 )
+		final_endpoint.resize( fe_len );
+		
+	final_endpoint.assign( url );
+	final_endpoint.append( endpoint );
 
 	// FIXME: factorise code
 	if ( config->get_pref_iface() == aws_iface::eth ) {
 
-		if ( http.begin( final_endpoint )) {
+		if ( http.begin( final_endpoint.data() )) {
 
 			if ( debug_mode )
 				Serial.printf( "OK.\n" );
@@ -1332,7 +1332,7 @@ bool AWSNetwork::post_content( const char *endpoint, const char *jsonString )
         		Serial.print( "OK.\n" );
 		}
 
-		http.begin( wifi_client, final_endpoint );
+		http.begin( wifi_client, final_endpoint.data() );
 		http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
 		http.addHeader( "Content-Type", "application/json" );
 		status = http.POST( jsonString );
@@ -1348,8 +1348,6 @@ bool AWSNetwork::post_content( const char *endpoint, const char *jsonString )
     	wifi_client.stop();
 	}
 
-	free( final_endpoint );
-	free( url );
 	return sent;
 }
 

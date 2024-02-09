@@ -20,12 +20,18 @@
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 
+#include "device.h"
 #include "alpaca_device.h"
 
-alpaca_device::alpaca_device( short intver ) : interfaceversion( intver )
+alpaca_device::alpaca_device( alpaca_interface_version_t intver ) : interfaceversion( intver )
 {
 }
-
+/*
+void alpaca_device::attach_device( std::shared_device<Device> _device )
+{
+	device = _device;
+}
+*/
 bool alpaca_device::get_debug_mode( void )
 {
 	return debug_mode;

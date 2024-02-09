@@ -33,6 +33,12 @@ extern AstroWeatherStation station;
 alpaca_dome::alpaca_dome( void ) : alpaca_device( DOME_INTERFACE_VERSION )
 {
 }
+/*
+void alpaca_dome::attach_device( Dome &dome )
+{
+	
+}
+*/
 void alpaca_dome::abortslew( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( get_is_connected() )
