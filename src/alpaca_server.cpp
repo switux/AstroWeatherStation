@@ -49,11 +49,6 @@
 
 extern AstroWeatherStation station;
 
-constexpr unsigned int str2int(const char* str, int h = 0 )
-{
-    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
-}
-
 const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
 
 	{ "Rain sensor", "Safetymonitor", 0, SAFETYMONITOR_UUID },
@@ -61,6 +56,11 @@ const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
 	{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID },
 	{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
 };
+
+constexpr unsigned int str2int(const char* str, int h = 0 )
+{
+    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
+}
 
 // flawfinder: ignore
 const char *ascom_error_message[8] = {
@@ -914,6 +914,7 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 		strlcat( json_string, "]", len );
 	else
 		return false;
+		Serial.printf("CONFIGDEV=%s\n",json_string);
 	return true;
 }
 
@@ -990,10 +991,13 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 
 void alpaca_server::on_packet( AsyncUDPPacket packet )
 {
+Serial.printf("ONPACKET\n");
 	if ( packet.length() ) {
+Serial.printf("OK1\n");
 
 		// flawfinder: ignore
 		int len = packet.read( reinterpret_cast<uint8_t *>( buf ), 255 );
+Serial.printf("READ %d bytes in packet [%s]\n",len,buf);
 		if ( len > 0 )
 			buf[ len ] = 0;
 		if ( len < 16 ) {
@@ -1016,21 +1020,17 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 
 void alpaca_server::send_file( AsyncWebServerRequest *request )
 {
-	char *filename = strdup( request->url().c_str() );
-
-	if ( !SPIFFS.exists( filename )) {
+	if ( !SPIFFS.exists( request->url().c_str() )) {
 
 		etl::string<64> msg;
-		Serial.printf( "[ERROR] File [%s] not found.", filename );
-		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", filename );
+		Serial.printf( "[ERROR] File [%s] not found.", request->url().c_str() );
+		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", request->url().c_str() );
 		request->send( 500, "text/html", msg.data() );
-		free( filename );
 		return;
 	}
 
-	request->send( SPIFFS, filename );
+	request->send( SPIFFS, request->url().c_str() );
 	delay( 500 );
-	free( filename );
 }
 	
 bool alpaca_server::start( IPAddress address, bool _debug_mode )

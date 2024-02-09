@@ -22,14 +22,9 @@
 #ifndef _ALPACA_DOME_H
 #define _ALPACA_DOME_H
 
-#define	DOME_SUPPORTED_ACTIONS	"[]"
-#define DOME_DRIVER_INFO		"OpenAstroDevices driver for relay driven roll-off roof / v1.0.0"
-#define	DOME_NAME				"OpenAstroDevices relay driven roll-off roof / v1.0.0"
-#define	DOME_DESCRIPTION		"OpenAstroDevices driver for relay driven roll-off roof / v1.0.0"
-#define DOME_DRIVER_VERSION		"1.0"
-#define	DOME_INTERFACE_VERSION	2
-
 #include "alpaca_device.h"
+
+const alpaca_interface_version_t	DOME_INTERFACE_VERSION	= 2;
 
 enum struct dome_shutter_status_type : byte
 {

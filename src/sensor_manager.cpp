@@ -49,7 +49,6 @@ AWSSensorManager::AWSSensorManager( void ) :
 	bme( new Adafruit_BME280() ),
 	mlx( new Adafruit_MLX90614() ),
 	tsl( new Adafruit_TSL2591( 2591 )),
-	sqm( new SQM( tsl, &sensor_data )),
 	i2c_mutex( xSemaphoreCreateMutex() )
 {
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
@@ -119,15 +118,13 @@ void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Initialising GPS.\n" );
 
-	gps = new AWSGPS( debug_mode );
-
-	if ( ( config->get_has_sc16is750() && !gps->initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps->initialise( &sensor_data.gps )) {
+	if ( ( config->get_has_sc16is750() && !gps.initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps.initialise( &sensor_data.gps )) {
 
 			Serial.printf( "[ERROR] GPS initialisation failed.\n" );
 			return;
 	}
-	gps->start();
-	gps->pilot_rtc( true );
+	gps.start();
+	gps.pilot_rtc( true );
 	available_sensors |= GPS_SENSOR;
 	delay( 1000 );						// Wait a little to get a fix
 
@@ -169,8 +166,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 	if ( !rain_event && config->get_has_tsl() ) {
 
 		initialise_TSL();
-		sqm->set_msas_calibration_offset( config->get_msas_calibration_offset() );
-		sqm->set_debug_mode( debug_mode );
+		sqm.initialise( tsl, &sensor_data, config->get_msas_calibration_offset(), debug_mode );
 	}
 
 	if ( !rain_event &&  config->get_has_ws() ) {
@@ -478,7 +474,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			// FIXME: what if mlx is down, since we get the temperature from it?
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
-				sqm->read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
+				sqm.read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
 		}
 
 		if ( config->get_has_ws() )

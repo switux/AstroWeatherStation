@@ -63,8 +63,8 @@ class AWSSensorManager {
     Adafruit_MLX90614	*mlx				= nullptr;
     Adafruit_TSL2591	*tsl				= nullptr;
     Hydreon				rain_sensor;
-    SQM					*sqm				= nullptr;
-    AWSGPS				*gps				= nullptr;
+    SQM					sqm;
+    AWSGPS				gps;
 	Anemometer			anemometer;
 	Wind_vane			wind_vane;
 	

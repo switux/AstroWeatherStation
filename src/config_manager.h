@@ -92,7 +92,7 @@ class AWSNetworkConfig {
 		aws_ip_mode			eth_ip_mode			= DEFAULT_ETH_IP_MODE;
 		etl::string<15>		eth_gw;
 		aws_iface			pref_iface			= DEFAULT_PREF_IFACE;
-		etl::string<1500>	root_ca;
+		etl::string<2300>	root_ca;
 		etl::string<15>		wifi_ap_dns;
 		etl::string<15>		wifi_ap_gw;
 		etl::string<18>		wifi_ap_ip;

@@ -73,7 +73,7 @@ class AWSNetwork {
 		bool		initialise_ethernet( void );
 		bool		initialise_wifi( void );
 		byte		mask_to_cidr( uint32_t );
-		bool		post_content( const char *, const char * );
+		bool		post_content( const char *, size_t, const char * );
 		bool		shutdown_wifi( void );
 		bool		start_hotspot( void );
 		bool		stop_hotspot( void );

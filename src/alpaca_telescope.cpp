@@ -248,9 +248,9 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 	
 	if ( request->hasParam( "SiteElevation", true ) ) {
 
-		char	*s = strdup( request->getParam( "SiteElevation", true )->value().c_str() );
 		char	*e;
-		double	x = strtof( s, &e );
+		double	x = strtof( request->getParam( "SiteElevation", true )->value().c_str(), &e );
+
 		if (( *e != '\0' ) || ( x >10000 ) || ( x < -300 ))
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
 
@@ -260,7 +260,6 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-		free( s );
 		return;
 	}
 
@@ -272,9 +271,8 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 
 	if ( request->hasParam( "SiteLatitude", true ) ) {
 
-		char	*s = strdup( request->getParam( "SiteLatitude", true )->value().c_str() );
 		char	*e;
-		double	x = strtof( s, &e );
+		double	x = strtof( request->getParam( "SiteLatitude", true )->value().c_str(), &e );
 		if (( *e != '\0' ) || ( x > 90 ) || ( x < -90 ))
 			
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
@@ -285,7 +283,6 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-		free( s );
 		return;
 	}
 
@@ -294,13 +291,10 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 
 void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	char *s = nullptr;
-	char *e;
-
 	if ( request->hasParam( "SiteLongitude", true ) ) {
 
-		s = strdup( request->getParam( "SiteLongitude", true )->value().c_str() );
-		double	x = strtof( s, &e );
+		char *e;
+		double	x = strtof( request->getParam( "SiteLongitude", true )->value().c_str(), &e );
 		if (( *e != '\0' ) || ( x > 180 ) || ( x < -180 ))
 			
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );
@@ -311,7 +305,6 @@ void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const 
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-		free( s );
 		return;
 	}
 

@@ -412,8 +412,8 @@ bool AWSConfig::read_config( void )
 
 bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 {
-	char	*json_string;
-	int		s = 0;
+	etl::string<3000>	json_string;
+	int					s = 0;
 
 	// flawfinder: ignore
 	File file = SPIFFS.open( filename, FILE_READ );
@@ -431,26 +431,23 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 		return false;
 	}
 
-	json_string = static_cast<char *>( malloc( s ) );
-	file.readBytes( json_string, s);
+	file.readBytes( json_string.data() , s );
 	file.close();
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] File successfuly read... ");
 
-	if ( DeserializationError::Ok == deserializeJson( _json_config, json_string )) {
+	if ( DeserializationError::Ok == deserializeJson( _json_config, json_string.data() )) {
 
 		if ( debug_mode )
 			Serial.printf( "and configuration format is valid... OK!\n");
 
-		free( json_string );
 		return true;
 	}
 
 	if ( debug_mode )
 		Serial.printf( "but configuration has been corrupted...\n");
 
-	free( json_string );
 	return false;
 }
 
@@ -575,9 +572,6 @@ void AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config
 		
 		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {
 
-			len = strlen( aws_json_config[config_key] );
-			if ( len > config_item.capacity() )
-				config_item.resize( len );
 			config_item.assign( aws_json_config[config_key].as<const char *>() );
 
 		}
@@ -586,9 +580,6 @@ void AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config
 
 		if ( config_item.compare( default_value )) {
 
-			len = strlen( default_value );
-			if ( len > config_item.capacity() )
-			config_item.resize( len );
 			config_item.assign( default_value );
 		}
 	}
@@ -616,6 +607,9 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "rain_event_guard_time" ):
 			case str2int( "remote_server" ):
 			case str2int( "root_ca" ):
+			case str2int( "safety_cloud_coverage_max" ):
+			case str2int( "safety_rain_intensity_max" ):
+			case str2int( "safety_wind_speed_max" ):
 			case str2int( "sta_ssid" ):
 			case str2int( "tzname" ):
 			case str2int( "url_path" ):

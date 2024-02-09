@@ -22,12 +22,7 @@
 #ifndef _ALPACA_SAFETYMONITOR_H
 #define _ALPACA_SAFETYMONITOR_H
 
-#define	SAFETYMONITOR_SUPPORTED_ACTIONS		"[]"
-#define SAFETYMONITOR_DRIVER_INFO			"OpenAstroDevices driver for Hydreon RG-9 / v1.0.0"
-#define SAFETYMONITOR_DESCRIPTION			"OpenAstroDevices Safety Monitor based on Hydreon RG-9 / v1.0.0"
-#define SAFETYMONITOR_NAME					"OpenAstroDevices driver for Hydreon RG-9 / v1.0.0"
-#define SAFETYMONITOR_DRIVER_VERSION		"1.0"
-#define SAFETYMONITOR_INTERFACE_VERSION		1
+const alpaca_interface_version_t	SAFETYMONITOR_INTERFACE_VERSION		= 1;
 
 #include "alpaca_device.h"
 

@@ -29,9 +29,9 @@
 class SQM {
 
 	public:
-		SQM( Adafruit_TSL2591 *, sensor_data_t * );
+		SQM( void ) = default;
+		void initialise( Adafruit_TSL2591 *, sensor_data_t *, float, bool );
 		void read_SQM( float );
-		void set_debug_mode( bool );
 		void set_msas_calibration_offset( float );
 		
 	private:

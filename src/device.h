@@ -27,23 +27,20 @@
 class Device {
 
 	public:
-				Device( void ) = default;
-		bool	get_initialised( void );
-		void	uint64_t_to_uint8_t_array( uint64_t, std::array<uint8_t,8> & );
-
-	protected:
-	
-		bool				get_debug_mode( void );
+							Device( void ) = default;
 		etl::string_view 	get_description( void );
 		etl::string_view	get_driver_info( void );
 		etl::string_view	get_driver_version( void );
+		bool				get_initialised( void );
 		etl::string_view	get_name( void );
+		bool				get_debug_mode( void );
 		void				set_debug_mode( bool );
 		void				set_description( const char * );
 		void				set_driver_version( const char * );
 		bool				set_initialised( bool );
 		void				set_name( const char * );
-		
+		void				uint64_t_to_uint8_t_array( uint64_t, std::array<uint8_t,8> & );
+
 	private:
 
 		bool				debug_mode		= false;

@@ -24,7 +24,7 @@
 
 #include <AsyncUDP_ESP32_W5500.hpp>
 
-#define	ALPACA_SERVER_PORT	8080
+const	uint16_t	ALPACA_SERVER_PORT	= 8080;
 
 #define	CONFIGURED_DEVICES	4
 #define	AWS_UUID			"ed0f1194-7cff-11ee-adf4-43fdf91ce20d"

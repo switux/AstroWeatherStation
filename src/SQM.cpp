@@ -28,12 +28,11 @@
 #include "Hydreon.h"
 #include "sensor_manager.h"
 
-SQM::SQM( Adafruit_TSL2591 *_tsl, sensor_data_t *_sensor_data ) : tsl( _tsl ), sensor_data( _sensor_data )
+void SQM::initialise( Adafruit_TSL2591 *_tsl, sensor_data_t *data, float calibration_offset, bool _debug_mode )
 {
-}
-
-void SQM::set_debug_mode( bool _debug_mode )
-{
+	tsl = _tsl;
+	sensor_data = data;
+	msas_calibration_offset = calibration_offset;
 	debug_mode = _debug_mode;
 }
 

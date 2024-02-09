@@ -38,6 +38,7 @@ struct gps_data_t {
 class AWSGPS
 {
 	private:
+
 		TaskHandle_t		gps_task_handle;
 		TinyGPSPlus			gps;
 		I2C_SC16IS750		*sc16is750		= nullptr;
@@ -52,14 +53,15 @@ class AWSGPS
 		void read_GPS( void );
 
 	public:
-		explicit AWSGPS( bool );
-		bool initialise( gps_data_t * );
-		bool initialise( gps_data_t *, I2C_SC16IS750 *, SemaphoreHandle_t );
-		void resume( void );
-		void pilot_rtc( bool );
-		bool start( void );
-		void stop( void );
-		void suspend( void );
+
+					AWSGPS( void ) = default;
+		bool		initialise( gps_data_t * );
+		bool		initialise( gps_data_t *, I2C_SC16IS750 *, SemaphoreHandle_t );
+		void		resume( void );
+		void		pilot_rtc( bool );
+		bool		start( void );
+		void		stop( void );
+		void		suspend( void );
 };
 
 #endif
