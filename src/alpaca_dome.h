@@ -23,19 +23,9 @@
 #define _ALPACA_DOME_H
 
 #include "alpaca_device.h"
+#include "dome.h"
 
 const alpaca_interface_version_t	DOME_INTERFACE_VERSION	= 2;
-
-enum struct dome_shutter_status_type : byte
-{
-	Open,
-	Closed,
-	Opening,
-	Closing,
-	Error
-};
-
-using dome_shutter_status_t = dome_shutter_status_type;
 
 typedef struct alpaca_dome_t {
 

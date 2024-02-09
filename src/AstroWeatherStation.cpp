@@ -379,6 +379,11 @@ etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 	return etl::string_view( "N/A" );
 }
 
+void AstroWeatherStation::handle_dome_shutter_is_moving( void )
+{
+	dome.shutter_is_moving();
+}
+
 void AstroWeatherStation::handle_rain_event( void )
 {
 	if ( solar_panel ) {

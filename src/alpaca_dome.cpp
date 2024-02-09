@@ -64,7 +64,7 @@ void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 	if ( get_is_connected() ) {
 
 		station.get_dome()->trigger_close();
-		dome_shutter_status = dome_shutter_status_t::Closing;
+		// dome_shutter_status = dome_shutter_status_t::Closing;
 
 		snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		if ( get_debug_mode() )
@@ -82,9 +82,12 @@ void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 
 void alpaca_dome::openshutter( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	if ( get_is_connected() )
-		snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1036,"ErrorMessage":"We cannot control dome closure"})json", transaction_details );
-	else
+	if ( get_is_connected() ) {
+
+		station.get_dome()->open();
+		snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
+
+	} else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );

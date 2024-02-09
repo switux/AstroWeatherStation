@@ -69,7 +69,7 @@ const	uint8_t	GPIO_DOME_1_DIRECT	= 12;
 const	uint8_t	GPIO_DOME_2_DIRECT	= 14;
 
 #define	GPIO_DOME_STATUS		GPIO_NUM_39
-#define	GPIO_DOME_OPENING		GPIO_NUM_36
+#define	GPIO_DOME_MOVING		GPIO_NUM_36
 
 // Direct connection between GPS and ESP32 (not through SC16IS750)
 #define	GPS_RX					GPIO_NUM_27

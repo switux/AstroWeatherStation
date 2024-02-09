@@ -92,18 +92,18 @@ class AWSNetworkConfig {
 		aws_ip_mode			eth_ip_mode			= DEFAULT_ETH_IP_MODE;
 		etl::string<15>		eth_gw;
 		aws_iface			pref_iface			= DEFAULT_PREF_IFACE;
-		etl::string<2300>	root_ca;
+		etl::string<4096>	root_ca;
 		etl::string<15>		wifi_ap_dns;
 		etl::string<15>		wifi_ap_gw;
 		etl::string<18>		wifi_ap_ip;
-		etl::string<32>		wifi_ap_password;
+		etl::string<64>		wifi_ap_password;
 		etl::string<32>		wifi_ap_ssid;
 		aws_wifi_mode		wifi_mode			= DEFAULT_WIFI_MODE;
 		etl::string<15>		wifi_sta_dns;
 		etl::string<15>		wifi_sta_gw;
 		etl::string<18>		wifi_sta_ip;
 		aws_ip_mode			wifi_sta_ip_mode	= DEFAULT_WIFI_STA_IP_MODE;
-		etl::string<32>		wifi_sta_password;
+		etl::string<64>		wifi_sta_password;
 		etl::string<32>		wifi_sta_ssid;
 
 		template <std::size_t sz>
@@ -193,6 +193,7 @@ class AWSConfig {
 		
 	private:
 
+		const size_t		MAX_CONFIG_FILE_SIZE	= 5120;
 		uint8_t 			anemometer_model		= 255;
 		bool				close_dome_on_rain		= true;
 		uint16_t			config_port				= DEFAULT_CONFIG_PORT;
@@ -204,9 +205,9 @@ class AWSConfig {
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		uint16_t			rain_event_guard_time	= 60;
-		etl::string<32>		remote_server;
-		etl::string<32>		tzname;
-		etl::string<16>		url_path;
+		etl::string<128>	remote_server;
+		etl::string<64>		tzname;
+		etl::string<64>		url_path;
 		uint8_t				wind_vane_model			= 255;
 
 		bool	read_config( void );
