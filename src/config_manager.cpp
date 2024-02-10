@@ -542,12 +542,14 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
-	// flawfinder: ignore
+	
+	SPIFFS.remove( "/aws.conf.bak.try" );
 	SPIFFS.rename( "/aws.conf", "/aws.conf.bak.try" );
 
 	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
 	s = serializeJson( json_config, file );
+	serializeJson( json_config, Serial1 );
 	file.close();
 	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
@@ -560,7 +562,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	}
 	SPIFFS.rename( "/aws.conf.try", "/aws.conf" );
 	SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
-	Serial.printf( "[INFO] Save successful.\n" );
+	Serial.printf( "[INFO] Wrote %d bytes, configuration save successful.\n", s );
 	_can_rollback = 1;
 	return true;
 }
@@ -570,6 +572,7 @@ void AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config
 {
 	size_t len;
 
+	
 	if ( aws_json_config.containsKey( config_key ) ) {
 		
 		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {

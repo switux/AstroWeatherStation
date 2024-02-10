@@ -91,6 +91,7 @@ class AstroWeatherStation {
 		bool				debug_mode	= false;
 		Dome				dome;
 		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
+		size_t				json_sensor_data_len;
 		etl::string<128>	location;
 		bool				ntp_synced	= false;
 		char				*ota_board	= nullptr;
@@ -136,7 +137,7 @@ class AstroWeatherStation {
 		bool			start_hotspot( void );
 		bool			startup_sanity_check( void );
 		bool			stop_hotspot( void );
-		bool			store_unsent_data( char * );
+		bool			store_unsent_data( char *, size_t );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:

@@ -68,7 +68,6 @@ void Dome::close( void )
 
 		xSemaphoreGive( i2c_mutex );
 
-
 	} else {
 
 		digitalWrite( GPIO_DOME_1_DIRECT, LOW );
@@ -92,7 +91,7 @@ bool Dome::closed( void )
 	return x;
 }
 
-void Dome::control_task( void * )
+void Dome::control_task( void * )	// NOSONAR
 {
 	while ( true ) {
 

@@ -68,7 +68,7 @@ function toggle_panel( panel_id )
 
 function send_config()
 {
-	req = new XMLHttpRequest();
+	var req = new XMLHttpRequest();
 	req.open( "POST", "/set_config", true );
 	req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
 	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
@@ -78,7 +78,7 @@ function display_values()
 {
 	toggle_panel( 0 );
 	req = new XMLHttpRequest();
-	req2 = new XMLHttpRequest();
+	var req2 = new XMLHttpRequest();
 	req2.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
 			document.getElementById("root_ca").value = req2.responseText;
@@ -86,7 +86,7 @@ function display_values()
 	};
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
-			values = JSON.parse( req.responseText );
+			var values = JSON.parse( req.responseText );
 			switch( values['wifi_mode'] ) {
 				case 'AP':
 					document.getElementById("AP").checked = true;
