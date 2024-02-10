@@ -43,14 +43,17 @@
 	
 function reboot()
 {
+	req = new XMLHttpRequest();
+	req.open( "GET", "/reboot", true );
+	req.send();	
 }
 	
 function initialise_page()
 {
-	req = new XMLHttpRequest();
+	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
-			values = JSON.parse( req.responseText );
+			var values = JSON.parse( req.responseText );
 /*			switch( values['wifi_mode'] ) {
 				case 'AP':
 					document.getElementById("AP").checked = true;

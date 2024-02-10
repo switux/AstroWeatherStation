@@ -306,7 +306,7 @@ char *AstroWeatherStation::get_json_sensor_data( void )
 	json_data["current_heap_size"] = station_health_data.current_heap_size;
 	json_data["largest_free_heap_block" ] = station_health_data.largest_free_heap_block;
 	
-	serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
+	json_sensor_data_len = serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
 	return json_sensor_data;
 }
 etl::string_view AstroWeatherStation::get_json_string_config( void )
@@ -800,12 +800,14 @@ void AstroWeatherStation::send_backlog_data( void )
 		int	i = backlog.readBytesUntil( '\n', line.data(), line.size() - 1 );
 		if ( !i )
 			break;
+		Serial.printf("1 LINE SIZE=%d\n", line.size());
 		line[i] = '\0';
 		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
 			empty = false;
 			// flawfinder: ignore
-			if ( new_backlog.printf( "%s\n", line.data() ) == ( 1 + strlen( line.data() )) ) {
+			Serial.printf("2 LINE SIZE=%d\n", line.size());
+			if ( new_backlog.printf( "%s\n", line.data() ) == ( 1 + line.size() )) {
 
 				if ( debug_mode )
 					Serial.printf( "[DEBUG] Data saved in backlog.\n" );
@@ -858,7 +860,7 @@ void AstroWeatherStation::send_data( void )
 	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data ))
 		send_backlog_data();
 	else
-		store_unsent_data( json_sensor_data );
+		store_unsent_data( json_sensor_data, json_sensor_data_len );
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
@@ -913,7 +915,7 @@ bool AstroWeatherStation::startup_sanity_check( void )
 	return false;
 }
 
-bool AstroWeatherStation::store_unsent_data( char *data )
+bool AstroWeatherStation::store_unsent_data( char *data, size_t len )
 {
 	bool ok = false;
 
@@ -929,7 +931,7 @@ bool AstroWeatherStation::store_unsent_data( char *data )
 	}
 
 	// flawfinder: ignore
-	if (( ok = ( backlog.printf( "%s\n", data ) == ( strlen( data ) + 1 )) )) {
+	if (( ok = ( backlog.printf( "%s\n", data ) == ( len + 1 )) )) {
 
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Ok, data secured for when server is available. data=%s\n", data );
@@ -1300,7 +1302,19 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	// FIXME: factorise code
 	if ( config->get_pref_iface() == aws_iface::eth ) {
 
-		if ( http.begin( final_endpoint.data() )) {
+		wifi_client.setCACert( config->get_root_ca().data() );
+		if ( !wifi_client.connect( remote_server, 443 )) {
+
+			if ( debug_mode )
+        		Serial.print( "NOK.\n" );
+
+		} else {
+
+			if ( debug_mode )
+        		Serial.print( "OK.\n" );
+		}
+				
+		http.begin( wifi_client, final_endpoint.data() );
 
 			if ( debug_mode )
 				Serial.printf( "OK.\n" );
@@ -1309,6 +1323,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 			http.addHeader( "Host", remote_server );
 			http.addHeader( "Accept", "application/json" );
 			http.addHeader( "Content-Type", "application/json" );
+			Serial.printf("ETH HTTPS POST STRING [%s]\n", jsonString );
 			status = http.POST( jsonString );
 			if ( debug_mode ) {
 
@@ -1318,10 +1333,6 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 			http.end();
 			if ( status == 200 )
 				sent = true;
-
-		} else
-			if ( debug_mode )
-				Serial.printf( "NOK.\n" );
 
 	} else {
 
