@@ -549,7 +549,6 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
 	s = serializeJson( json_config, file );
-	serializeJson( json_config, Serial1 );
 	file.close();
 	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
