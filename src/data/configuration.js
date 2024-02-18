@@ -203,7 +203,7 @@ function display_values()
 	};
 	req.onreadystatechange = function() {
 
-		if ( this.readyState == 4 && this.status == 200 ) {
+    if ( this.readyState == 4 && this.status == 200 ) {
 
 			var values = JSON.parse( req.responseText );
 			document.getElementById("tzname").value = values['tzname'];

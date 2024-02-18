@@ -838,6 +838,7 @@ void AstroWeatherStation::send_backlog_data( void )
 		int	i = backlog.readBytesUntil( '\n', line.data(), line.size() - 1 );
 		if ( !i )
 			break;
+		Serial.printf("1 LINE SIZE=%d\n", line.size());
 		line[i] = '\0';
 		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
@@ -1329,8 +1330,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	// FIXME: factorise code
 	if ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) == aws_iface::eth ) {
 
-	return false;
-	//	wifi_client.setCACert( config->get_root_ca().data() );
+		wifi_client.setCACert( config->get_root_ca().data() );
 		if ( !wifi_client.connect( remote_server, 443 )) {
 
 			if ( debug_mode )
@@ -1342,9 +1342,9 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
         		Serial.print( "OK.\n" );
 		}
 				
-//http.begin( wifi_client, final_endpoint.data() );
+		http.begin( wifi_client, final_endpoint.data() );
 
-			if ( debug_mode )
+    if ( debug_mode )
 				Serial.printf( "OK.\n" );
 
 			http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
