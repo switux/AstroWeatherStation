@@ -32,9 +32,9 @@ class alpaca_telescope : public alpaca_device
 	private:
 
 			SiderealPlanets		astro_lib;
-			double				forced_latitude		= -1;
-			double				forced_longitude	= -1;
-			double				forced_altitude		= -1;
+			float				forced_latitude		= -1;
+			float				forced_longitude	= -1;
+			float				forced_altitude		= -1;
 			etl::string<256>	message_str;
 
 	public:

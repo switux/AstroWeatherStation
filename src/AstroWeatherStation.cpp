@@ -234,7 +234,7 @@ byte AstroWeatherStation::get_eth_cidr_prefix( void )
 	return network.get_eth_cidr_prefix();
 }
 
-bool AstroWeatherStation::get_location_coordinates( double *latitude, double *longitude )
+bool AstroWeatherStation::get_location_coordinates( float *latitude, float *longitude )
 {
 	if ( sensor_manager.get_sensor_data()->gps.fix ) {
 
@@ -282,6 +282,7 @@ char *AstroWeatherStation::get_json_sensor_data( void )
 	json_data["rain_intensity"] = sensor_data->rain_intensity;
 	json_data["sky_temperature"] = sensor_data->sky_temperature;
 	json_data["ambient_temperature"] = sensor_data->ambient_temperature;
+	json_data["cloud_coverage"] = sensor_data->cloud_coverage;
 	json_data["msas"] = sensor_data->msas;
 	json_data["nelm"] = sensor_data->nelm;
 	json_data["integration_time"] = sensor_data->integration_time;
@@ -389,9 +390,19 @@ etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 	return etl::string_view( "N/A" );
 }
 
+void AstroWeatherStation::handle_dome_shutter_is_closed( void )
+{
+	dome.shutter_is_closed();
+}
+
 void AstroWeatherStation::handle_dome_shutter_is_moving( void )
 {
 	dome.shutter_is_moving();
+}
+
+void AstroWeatherStation::handle_dome_shutter_is_opening( void )
+{
+	dome.shutter_is_opening();
 }
 
 void AstroWeatherStation::handle_rain_event( void )
@@ -407,10 +418,7 @@ void AstroWeatherStation::handle_rain_event( void )
 
 	time( &rain_event_timestamp );
 	sensor_manager.set_rain_event();
-	//FIXME: lookout
-	if ( config.get_has_device( DOME_DEVICE ) && 1 )
-		dome.trigger_close_shutter();
-	catch_rain_event = false;
+	lookout.set_rain_event();
 }
 
 bool AstroWeatherStation::has_gps( void )
@@ -496,7 +504,7 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel ) {
 
-		sync_time();
+		sync_time( true );
 		if ( config.get_has_device( RAIN_SENSOR ))
 			check_rain_event_guard_time( config.get_parameter<int>( "rain_event_guard_time" ) );
 	}
@@ -523,7 +531,8 @@ bool AstroWeatherStation::initialise( void )
 		attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
 	}
 
-	lookout.initialise( &config, &sensor_manager, &dome, debug_mode );
+	if ( config.get_parameter<bool>( "lookout_enabled" ))
+		lookout.initialise( &config, &sensor_manager, &dome, debug_mode );
 	
 	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
@@ -623,7 +632,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 
 			station_health_data.current_heap_size =	xPortGetFreeHeapSize();
 			station_health_data.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
-			sync_time();
+			sync_time( false );
 			sync_time_mod = 1;
 		}
 		time_t now;
@@ -838,7 +847,6 @@ void AstroWeatherStation::send_backlog_data( void )
 		int	i = backlog.readBytesUntil( '\n', line.data(), line.size() - 1 );
 		if ( !i )
 			break;
-		Serial.printf("1 LINE SIZE=%d\n", line.size());
 		line[i] = '\0';
 		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
@@ -972,7 +980,7 @@ bool AstroWeatherStation::store_unsent_data( char *data, size_t len )
 	return ok;
 }
 
-bool AstroWeatherStation::sync_time( void )
+bool AstroWeatherStation::sync_time( bool verbose )
 {
 	const char	*ntp_server = "pool.ntp.org";
 	uint8_t		ntp_retries = 5;
@@ -981,19 +989,19 @@ bool AstroWeatherStation::sync_time( void )
 	if ( config.get_has_device( GPS_SENSOR ) && sensor_manager.get_sensor_data()->gps.fix )
 		return true;
 
-	if ( debug_mode )
+	if ( debug_mode && verbose )
 		Serial.printf( "[DEBUG] Connecting to NTP server " );
 
 	configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 
 	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
 
-		if ( debug_mode )
+		if ( debug_mode && verbose )
 			Serial.printf( "." );
 		delay( 1000 );
 		configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 	}
-	if ( debug_mode ) {
+	if ( debug_mode && verbose ) {
 
 		Serial.printf( "\n[DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
 		Serial.print( "Time and date: " );
@@ -1330,7 +1338,8 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	// FIXME: factorise code
 	if ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) == aws_iface::eth ) {
 
-		wifi_client.setCACert( config->get_root_ca().data() );
+	return false;
+	//	wifi_client.setCACert( config->get_root_ca().data() );
 		if ( !wifi_client.connect( remote_server, 443 )) {
 
 			if ( debug_mode )
@@ -1342,7 +1351,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
         		Serial.print( "OK.\n" );
 		}
 				
-		http.begin( wifi_client, final_endpoint.data() );
+//http.begin( wifi_client, final_endpoint.data() );
 
     if ( debug_mode )
 				Serial.printf( "OK.\n" );

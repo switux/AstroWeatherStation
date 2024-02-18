@@ -28,8 +28,8 @@
 struct gps_data_t {
 
 	bool			fix;
-	double			longitude;
-	double			latitude;
+	float			longitude;
+	float			latitude;
 	float			altitude;
 	struct timeval	time;
 

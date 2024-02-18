@@ -100,6 +100,19 @@ etl::string_view AWSConfig::get_wind_vane_model_str( void )
 	return etl::string_view( Wind_vane::WIND_VANE_MODEL[ get_parameter<int>( "wind_vane_model" ) ].c_str() );
 }
 
+void AWSConfig::list_files( void )
+{
+	File root = SPIFFS.open( "/" );
+	File file = root.openNextFile();
+ 
+	while( file ) {
+ 
+      Serial.printf( "[DEBUG] Filename: %05d /%s\n", file.size(), file.name() );
+      file = root.openNextFile();
+	}	
+	close( root );
+}
+
 bool AWSConfig::load( bool _debug_mode  )
 {
 	debug_mode = _debug_mode;
@@ -109,6 +122,9 @@ bool AWSConfig::load( bool _debug_mode  )
 		Serial.printf( "[ERROR] Could not access flash filesystem, bailing out!\n" );
 		return false;
 	}
+	if ( debug_mode )
+		list_files();
+
 	return read_config();
 }
 
@@ -305,19 +321,6 @@ bool AWSConfig::rollback()
 	return true;
 }
 
-void AWSConfig::set_root_ca( JsonVariant &_json_config )
-{
-	if ( _json_config.containsKey( "root_ca" )) {
-
-		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
-			root_ca.assign( _json_config["root_ca"].as<const char *>() );
-			_json_config.remove( "root_ca" );
-			return;
-		}
-	}
-	root_ca.empty();
-}
-
 bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 {
 	size_t	s;
@@ -325,6 +328,9 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	if ( !verify_entries( _json_config ))
 		return false;
 
+	if ( debug_mode )
+		list_files();
+		
 	set_root_ca( _json_config );
 	
 	Serial.printf( "[INFO] Saving submitted configuration.\n" );
@@ -338,21 +344,35 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	SPIFFS.remove( "/aws.conf.bak.try" );
 	SPIFFS.rename( "/aws.conf", "/aws.conf.bak.try" );
 
+	SPIFFS.remove( "/aws.conf.try" );
 	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
-	s = serializeJson( _json_config, Serial );
-	Serial.printf("OK: %d bytes\n",s);
 	s = serializeJson( _json_config, file );
 	file.close();
-	if ( s > MAX_CONFIG_FILE_SIZE ) {
+	if ( !s ) {
 
 		SPIFFS.remove( "/aws.conf" );
+		SPIFFS.remove( "/aws.conf.try" );
+		SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		Serial.printf( "[ERROR] Empty configuration file, rolling back.\n" );
+		return false;
+		
+	}
+	if ( s > MAX_CONFIG_FILE_SIZE ) {
+
+		SPIFFS.remove( "/aws.conf.try" );
 		SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf" );
 		Serial.printf( "[ERROR] Configuration file is too big [%d bytes].\n" );
 		station.send_alarm( "Configuration error", "Configuration file is too big. Not applying changes!" );
 		return false;
 
 	}
+	if ( debug_mode )
+		list_files();
+	SPIFFS.remove( "/aws.conf" );
+Serial.printf(" REMOVED AWS.CONF\n");
+	if ( debug_mode )
+		list_files();
 	SPIFFS.rename( "/aws.conf.try", "/aws.conf" );
 	SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
 	Serial.printf( "[INFO] Wrote %d bytes, configuration save successful.\n", s );
@@ -367,6 +387,9 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	SPIFFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
 	
 	_can_rollback = 1;
+	if ( debug_mode )
+		list_files();
+
 	return true;
 }
 
@@ -520,6 +543,19 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
 }
 
+void AWSConfig::set_root_ca( JsonVariant &_json_config )
+{
+	if ( _json_config.containsKey( "root_ca" )) {
+
+		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
+			root_ca.assign( _json_config["root_ca"].as<const char *>() );
+			_json_config.remove( "root_ca" );
+			return;
+		}
+	}
+	root_ca.empty();
+}
+
 bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 {
 	// proposed_config will de facto be modified in this function as
@@ -612,95 +648,3 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	return true;	
 }
-/*
-bool AWSConfig::verify_entries( JsonVariant &proposed_config )
-{
-	// proposed_config will de facto be modified in this function as
-	// config_items is only a way of presenting the items in proposed_config
-
-	JsonObject config_items = proposed_config.as<JsonObject>();
-	aws_ip_mode x = aws_ip_mode::dhcp;
-	
-	for( JsonPair item : config_items ) {
-
-		switch( str2int( item.key().c_str() )) {
-
-	.		case str2int( "alpaca_iface" ):
-	.		case str2int( "anemometer_model" ):
-	.		case str2int( "eth_dns" ):
-	.		case str2int( "eth_gw" ):
-	.		case str2int( "eth_ip" ):
-	.		case str2int( "has_bme" ):
-	.		case str2int( "has_dome" ):
-	.		case str2int( "has_gps" ):
-	.		case str2int( "has_mlx" ):
-	.		case str2int( "has_rain_sensor" ):
-	.		case str2int( "has_tsl" ):
-	.		case str2int( "has_ws" ):
-	.		case str2int( "has_wv" ):
-	.		case str2int( "lookout_enabled" ):
-	.		case str2int( "pref_iface" ):
-			case str2int( "rain_event_guard_time" ):
-	.		case str2int( "remote_server" ):
-	.		case str2int( "root_ca" ):
-	.		case str2int( "safe_cloud_coverage_active_1" ):
-	.		case str2int( "safe_cloud_coverage_active_2" ):
-	.		case str2int( "safe_cloud_coverage_delay_1" ):
-	.		case str2int( "safe_cloud_coverage_delay_2" ):
-	.		case str2int( "safe_cloud_coverage_max_1" ):
-	.		case str2int( "safe_cloud_coverage_max_2" ):
-	.		case str2int( "safe_rain_intensity_active" ):
-	.		case str2int( "safe_rain_intensity_delay" ):
-	.		case str2int( "safe_rain_intensity_max" ):
-	.		case str2int( "safe_wind_speed_active" ):
-	.		case str2int( "safe_wind_speed_delay" ):
-	.		case str2int( "safe_wind_speed_max" ):
-	.		case str2int( "tzname" ):
-	.		case str2int( "unsafe_cloud_coverage_active_1" ):
-	.		case str2int( "unsafe_cloud_coverage_active_2" ):
-	.		case str2int( "unsafe_cloud_coverage_delay_1" ):
-	.		case str2int( "unsafe_cloud_coverage_delay_2" ):
-	.		case str2int( "unsafe_cloud_coverage_max_1" ):
-	.		case str2int( "unsafe_cloud_coverage_max_2" ):
-	.		case str2int( "unsafe_rain_intensity_active" ):
-	.		case str2int( "unsafe_rain_intensity_max" ):
-	.		case str2int( "unsafe_wind_speed_delay_1" ):
-	.		case str2int( "unsafe_wind_speed_delay_2" ):
-	.		case str2int( "unsafe_wind_speed_max_1" ):
-	.		case str2int( "unsafe_wind_speed_max_2" ):
-	.		case str2int( "unsafe_wind_speed_active_1" ):
-	.		case str2int( "unsafe_wind_speed_active_2" ):
-	.		case str2int( "url_path" ):
-	.		case str2int( "wifi_ap_dns" ):
-	.		case str2int( "wifi_ap_gw" ):
-	.		case str2int( "wifi_ap_ip" ):
-	.		case str2int( "wifi_ap_password" ):
-	.		case str2int( "wifi_ap_ssid" ):
-	.		case str2int( "wifi_mode" ):
-	.		case str2int( "wifi_sta_dns" ):
-	.		case str2int( "wifi_sta_gw" ):
-	.		case str2int( "wifi_sta_ip" ):
-	.		case str2int( "wifi_sta_ip_mode" ):
-	.		case str2int( "wifi_sta_password" ):
-	.		case str2int( "wifi_sta_ssid" ):
-	.		case str2int( "windvane_model" ):
-				break;
-	.		case str2int( "eth_ip_mode" ):
-				x = ( item.value() == "0" ) ? aws_ip_mode::dhcp : aws_ip_mode::fixed;
-				break;
-			default:
-				Serial.printf( "[ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
-				return false;
-		}
-	}
-
-	if ( x == aws_ip_mode::dhcp ) {
-
-		config_items.remove( "eth_ip" );
-		config_items.remove( "eth_gw" );
-		config_items.remove( "eth_dns" );
-	}
-
-	return true;	
-}
-*/

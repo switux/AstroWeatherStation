@@ -63,7 +63,9 @@ class Dome : public Device {
 		void					initialise( uint16_t, bool );
 		void					initialise( I2C_SC16IS750 *, SemaphoreHandle_t, uint16_t, bool );
 		void					open_shutter( void );
+		void 					shutter_is_closed( void );
 		void 					shutter_is_moving( void );
+		void 					shutter_is_opening( void );
 		void					trigger_close_shutter( void );
 };
 

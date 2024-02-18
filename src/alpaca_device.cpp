@@ -79,7 +79,7 @@ void alpaca_device::send_value( AsyncWebServerRequest *request, const char *tran
 
 }
 
-void alpaca_device::send_value( AsyncWebServerRequest *request, const char *transaction_details, double value )
+void alpaca_device::send_value( AsyncWebServerRequest *request, const char *transaction_details, float value )
 {
 	etl::string<256>	message_str;
 	if ( is_connected )
