@@ -105,14 +105,14 @@ void loop()
 
 void IRAM_ATTR _handle_dome_shutter_is_moving( void )
 {
-	Serial.printf( "[INFO] Dome shutter is moving.\n" );
+	Serial.printf( "[INFO] EVENT: Dome shutter is moving.\n" );
 	esp_task_wdt_reset();	// Serial.printf() may starve wdt
 	station.handle_dome_shutter_is_moving();
 }
 
 void IRAM_ATTR _handle_rain_event( void )
 {
-	Serial.printf( "[INFO] RAIN EVENT.\n" );
+	Serial.printf( "[INFO] EVENT: Rain detected.\n" );
 	esp_task_wdt_reset();	// Serial.printf() may starve wdt
 	station.handle_rain_event();
 }

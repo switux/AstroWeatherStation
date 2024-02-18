@@ -33,10 +33,6 @@
 #include <Wire.h>
 #include "SC16IS750.h"
 
-I2C_SC16IS750::I2C_SC16IS750( void ) : address( DEFAULT_SC16IS750_ADDR >> 1 )
-{
-}
-
 int I2C_SC16IS750::available( void )
 {
     return available_data_in_FIFO();

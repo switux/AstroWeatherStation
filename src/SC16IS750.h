@@ -159,7 +159,7 @@ const uint8_t			DEFAULT_SC16IS750_ADDR				= 0x90;
 class I2C_SC16IS750
 {
 	public:
-				explicit I2C_SC16IS750( void );
+				explicit I2C_SC16IS750( void ) = default;
 		bool	begin( uint32_t );
 		// flawfinder: ignore
 		int8_t	read( void );
@@ -176,7 +176,7 @@ class I2C_SC16IS750
 
 	private:
 
-		uint8_t address		= 0;
+		uint8_t address		= ( DEFAULT_SC16IS750_ADDR >> 1 );
 		bool	has_peek	= false;
 		int		peek_byte	= -1;
 

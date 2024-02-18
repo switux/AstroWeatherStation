@@ -28,15 +28,18 @@
 #include <ESPAsyncWebSrv.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <ESP32OTAPull.h>
 #include <ESPping.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <FS.h>
 #include <SPIFFS.h>
+#include <charconv>
+#include <optional>
 
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
+#include <ESP32OTAPull.h>
+
 #include "defaults.h"
 #include "gpio_config.h"
 #include "SC16IS750.h"
@@ -45,6 +48,7 @@
 #include "config_manager.h"
 #include "config_server.h"
 #include "dome.h"
+#include "AWSLookout.h"
 #include "alpaca_server.h"
 #include "AstroWeatherStation.h"
 
@@ -52,7 +56,7 @@ extern void IRAM_ATTR		_handle_rain_event( void );
 
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
-const std::array<std::string, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
+std::array<std::string, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
 
 const bool				FORMAT_SPIFFS_IF_FAILED = true;
 const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
@@ -73,14 +77,14 @@ AstroWeatherStation::AstroWeatherStation( void )
 
 void AstroWeatherStation::check_ota_updates( void )
 {
-	ESP32OTAPull			ota;
-	std::array<char, 64>	string;
-	int						ret_code;
-	uint8_t					*wifi_mac = network.get_wifi_mac();
+	ESP32OTAPull	ota;
+	etl::string<64>	string;
+	int				ret_code;
+	uint8_t			*wifi_mac = network.get_wifi_mac();
 
-	snprintf( string.data(), string.size(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
+	snprintf( string.data(), string.capacity(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota.OverrideBoard( string.data() );
-	snprintf( string.data(), string.size(), "%02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
+	snprintf( string.data(), string.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
 	ota.OverrideDevice( string.data() );
 	ota.SetConfig( unique_build_id.data() );
 	ota.SetCallback( OTA_callback );
@@ -89,31 +93,23 @@ void AstroWeatherStation::check_ota_updates( void )
 	Serial.printf( "[INFO] Firmware OTA update result: %s.\n", OTA_message( ret_code ));
 }
 
-void AstroWeatherStation::check_rain_event_guard_time( void )
+void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
 {
-	time_t now;
+	time_t now = get_timestamp();
 
 	if ( catch_rain_event )
 		return;
-
-	if ( ntp_synced )
-		time( &now );
-	else
-		now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
-
-	if ( ( now - rain_event_timestamp ) <= config.get_rain_event_guard_time() )
+		
+	if ( ( now - rain_event_timestamp ) <= guard_time )
 		return;
 
-	if ( config.get_has_rain_sensor() ) {
+	if ( debug_mode )
+		Serial.printf( "\n[DEBUG] Rain event guard time elapsed.\n" );
 
-		if ( debug_mode )
-			Serial.printf( "\n[DEBUG] Rain event guard time elapsed.\n" );
-
-		pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
-		if ( !solar_panel )
-			attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
-		catch_rain_event = true;
-	}
+	pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
+	if ( !solar_panel )
+		attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
+	catch_rain_event = true;
 }
 
 void AstroWeatherStation::compute_uptime( void )
@@ -137,10 +133,10 @@ void AstroWeatherStation::compute_uptime( void )
 	}
 }
 
-void AstroWeatherStation::determine_boot_mode( void )
+bool AstroWeatherStation::determine_boot_mode( void )
 {
- 	unsigned long			start = micros();
-	unsigned long			guard = 0;
+ 	unsigned long start					= micros();
+	unsigned long button_pressed_secs	= 0;
 
 	pinMode( GPIO_DEBUG, INPUT );
 
@@ -150,10 +146,10 @@ void AstroWeatherStation::determine_boot_mode( void )
 		if (( micros() - start ) <= CONFIG_MODE_GUARD )
 			break;
 		delay( 100 );
-		guard = micros() - start;
+		button_pressed_secs = micros() - start;
 	}
 
-	config_mode = ( guard > CONFIG_MODE_GUARD );
+	return ( button_pressed_secs > CONFIG_MODE_GUARD );
 }
 
 void AstroWeatherStation::display_banner()
@@ -162,6 +158,7 @@ void AstroWeatherStation::display_banner()
 		return;
 
 	uint8_t	*wifi_mac = network.get_wifi_mac();
+	int		i;
 	
 	Serial.printf( "\n#############################################################################################\n" );
 	Serial.printf( "# AstroWeatherStation                                                                       #\n" );
@@ -172,10 +169,10 @@ void AstroWeatherStation::display_banner()
 
 	print_config_string( "# MCU               : Model %s Revision %d", ESP.getChipModel(), ESP.getChipRevision() );
 	print_config_string( "# WIFI Mac          : %02x:%02x:%02x:%02x:%02x:%02x", wifi_mac[0], wifi_mac[1], wifi_mac[2], wifi_mac[3], wifi_mac[4], wifi_mac[5] );
-	print_config_string( "# Power Mode        : %s", PWR_MODE_STR[ static_cast<byte>( config.get_pwr_mode() ) ].c_str() );
+	print_config_string( "# Power Mode        : %s", PWR_MODE_STR[ static_cast<int>( config.get_pwr_mode()) ].data() );
 	print_config_string( "# PCB version       : %s", config.get_pcb_version().data() );
-	print_config_string( "# Ethernet present  : %s", config.get_has_ethernet() ? "Yes" : "No" );
-	print_config_string( "# GPIO ext. present : %s", config.get_has_sc16is750() ? "Yes" : "No" );
+	print_config_string( "# Ethernet present  : %s", config.get_has_device( ETHERNET_DEVICE ) ? "Yes" : "No" );
+	print_config_string( "# GPIO ext. present : %s", config.get_has_device( SC16IS750_DEVICE ) ? "Yes" : "No" );
 	print_config_string( "# Firmware          : %s-%s", REV.data(), BUILD_DATE );
 
 	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
@@ -212,14 +209,14 @@ void AstroWeatherStation::enter_config_mode( void )
 
 etl::string_view AstroWeatherStation::get_anemometer_sensorname( void )
 {
-	if ( config.get_has_ws() )
+	if ( config.get_has_device( ANEMOMETER_SENSOR ) )
 		return etl::string_view( config.get_anemometer_model_str() );
 	return etl::string_view( "N/A" );
 }
 
 uint16_t AstroWeatherStation::get_config_port( void )
 {
-	return config.get_config_port();
+	return config.get_parameter<int>( "config_port" );
 }
 
 bool AstroWeatherStation::get_debug_mode( void )
@@ -309,6 +306,7 @@ char *AstroWeatherStation::get_json_sensor_data( void )
 	json_sensor_data_len = serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
 	return json_sensor_data;
 }
+
 etl::string_view AstroWeatherStation::get_json_string_config( void )
 {
 	return etl::string_view( config.get_json_string_config() );
@@ -332,6 +330,18 @@ sensor_data_t *AstroWeatherStation::get_sensor_data( void )
 etl::string_view AstroWeatherStation::get_unique_build_id( void )
 {
 	return unique_build_id;
+}
+
+time_t AstroWeatherStation::get_timestamp( void )
+{
+	time_t now;
+
+	if ( ntp_synced )
+		time( &now );
+	else
+		now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+
+	return now;
 }
 
 uint32_t AstroWeatherStation::get_uptime( void )
@@ -374,7 +384,7 @@ IPAddress *AstroWeatherStation::get_wifi_sta_ip( void )
 
 etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 {
-	if ( config.get_has_wv() )
+	if ( config.get_has_device( WIND_VANE_SENSOR ))
 		return etl::string_view( config.get_wind_vane_model_str() );
 	return etl::string_view( "N/A" );
 }
@@ -397,19 +407,20 @@ void AstroWeatherStation::handle_rain_event( void )
 
 	time( &rain_event_timestamp );
 	sensor_manager.set_rain_event();
-	if ( config.get_has_dome() && config.get_close_dome_on_rain() )
-		dome.trigger_close();
+	//FIXME: lookout
+	if ( config.get_has_device( DOME_DEVICE ) && 1 )
+		dome.trigger_close_shutter();
 	catch_rain_event = false;
 }
 
 bool AstroWeatherStation::has_gps( void )
 {
-	return config.get_has_gps();
+	return config.get_has_device( GPS_SENSOR );
 }
 
 bool AstroWeatherStation::has_rain_sensor( void )
 {
-	return config.get_has_rain_sensor();
+	return config.get_has_device( RAIN_SENSOR );
 }
 
 bool AstroWeatherStation::initialise( void )
@@ -417,14 +428,14 @@ bool AstroWeatherStation::initialise( void )
 	etl::string<64>			string;
 	std::array<uint8_t,6>	mac;
 
-	determine_boot_mode();
+	bool					config_mode = determine_boot_mode();
 
 	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_DATE );
 
 	if ( !config.load( debug_mode ) )
 		return false;
 
-	solar_panel = ( config.get_pwr_mode() == aws_pwr_src::panel );
+	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
@@ -435,13 +446,13 @@ bool AstroWeatherStation::initialise( void )
 	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
 		boot_timestamp = 0;
 
-	snprintf( unique_build_id.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV.data(), BUILD_DATE );
+	snprintf( unique_build_id.data(), string.capacity(), "%d-%s-%s-%s",config.get_pwr_mode(), config.get_pcb_version().data(), REV.data(), BUILD_DATE );
 
 	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
 	snprintf( string.data(), string.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 	ota_device = strdup( string.data() );
 
-	snprintf( string.data(), string.capacity(), "%d-%s-%s-%s",config.get_pwr_mode(), config.get_pcb_version().data(), REV, BUILD_DATE );
+	snprintf( string.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV, BUILD_DATE );
 	ota_config = strdup( unique_build_id.data() );
 
 	if ( solar_panel )
@@ -470,22 +481,24 @@ bool AstroWeatherStation::initialise( void )
 	display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
-	if ( config.get_has_dome() ) {
+	if ( config.get_has_device( DOME_DEVICE ) ) {
 
-	    if ( config.get_has_sc16is750() ) {
+	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
 
-			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), debug_mode );
+			//FIXME: make guard time a config parameter
+			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), 30, debug_mode );
 
 	    } else {
 
-			dome.initialise( debug_mode );
+			dome.initialise( 30, debug_mode );
 	    }
 	}
 
 	if ( solar_panel ) {
 
 		sync_time();
-		check_rain_event_guard_time();
+		if ( config.get_has_device( RAIN_SENSOR ))
+			check_rain_event_guard_time( config.get_parameter<int>( "rain_event_guard_time" ) );
 	}
 
 	if ( rain_event ) {
@@ -503,13 +516,15 @@ bool AstroWeatherStation::initialise( void )
 		
 	start_alpaca_server();
 	
-	if ( config.get_has_rain_sensor() ) {
+	if ( config.get_has_device( RAIN_SENSOR ) ) {
 
 		Serial.printf( "[INFO] Monitoring rain sensor for rain event.\n" );
 		pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
 		attachInterrupt( GPIO_RAIN_SENSOR_RAIN, _handle_rain_event, FALLING );
 	}
 
+	lookout.initialise( &config, &sensor_manager, &dome, debug_mode );
+	
 	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
@@ -595,8 +610,9 @@ const char *AstroWeatherStation::OTA_message( int code )
 
 void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 {
-	uint8_t	sync_time_mod = 1;
-
+	uint8_t		sync_time_mod = 1;
+	uint16_t	rain_event_guard_time = config.get_parameter<int>( "rain_event_guard_time" );
+	
 	while ( true ) {
 
 		if ( sync_time_mod % 5 )
@@ -610,7 +626,21 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 			sync_time();
 			sync_time_mod = 1;
 		}
-		check_rain_event_guard_time();
+		time_t now;
+
+		if ( ntp_synced )
+			time( &now );
+		else
+			now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+
+		if ( ( now - rain_event_timestamp ) > config.get_parameter<int>( "rain_event_guard_time" ) )
+			if ( request_dome_shutter_open && ( sensor_manager.get_sensor_data()->rain_intensity == 0 )) {
+				Serial.printf("RAIN OVER: open dome\n");
+				dome.open_shutter();
+				request_dome_shutter_open = false;
+			}
+		if ( config.get_has_device( RAIN_SENSOR ))
+			check_rain_event_guard_time( rain_event_guard_time );
 		delay( 1000 );
 	}
 }
@@ -648,55 +678,63 @@ void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
 	Serial.printf( "%s", string.data() );
 }
 
+int AstroWeatherStation::reformat_ca_root_line( std::array<char,97> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
+{
+	int string_pos;
+	
+	strlcat( string.data(), root_ca + ca_pos, 92 );
+	for( string_pos = str_len; string_pos < 92; string_pos++ ) {
+
+		if ( string[ string_pos ] == '\n' ) {
+
+			if (( ca_pos < 92 ) || (( ca_len - ca_pos) < 92))
+
+				string[ string_pos ] = ' ';
+
+			else {
+
+				memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
+				ca_pos++;
+
+			}
+		}
+		ca_pos++;
+		if ( ca_pos > ca_len )
+			break;
+	}
+	ca_pos--;
+	for( int j = string_pos; j < 92; string[ j ] = ' ', j++ );
+	memset( string.data() + 91, 0, 6 );
+	strlcat( string.data(), " #\n", string.size() - 1 );
+	return ca_pos;
+}
+
 void AstroWeatherStation::print_runtime_config( void )
 {
  	std::array<char,97>	string;
 	const char			*root_ca = config.get_root_ca().data();
 	int					ca_pos = 0;
 
-	print_config_string( "# AP SSID      : %s", config.get_wifi_ap_ssid().data() );
-	print_config_string( "# AP PASSWORD  : %s", config.get_wifi_ap_password().data() );
-	print_config_string( "# AP IP        : %s", config.get_wifi_ap_ip().data() );
-	print_config_string( "# AP Gateway   : %s", config.get_wifi_ap_gw().data() );
-	print_config_string( "# STA SSID     : %s", config.get_wifi_sta_ssid().data() );
-	print_config_string( "# STA PASSWORD : %s", config.get_wifi_sta_password().data() );
-	print_config_string( "# STA IP       : %s", config.get_wifi_sta_ip().data() );
-	print_config_string( "# STA Gateway  : %s", config.get_wifi_sta_gw().data() );
-	print_config_string( "# SERVER       : %s", config.get_remote_server().data() );
-	print_config_string( "# URL PATH     : /%s", config.get_url_path().data() );
-	print_config_string( "# TZNAME       : %s", config.get_tzname().data() );
+	print_config_string( "# AP SSID      : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
+	print_config_string( "# AP PASSWORD  : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
+	print_config_string( "# AP IP        : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
+	print_config_string( "# AP Gateway   : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
+	print_config_string( "# STA SSID     : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
+	print_config_string( "# STA PASSWORD : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
+	print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
+	print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
+	print_config_string( "# SERVER       : %s", config.get_parameter<const char *>( "remote_server" ));
+	print_config_string( "# URL PATH     : /%s", config.get_parameter<const char *>( "url_path" ));
+	print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
 
 	memset( string.data(), 0, string.size() );
 	int str_len = snprintf( string.data(), string.size() - 1, "# ROOT CA      : " );
 
 	int ca_len = config.get_root_ca().size();
-	int string_pos;
+
 	while ( ca_pos < ca_len ) {
 
-		strlcat( string.data(), root_ca + ca_pos, 92 );
-		for ( string_pos = str_len; string_pos < 92; string_pos++ ) {
-
-			if ( string[ string_pos ] == '\n' ) {
-
-				if (( ca_pos < 92 ) || (( ca_len - ca_pos ) < 92 ))
-
-					string[ string_pos ] = ' ';
-
-				else  {
-
-					memcpy( string.data() + string_pos, root_ca + ca_pos + 1, 96 - string_pos - 3 );
-					ca_pos++;
-				}
-			}
-
-			ca_pos++;
-			if ( ca_pos > ca_len )
-				break;
-		}
-		ca_pos--;
-		for( int j = string_pos; j < 92; string[ j ] = ' ', j++ );
-		memset( string.data() + 91, 0, 6 );
-		strlcat( string.data(), " #\n", string.size() - 1 );
+		ca_pos = reformat_ca_root_line( string, str_len, ca_pos, ca_len, root_ca );
 		Serial.printf( "%s", string.data() );
 		memset( string.data(), 0, string.size() );
 		str_len = snprintf( string.data(), string.size() - 1, "# " );
@@ -706,16 +744,16 @@ void AstroWeatherStation::print_runtime_config( void )
 	Serial.printf( "# SENSORS & CONTROLS                                                                        #\n" );
 	Serial.printf( "#-------------------------------------------------------------------------------------------#\n" );
 
-	print_config_string( "# DOME             : %s", config.get_has_dome() ? "Yes" : "No" );
-	print_config_string( "# GPS              : %s", config.get_has_gps() ? "Yes" : "No" );
-	print_config_string( "# SQM/IRRANDIANCE  : %s", config.get_has_tsl() ? "Yes" : "No" );
-	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_mlx() ? "Yes" : "No" );
-	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_bme() ? "Yes" : "No" );
-	print_config_string( "# WINDVANE         : %s", config.get_has_wv() ? "Yes" : "No" );
+	print_config_string( "# DOME             : %s", config.get_has_device( DOME_DEVICE ) ? "Yes" : "No" );
+	print_config_string( "# GPS              : %s", config.get_has_device( GPS_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# SQM/IRRANDIANCE  : %s", config.get_has_device( TSL_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( MLX_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( BME_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# WINDVANE         : %s", config.get_has_device( WIND_VANE_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# WINDVANE MODEL   : %s", config.get_wind_vane_model_str().data() );
-	print_config_string( "# ANEMOMETER       : %s", config.get_has_ws() ? "Yes" : "No" );
+	print_config_string( "# ANEMOMETER       : %s", config.get_has_device( ANEMOMETER_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# ANEMOMETER MODEL : %s", config.get_anemometer_model_str().data() );
-	print_config_string( "# RAIN SENSOR      : %s", config.get_has_rain_sensor() ? "Yes" : "No" );
+	print_config_string( "# RAIN SENSOR      : %s", config.get_has_device( RAIN_SENSOR ) ? "Yes" : "No" );
 
 }
 
@@ -800,28 +838,17 @@ void AstroWeatherStation::send_backlog_data( void )
 		int	i = backlog.readBytesUntil( '\n', line.data(), line.size() - 1 );
 		if ( !i )
 			break;
-		Serial.printf("1 LINE SIZE=%d\n", line.size());
 		line[i] = '\0';
 		if ( !network.post_content( "newData.php", strlen( "newData.php" ), line.data() )) {
 
 			empty = false;
 			// flawfinder: ignore
-			Serial.printf("2 LINE SIZE=%d\n", line.size());
-			if ( new_backlog.printf( "%s\n", line.data() ) == ( 1 + line.size() )) {
-
-				if ( debug_mode )
-					Serial.printf( "[DEBUG] Data saved in backlog.\n" );
-
-			} else
-
+			if ( new_backlog.printf( "%s\n", line.data() ) != ( 1 + line.size() ))
 				Serial.printf( "[ERROR] Could not write data into the backlog.\n" );
 
-		} else
-
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Sucessfully sent backlog data: %s\n", line.data() );
-
+		}
 	}
+
 	new_backlog.close();
 	backlog.close();
 
@@ -876,7 +903,7 @@ void AstroWeatherStation::send_rain_event_alarm( const char *str )
 
 void AstroWeatherStation::start_alpaca_server( void )
 {
-	switch ( config.get_alpaca_iface() ) {
+	switch ( static_cast<aws_iface>( config.get_parameter<int>( "alpaca_iface" ))) {
 
 		case aws_iface::wifi_sta:
 			alpaca.start( WiFi.localIP(), debug_mode );
@@ -901,7 +928,7 @@ bool AstroWeatherStation::start_config_server( void )
 
 bool AstroWeatherStation::startup_sanity_check( void )
 {
-	switch ( config.get_pref_iface() ) {
+	switch ( static_cast<aws_iface>( config.get_parameter<int>( "pref_iface" ) )) {
 
 		case aws_iface::wifi_sta:
 			return Ping.ping( WiFi.gatewayIP(), 3 );
@@ -950,20 +977,20 @@ bool AstroWeatherStation::sync_time( void )
 	uint8_t		ntp_retries = 5;
    	struct 		tm timeinfo;
 
-	if ( config.get_has_gps() && sensor_manager.get_sensor_data()->gps.fix )
+	if ( config.get_has_device( GPS_SENSOR ) && sensor_manager.get_sensor_data()->gps.fix )
 		return true;
 
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Connecting to NTP server " );
 
-	configTzTime( config.get_tzname().data(), ntp_server );
+	configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 
 	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
 
 		if ( debug_mode )
 			Serial.printf( "." );
 		delay( 1000 );
-		configTzTime( config.get_tzname().data(), ntp_server );
+		configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 	}
 	if ( debug_mode ) {
 
@@ -1039,8 +1066,8 @@ bool AWSNetwork::connect_to_wifi()
 	uint8_t		remaining_attempts	= 10;
 	char		*ip = nullptr;
 	char		*cidr = nullptr;
-	const char	*ssid		= config->get_wifi_sta_ssid().data();
-	const char	*password	= config->get_wifi_sta_password().data();
+	const char	*ssid		= config->get_parameter<const char *>( "wifi_sta_ssid" );
+	const char	*password	= config->get_parameter<const char *>( "wifi_sta_password" );
 	char		*dummy;
 
 	if (( WiFi.status () == WL_CONNECTED ) && !strcmp( ssid, WiFi.SSID().c_str() )) {
@@ -1052,20 +1079,20 @@ bool AWSNetwork::connect_to_wifi()
 
 	Serial.printf( "[INFO] Attempting to connect to SSID [%s] ", ssid );
 
-	if ( config->get_wifi_sta_ip_mode() == aws_ip_mode::fixed ) {
+	if ( static_cast<aws_ip_mode>(config->get_parameter<int>( "wifi_sta_ip_mode" )) == aws_ip_mode::fixed ) {
 
-		if ( config->get_wifi_sta_ip().size() ) {
+		if ( etl::string_view( config->get_parameter<const char *>( "wifi_sta_ip" )).size() ) {
 
 			etl::string<32> buf;
-			strlcpy( buf.data(), config->get_wifi_sta_ip().data(), buf.capacity() );
+			strlcpy( buf.data(), config->get_parameter<const char *>( "wifi_sta_ip" ), buf.capacity() );
 		 	ip = strtok_r( buf.data(), "/", &dummy );
 		}
 		if ( ip )
 			cidr = strtok_r( nullptr, "/", &dummy );
 
   		wifi_sta_ip.fromString( ip );
-  		wifi_sta_gw.fromString( config->get_wifi_sta_gw().data() );
-  		wifi_sta_dns.fromString( config->get_wifi_sta_dns().data() );
+  		wifi_sta_gw.fromString( config->get_parameter<const char *>( "wifi_sta_gw" ));
+  		wifi_sta_dns.fromString( config->get_parameter<const char *>( "wifi_sta_dns" ));
 		// flawfinder: ignore
   		wifi_sta_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr ) ));
 		WiFi.config( wifi_sta_ip, wifi_sta_gw, wifi_sta_subnet, wifi_sta_dns );
@@ -1175,20 +1202,20 @@ bool AWSNetwork::initialise_ethernet( void )
 		return false;
 	}
 
-  	if ( config->get_eth_ip_mode() == aws_ip_mode::fixed ) {
+  	if ( static_cast<aws_ip_mode>( config->get_parameter<int>( "eth_ip_mode" )) == aws_ip_mode::fixed ) {
 
-		if ( config->get_eth_ip().size() ) {
+		if ( etl::string_view( config->get_parameter<const char *>( "eth_ip" )).size() ) {
 
 			etl::string<32> buf;
-			strlcpy( buf.data(), config->get_eth_ip().data(), buf.capacity() );
+			strlcpy( buf.data(), config->get_parameter<const char *>( "eth_ip" ), buf.capacity() );
 		 	ip = strtok_r( buf.data(), "/", &dummy );
 		}
 		if ( ip )
 			cidr = strtok_r( nullptr, "/", &dummy );
 
   		eth_ip.fromString( ip );
-  		eth_gw.fromString( config->get_eth_gw().data() );
-  		eth_dns.fromString( config->get_eth_dns().data() );
+  		eth_gw.fromString( config->get_parameter<const char *>( "eth_gw" ));
+  		eth_dns.fromString( config->get_parameter<const char *>( "eth_dns" ));
 		// flawfinder: ignore
 		ETH.config( eth_ip, eth_gw, cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) ), eth_dns );
   	}
@@ -1210,7 +1237,7 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 	
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
-	switch ( config->get_pref_iface() ) {
+	switch ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) ) {
 
 		case aws_iface::wifi_ap:
 		case aws_iface::wifi_sta:
@@ -1229,7 +1256,7 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 bool AWSNetwork::initialise_wifi( void )
 {
-	switch ( config->get_wifi_mode() ) {
+	switch ( static_cast<aws_wifi_mode>( config->get_parameter<int>( "wifi_mode" )) ) {
 
 		case aws_wifi_mode::ap:
 			if ( debug_mode )
@@ -1250,7 +1277,7 @@ bool AWSNetwork::initialise_wifi( void )
 			return connect_to_wifi();
 
 		default:
-			Serial.printf( "[ERROR] Unknown wifi mode [%d]\n", config->get_wifi_mode() );
+			Serial.printf( "[ERROR] Unknown wifi mode [%d]\n",  config->get_parameter<int>( "wifi_mode" ) );
 	}
 	return false;
 }
@@ -1276,12 +1303,12 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	etl::string<128>	final_endpoint;
 	HTTPClient 			http;
 	int 				l;
-	const char			*remote_server = config->get_remote_server().data();
+	const char			*remote_server = config->get_parameter<const char *>( "remote_server" );
 	bool				sent = false;
 	uint8_t				status;
 	etl::string<128>	url;
-	uint8_t 			url_len = 8 + config->get_remote_server().size() + 1 + config->get_url_path().size() + 1;
-	const char			*url_path = config->get_url_path().data();
+	uint8_t 			url_len = 8 + etl::string_view( config->get_parameter<const char *>( "remote_server" )).size() + 1 + etl::string_view( config->get_parameter<const char *>( "url_path" )).size() + 1;
+	const char			*url_path = config->get_parameter<const char *>( "url_path" );
 	WiFiClientSecure	wifi_client;
 
 	if ( url_len > 128 )
@@ -1300,9 +1327,10 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	final_endpoint.append( endpoint );
 
 	// FIXME: factorise code
-	if ( config->get_pref_iface() == aws_iface::eth ) {
+	if ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) == aws_iface::eth ) {
 
-		wifi_client.setCACert( config->get_root_ca().data() );
+	return false;
+	//	wifi_client.setCACert( config->get_root_ca().data() );
 		if ( !wifi_client.connect( remote_server, 443 )) {
 
 			if ( debug_mode )
@@ -1314,7 +1342,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
         		Serial.print( "OK.\n" );
 		}
 				
-		http.begin( wifi_client, final_endpoint.data() );
+//http.begin( wifi_client, final_endpoint.data() );
 
 			if ( debug_mode )
 				Serial.printf( "OK.\n" );
@@ -1331,6 +1359,8 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 				Serial.printf( "%d\n", status );
 			}
 			http.end();
+			    	wifi_client.stop();
+
 			if ( status == 200 )
 				sent = true;
 
@@ -1381,8 +1411,8 @@ bool AWSNetwork::shutdown_wifi( void )
 
 bool AWSNetwork::start_hotspot( void )
 {
-	const char	*ssid		= config->get_wifi_ap_ssid().data();
-	const char	*password	= config->get_wifi_ap_password().data();
+	const char	*ssid		= config->get_parameter<const char *>( "wifi_ap_ssid" );
+	const char	*password	= config->get_parameter<const char *>( "wifi_ap_password" );
 
 	char *ip = nullptr;
 	char *cidr = nullptr;
@@ -1393,17 +1423,17 @@ bool AWSNetwork::start_hotspot( void )
 
 	if ( WiFi.softAP( ssid, password )) {
 
-		if ( config->get_wifi_ap_ip().size() ) {
+		if ( etl::string_view( config->get_parameter<const char *>( "wifi_ap_ip" )).size() ) {
 
 			etl::string<32> buf;
-			strlcpy( buf.data(), config->get_wifi_ap_ip().data(), buf.capacity() );
+			strlcpy( buf.data(), config->get_parameter<const char *>( "wifi_ap_ip" ), buf.capacity() );
 		 	ip = strtok_r( buf.data(), "/", &dummy );
 		}
 		if ( ip )
 			cidr = strtok_r( nullptr, "/", &dummy );
 
   		wifi_ap_ip.fromString( ip );
-  		wifi_ap_gw.fromString( config->get_wifi_ap_gw().data() );
+  		wifi_ap_gw.fromString( config->get_parameter<const char *>( "wifi_ap_gw" ));
 		// flawfinder: ignore
   		wifi_ap_subnet = cidr_to_mask( static_cast<unsigned int>( atoi( cidr )) );
 

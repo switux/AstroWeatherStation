@@ -24,9 +24,15 @@
 #include "config_server.h"
 #include "sensor_manager.h"
 #include "dome.h"
+#include "AWSLookout.h"
 #include "alpaca_server.h"
 
 constexpr size_t DATA_JSON_STRING_MAXLEN = 1024;
+
+extern const unsigned long DOME_DEVICE;
+extern const unsigned long ETHERNET_DEVICE;
+extern const unsigned long SC16IS750_DEVICE;
+
 
 void OTA_callback( int, int );
 
@@ -87,33 +93,32 @@ class AstroWeatherStation {
 		alpaca_server		alpaca;
 		TaskHandle_t		aws_periodic_task_handle;
 		AWSConfig			config;
-		bool				config_mode	= false;
 		bool				debug_mode	= false;
 		Dome				dome;
 		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
 		size_t				json_sensor_data_len;
 		etl::string<128>	location;
+		AWSNetwork			network;
 		bool				ntp_synced	= false;
 		char				*ota_board	= nullptr;
 		char				*ota_config	= nullptr;
 		char				*ota_device	= nullptr;
 		bool				rain_event	= false;
-   		I2C_SC16IS750		sc16is750;
+		bool				request_dome_shutter_open = false;
+		I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
 		bool				solar_panel;
 		aws_health_data_t	station_health_data;
 		etl::string<32>		unique_build_id;
 		etl::string<32>		uptime_str;
+		AWSLookout			lookout;
 
-
-		AWSNetwork			network;
-
-		void			check_rain_event_guard_time( void );
+		void			check_rain_event_guard_time( uint16_t );
 		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
-		void 			determine_boot_mode( void );
+		bool 			determine_boot_mode( void );
 		bool			disconnect_from_wifi( void );
 		void			display_banner( void );
 		void			enter_config_mode( void );
@@ -129,6 +134,7 @@ class AstroWeatherStation {
 		template<typename... Args>
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
+		int				reformat_ca_root_line( std::array<char,97> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		void			send_rain_event_alarm( const char * );
 		bool			shutdown_wifi( void );
@@ -158,6 +164,7 @@ class AstroWeatherStation {
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( double *, double * );
         etl::string_view	get_root_ca( void );
+		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );
 		etl::string_view	get_uptime_str( void );
@@ -166,27 +173,26 @@ class AstroWeatherStation {
 		IPAddress			*get_wifi_sta_gw( void );
 		IPAddress			*get_wifi_sta_ip( void );
 		etl::string_view	get_wind_vane_sensorname( void );
-
-		void handle_dome_shutter_is_moving( void );
-		void handle_rain_event( void );
-		bool has_gps( void );
-		bool has_rain_sensor( void );
-		bool initialise( void );
-		bool is_sensor_initialised( uint8_t );
-		bool is_rain_event( void );
-		bool issafe( void );
-		bool is_ntp_synced( void );
-		bool on_solar_panel();
-		bool poll_sensors( void );
-		bool rain_sensor_available( void );
-		void reboot( void );
-		void read_sensors( void );
-		void report_unavailable_sensors( void );
-		void send_alarm( const char *, const char * );
-		void send_data( void );
-		bool sync_time( void );
-		void initialise_sensors( void );
-		bool update_config( JsonVariant & );
+		void				handle_dome_shutter_is_moving( void );
+		void				handle_rain_event( void );
+		bool				has_gps( void );
+		bool				has_rain_sensor( void );
+		bool				initialise( void );
+		void				initialise_sensors( void );
+		bool				is_sensor_initialised( uint8_t );
+		bool				is_rain_event( void );
+		bool				issafe( void );
+		bool				is_ntp_synced( void );
+		bool				on_solar_panel();
+		bool				poll_sensors( void );
+		bool				rain_sensor_available( void );
+		void				reboot( void );
+		void				read_sensors( void );
+		void				report_unavailable_sensors( void );
+		void				send_alarm( const char *, const char * );
+		void				send_data( void );
+		bool				sync_time( void );
+		bool				update_config( JsonVariant & );
 };
 
 #endif

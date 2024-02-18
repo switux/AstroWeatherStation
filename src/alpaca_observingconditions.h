@@ -22,9 +22,9 @@
 #ifndef _ALPACA_OBSERVINGCONDITIONS_H
 #define _ALPACA_OBSERVINGCONDITIONS_H
 
-const alpaca_interface_version_t	OBSERVINGCONDITIONS_INTERFACE_VERSION	= 1;
-
 #include "alpaca_device.h"
+
+const alpaca_interface_version_t	OBSERVINGCONDITIONS_INTERFACE_VERSION	= 1;
 
 // Attempt to convert RG-9 rain scale to ASCOM's ...
 const std::array<float,8> rain_rate = {
