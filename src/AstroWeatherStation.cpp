@@ -1353,7 +1353,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 				
 //http.begin( wifi_client, final_endpoint.data() );
 
-			if ( debug_mode )
+    if ( debug_mode )
 				Serial.printf( "OK.\n" );
 
 			http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );

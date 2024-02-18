@@ -37,6 +37,10 @@ extern AstroWeatherStation	station;
 extern time_t 				last_ntp_time;
 extern uint16_t				ntp_time_misses;
 
+extern AstroWeatherStation	station;
+extern time_t 				last_ntp_time;
+extern uint16_t				ntp_time_misses;
+
 //
 // IMPORTANT: Some indications about dome shutter status handling by this driver
 //
@@ -72,9 +76,9 @@ void Dome::check_guard_times( void )
 
 	if ( !catch_shutter_moving && (( now - shutter_moving_ts ) > dome_shutter_moving_guard_time )) {
 		
-	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_closed, RISING );
-	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_opening, FALLING );
-	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
+	  attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_closed, RISING );
+  	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_opening, FALLING );
+  	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
 		catch_shutter_moving = true;
 
 	}

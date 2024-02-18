@@ -207,7 +207,8 @@ void AWSLookout::loop( void * )	// NOSONAR
 		if ( enabled )
 			check_rules();
 		delay( 1000 );	
-	}
+
+  }
 }
 
 void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *_dome, bool _debug_mode )
