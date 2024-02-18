@@ -118,7 +118,7 @@ void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] Initialising GPS.\n" );
 
-	if ( ( config->get_has_sc16is750() && !gps.initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps.initialise( &sensor_data.gps )) {
+	if ( ( config->get_has_device( SC16IS750_DEVICE ) && !gps.initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps.initialise( &sensor_data.gps )) {
 
 			Serial.printf( "[ERROR] GPS initialisation failed.\n" );
 			return;
@@ -157,21 +157,21 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
 	}
 
-	if ( !rain_event && config->get_has_bme() )
+	if ( !rain_event && config->get_has_device( BME_SENSOR ) )
 		initialise_BME();
 
-	if ( !rain_event && config->get_has_mlx() )
+	if ( !rain_event && config->get_has_device( MLX_SENSOR ) )
 		initialise_MLX();
 
-	if ( !rain_event && config->get_has_tsl() ) {
+	if ( !rain_event && config->get_has_device( TSL_SENSOR ) ) {
 
 		initialise_TSL();
-		sqm.initialise( tsl, &sensor_data, config->get_msas_calibration_offset(), debug_mode );
+		sqm.initialise( tsl, &sensor_data, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
 	}
 
-	if ( !rain_event &&  config->get_has_ws() ) {
+	if ( !rain_event &&  config->get_has_device( ANEMOMETER_SENSOR ) ) {
 
-		if ( !anemometer.initialise( &rs485_bus, polling_ms_interval, config->get_anemometer_model(), debug_mode ))
+		if ( !anemometer.initialise( &rs485_bus, polling_ms_interval, config->get_parameter<int>( "anemometer_model" ), debug_mode ))
 
 			available_sensors &= ~ANEMOMETER_SENSOR;
 
@@ -182,9 +182,9 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		}
 	}
 
-	if ( !rain_event && config->get_has_wv() ) {
+	if ( !rain_event && config->get_has_device( WIND_VANE_SENSOR ) ) {
 
-		if ( !wind_vane.initialise( &rs485_bus, config->get_wind_vane_model(), debug_mode ))
+		if ( !wind_vane.initialise( &rs485_bus, config->get_parameter<int>( "wind_vane_model" ), debug_mode ))
 
 			available_sensors &= ~WIND_VANE_SENSOR;
 
@@ -195,10 +195,10 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		}
 	}
 
-	if ( config->get_has_rain_sensor() && initialise_rain_sensor())
+	if ( config->get_has_device( RAIN_SENSOR ) && initialise_rain_sensor())
 		available_sensors |= RAIN_SENSOR;
 
-	if ( !rain_event && config->get_has_gps() )
+	if ( !rain_event && config->get_has_device( GPS_SENSOR ) )
 		initialise_GPS( _sc16is750 );
 }
 
@@ -245,7 +245,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
-			if ( config->get_has_ws() )
+			if ( config->get_has_device( ANEMOMETER_SENSOR ) )
 				sensor_data.wind_gust = anemometer.get_wind_gust();
 			else
 				sensor_data.wind_gust = 0.F;
@@ -395,9 +395,10 @@ void AWSSensorManager::read_sensors( void )
 			snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
 
 			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-			if (( low_battery_event_count++ >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count++ <= LOW_BATTERY_COUNT_MAX ))
+			if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
 				station.send_alarm( "Low battery", string.data() );
 
+			low_battery_event_count++;
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] %s", string.data() );
 		}
@@ -459,17 +460,17 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		if ( station.is_ntp_synced() )
 			time( &sensor_data.timestamp );
 
-		if ( config->get_has_bme() )
+		if ( config->get_has_device( BME_SENSOR ) )
 			read_BME();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_mlx() )
+		if ( config->get_has_device( MLX_SENSOR ) )
 			read_MLX();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_tsl() ) {
+		if ( config->get_has_device( TSL_SENSOR ) ) {
 
 			// FIXME: what if mlx is down, since we get the temperature from it?
 			read_TSL();
@@ -477,22 +478,22 @@ void AWSSensorManager::retrieve_sensor_data( void )
 				sqm.read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
 		}
 
-		if ( config->get_has_ws() )
+		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
 			read_anemometer();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_wv() )
+		if ( config->get_has_device( WIND_VANE_SENSOR ) )
 			read_wind_vane();
 
 		esp_task_wdt_reset();
 
 		xSemaphoreGive( i2c_mutex );
 
-		if ( config->get_has_rain_sensor() )
+		if ( config->get_has_device( RAIN_SENSOR ) )
 			sensor_data.rain_intensity = rain_sensor.get_rain_intensity();
 
-		if ( config->get_has_gps() )
+		if ( config->get_has_device( GPS_SENSOR ) )
 			read_GPS();
 
 	}

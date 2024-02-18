@@ -44,7 +44,7 @@
 #include "alpaca_server.h"
 #include "AstroWeatherStation.h"
 
-// Keep this, as otherwise it will be the value defined in http_parser.h that will be taken ( = 4 ) and not the one expected by ESPAsyncWebSrv
+// Keep this, as otherwise it is the value defined in http_parser.h that will be taken ( = 4 ) and not the one expected by ESPAsyncWebSrv
 #define	HTTP_PUT	( 8 )		// NOSONAR
 
 extern AstroWeatherStation station;
@@ -56,11 +56,6 @@ const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
 	{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID },
 	{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
 };
-
-constexpr unsigned int str2int(const char* str, int h = 0 )
-{
-    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
-}
 
 // flawfinder: ignore
 const char *ascom_error_message[8] = {

@@ -50,311 +50,54 @@ RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 //
 // Credits to: https://stackoverflow.com/a/16388610
 //
-constexpr unsigned int str2int( const char* str, int h = 0 )
-{
-    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
-}
+
 
 bool AWSConfig::can_rollback( void )
 {
 	return _can_rollback;
 }
 
-aws_iface AWSConfig::get_alpaca_iface( void )
-{
-	return network_config.get_alpaca_iface();
-}
-
-uint8_t AWSConfig::get_anemometer_model( void )
-{
-	return anemometer_model;
-}
-
 etl::string_view AWSConfig::get_anemometer_model_str( void )
 {
-	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ anemometer_model ].c_str() );
+	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ get_parameter<int>( "anemometer_model" ) ].c_str() );	
 }
 
-bool AWSConfig::get_close_dome_on_rain( void )
-{
-	return close_dome_on_rain;
-}
-
-aws_iface AWSConfig::get_config_iface( void )
-{
-	return network_config.get_config_iface();
-}
-
-uint16_t AWSConfig::get_config_port( void )
-{
-	return config_port;
-}
-
-etl::string_view AWSConfig::get_eth_dns( void )
-{
-	return etl::string_view( network_config.get_eth_dns() );
-}
-
-etl::string_view AWSConfig::get_eth_gw( void )
-{
-	return etl::string_view( network_config.get_eth_gw() );
-}
-
-etl::string_view AWSConfig::get_eth_ip( void )
-{
-	return etl::string_view( network_config.get_eth_ip() );
-}
-
-aws_ip_mode AWSConfig::get_eth_ip_mode( void )
-{
-	return network_config.get_eth_ip_mode();
-}
-
-bool AWSConfig::get_has_bme( void )
-{
-	return ( devices & BME_SENSOR );
-}
-
-bool AWSConfig::get_has_dome( void )
-{
-	return ( devices & DOME_DEVICE );
-}
-
-bool AWSConfig::get_has_ethernet( void )
-{
-	return ( devices & ETHERNET_DEVICE );
-}
-
-bool AWSConfig::get_has_gps( void )
-{
-	return ( devices & GPS_SENSOR );
-}
-
-bool AWSConfig::get_has_mlx( void )
-{
-	return ( devices & MLX_SENSOR );
-}
-
-bool AWSConfig::get_has_rain_sensor( void )
-{
-	return ( devices & RAIN_SENSOR );
-}
-
-bool AWSConfig::get_has_sc16is750( void )
-{
-	return ( devices & SC16IS750_DEVICE );
-}
-
-bool AWSConfig::get_has_tsl( void )
-{
-	return ( devices & TSL_SENSOR );
-}
-
-bool AWSConfig::get_has_ws( void )
-{
-	return ( devices & ANEMOMETER_SENSOR );
-}
-
-bool AWSConfig::get_has_wv( void )
-{
-	return ( devices & WIND_VANE_SENSOR );
-}
-
-etl::string_view AWSConfig::get_json_string_config( void )
-{
-	DynamicJsonDocument	aws_json_config(1024);
-	static etl::string<1024>	json_string;
-	etl::string<64>		buf;
-
-	aws_json_config["tzname"] = tzname;
-	aws_json_config["pref_iface"] = static_cast<byte>( network_config.get_pref_iface() );
-    aws_json_config["eth_ip_mode"] = static_cast<byte>( network_config.get_eth_ip_mode() );
-	if ( network_config.get_eth_ip_mode() == aws_ip_mode::dhcp ) {
-
-		snprintf( buf.data(), buf.capacity(), "%s/%d", station.get_eth_ip()->toString().c_str(), station.get_eth_cidr_prefix() );
-		aws_json_config["eth_ip"] = buf.data();
-		snprintf( buf.data(), buf.capacity(), "%s",  station.get_eth_gw()->toString().c_str() );
-		aws_json_config["eth_gw"] = buf.data();
-		snprintf( buf.data(), buf.capacity(), "%s",  station.get_eth_dns()->toString().c_str() );
-		aws_json_config["eth_dns"] = buf.data();
-
-	} else {
-
-		aws_json_config["eth_ip"] = network_config.get_eth_ip();
-		aws_json_config["eth_gw"] = network_config.get_eth_gw();
-		aws_json_config["eth_dns"] = network_config.get_eth_dns();
-
-	}
-	aws_json_config["sta_ssid"] = network_config.get_wifi_sta_ssid();
-	aws_json_config["wifi_sta_password"] = network_config.get_wifi_sta_password();
-	aws_json_config["wifi_sta_ip_mode"] = static_cast<byte>( network_config.get_wifi_sta_ip_mode() );
-
-	if ( network_config.get_wifi_sta_ip_mode() == aws_ip_mode::dhcp ) {
-
-		snprintf( buf.data(), buf.capacity(), "%s/%d", station.get_wifi_sta_ip()->toString().c_str(), station.get_wifi_sta_cidr_prefix() );
-		aws_json_config["wifi_sta_ip"] = buf.data();
-		snprintf( buf.data(), buf.capacity(), "%s",  station.get_wifi_sta_gw()->toString().c_str() );
-		aws_json_config["wifi_sta_gw"] = buf.data();
-		snprintf( buf.data(), buf.capacity(), "%s",  station.get_wifi_sta_dns()->toString().c_str() );
-		aws_json_config["wifi_sta_dns"] = buf.data();
-
-	} else {
-
-		aws_json_config["wifi_sta_ip"] = network_config.get_wifi_sta_ip();
-		aws_json_config["wifi_sta_gw"] = network_config.get_eth_gw();
-		aws_json_config["wifi_sta_dns"] = network_config.get_eth_dns();
-
-	}
-
-	aws_json_config["ap_ssid"] = network_config.get_wifi_ap_ssid();
-	aws_json_config["wifi_ap_password"] = network_config.get_wifi_ap_password();
-	aws_json_config["wifi_ap_ip"] = network_config.get_wifi_ap_ip();
-	aws_json_config["wifi_ap_gw"] = network_config.get_wifi_ap_gw();
-
-	aws_json_config["remote_server"] = remote_server;
-	aws_json_config["url_path"] = url_path;
-	aws_json_config["has_bme"] = get_has_bme();
-	aws_json_config["has_tsl"] = get_has_tsl();
-	aws_json_config["has_mlx"] = get_has_mlx();
-	aws_json_config["has_ws"] = get_has_ws();
-	aws_json_config["anemometer_model"] = anemometer_model;
-	aws_json_config["has_wv"] = get_has_wv();
-	aws_json_config["windvane_model"] = wind_vane_model;
-	aws_json_config["has_rain_sensor"] = get_has_rain_sensor();
-	aws_json_config["rain_event_guard_time"] = rain_event_guard_time;
-	aws_json_config["has_gps"] = get_has_gps();
-	aws_json_config["wifi_mode"] = static_cast<byte>( network_config.get_wifi_mode() );
-	aws_json_config["alpaca_iface"] = static_cast<byte>( network_config.get_alpaca_iface() );
-	aws_json_config["config_iface"] = static_cast<byte>( network_config.get_config_iface() );
-
-	aws_json_config["has_sc16is750" ] = get_has_sc16is750();
-	
-	aws_json_config["has_dome"] = get_has_dome();
-	aws_json_config["close_dome_on_rain"] = close_dome_on_rain;
-	
-	aws_json_config["has_ethernet"] = get_has_ethernet();
-	
-	if ( serializeJson( aws_json_config, json_string.data(), json_string.capacity() ) >= json_string.capacity() ) {
-
-		Serial.printf( "[ERROR] Reached configuration string limit. Please contact support\n" );
-		return etl::string_view( "" );
-	}
-	return etl::string_view( json_string.data());
-}
-
-float AWSConfig::get_msas_calibration_offset( void )
-{
-	return msas_calibration_offset;
-}
-
-etl::string_view AWSConfig::get_pcb_version( void )
+const etl::string_view AWSConfig::get_pcb_version( void )
 {
 	return etl::string_view( pcb_version );
 }
 
-aws_iface AWSConfig::get_pref_iface( void )
-{
-	return network_config.get_pref_iface();
-}
-
-aws_pwr_src AWSConfig::get_pwr_mode( void )
+aws_pwr_src	AWSConfig::get_pwr_mode( void )
 {
 	return pwr_mode;
 }
 
-uint16_t AWSConfig::get_rain_event_guard_time( void )
-{
-	return rain_event_guard_time;
-}
-
-etl::string_view AWSConfig::get_remote_server( void )
-{
-	return etl::string_view( remote_server );
-}
-
 etl::string_view AWSConfig::get_root_ca( void )
 {
-	return network_config.get_root_ca();
+	return etl::string_view( root_ca );
 }
 
-etl::string_view AWSConfig::get_tzname( void )
+bool AWSConfig::get_has_device( unsigned long dev )
 {
-	return etl::string_view( tzname );
+	return( devices & dev );
 }
 
-etl::string_view AWSConfig::get_url_path( void )
+const etl::string_view AWSConfig::get_json_string_config( void )
 {
-	return etl::string_view( url_path );
-}
+	static etl::string<5120>	json_string;
+	int							i;
 
-etl::string_view AWSConfig::get_wifi_ap_dns( void )
-{
-	return etl::string_view( network_config.get_wifi_ap_dns() );
-}
+	if ( (i= serializeJson( json_config, json_string.data(), json_string.capacity() )) >= json_string.capacity() ) {
 
-etl::string_view AWSConfig::get_wifi_ap_gw( void )
-{
-	return etl::string_view( network_config.get_wifi_ap_gw() );
-}
-
-etl::string_view AWSConfig::get_wifi_ap_ip( void )
-{
-	return etl::string_view( network_config.get_wifi_ap_ip() );
-}
-
-etl::string_view AWSConfig::get_wifi_ap_ssid( void )
-{
-	return etl::string_view( network_config.get_wifi_ap_ssid() );
-}
-
-aws_wifi_mode AWSConfig::get_wifi_mode( void )
-{
-	return network_config.get_wifi_mode();
-}
-
-etl::string_view AWSConfig::get_wifi_ap_password( void )
-{
-	return etl::string_view( network_config.get_wifi_ap_password() );
-}
-
-etl::string_view AWSConfig::get_wifi_sta_dns( void )
-{
-	return etl::string_view( network_config.get_wifi_sta_dns() );
-}
-
-etl::string_view AWSConfig::get_wifi_sta_gw( void )
-{
-	return etl::string_view( network_config.get_wifi_sta_gw() );
-}
-
-etl::string_view AWSConfig::get_wifi_sta_ip( void ) 
-{
-	return etl::string_view( network_config.get_wifi_sta_ip() );
-}
-
-aws_ip_mode AWSConfig::get_wifi_sta_ip_mode( void )
-{
-	return network_config.get_wifi_sta_ip_mode();
-}
-
-etl::string_view AWSConfig::get_wifi_sta_password( void )
-{
-	return etl::string_view( network_config.get_wifi_sta_password() );
-}
-
-etl::string_view AWSConfig::get_wifi_sta_ssid( void )
-{
-	return etl::string_view( network_config.get_wifi_sta_ssid() );
-}
-
-uint8_t AWSConfig::get_wind_vane_model( void )
-{
-	return wind_vane_model;
+		Serial.printf( "[ERROR] Reached configuration string limit (%d > 1024). Please contact support\n", i );
+		return etl::string_view( "" );
+	}
+	return etl::string_view( json_string.data() );
 }
 
 etl::string_view AWSConfig::get_wind_vane_model_str( void )
 {
-	return etl::string_view( Wind_vane::WIND_VANE_MODEL[ wind_vane_model ].c_str() );
+	return etl::string_view( Wind_vane::WIND_VANE_MODEL[ get_parameter<int>( "wind_vane_model" ) ].c_str() );
 }
 
 bool AWSConfig::load( bool _debug_mode  )
@@ -371,13 +114,13 @@ bool AWSConfig::load( bool _debug_mode  )
 
 bool AWSConfig::read_config( void )
 {
-	DynamicJsonDocument	aws_json_config(768);
-
 	read_hw_info_from_nvs();
 
-	if ( !read_file( "/aws.conf", aws_json_config ) ) {
+	read_root_ca();
+	
+	if ( !read_file( "/aws.conf"  ) ) {
 		
-		if ( !read_file( "/aws.conf.dfl", aws_json_config )) {
+		if ( !read_file( "/aws.conf.dfl" )) {
 			
 			Serial.printf( "\n[ERROR] Could not read config file.\n" );
 			return false;
@@ -385,36 +128,70 @@ bool AWSConfig::read_config( void )
 		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
 	}
 
-	network_config.commit_config( aws_json_config );
+	devices |= DOME_DEVICE * ( json_config.containsKey( "has_dome" ) ? json_config["has_dome"].as<int>() : DEFAULT_HAS_DOME );
+	devices |= BME_SENSOR * ( json_config.containsKey( "has_bme" ) ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
+	devices |= GPS_SENSOR * ( json_config.containsKey( "has_gps" ) ? json_config["has_gps"].as<int>() : DEFAULT_HAS_GPS );
+	devices |= MLX_SENSOR * ( json_config.containsKey( "has_mlx" ) ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
+	devices |= RAIN_SENSOR * ( json_config.containsKey( "has_rain_sensor" ) ? json_config["has_rain_sensor"].as<int>() : DEFAULT_HAS_RAIN_SENSOR );
+	devices |= TSL_SENSOR * ( json_config.containsKey( "has_tsl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
+	devices |= ANEMOMETER_SENSOR * ( json_config.containsKey( "has_ws" ) ? json_config["has_ws"].as<int>() : DEFAULT_HAS_WS );
+	devices |= WIND_VANE_SENSOR * ( json_config.containsKey( "has_wv" ) ? json_config["has_wv"].as<int>() : DEFAULT_HAS_WV );
 	
-	wind_vane_model = aws_json_config.containsKey( "windvane_model" ) ? aws_json_config["windvane_model"] : 0;
-	anemometer_model = aws_json_config.containsKey( "anemometer_model" ) ? aws_json_config["anemometer_model"] : 0;
-	config_port = aws_json_config.containsKey( "config_port" ) ? aws_json_config["config_port"] : DEFAULT_CONFIG_PORT;
-
-	set_parameter( aws_json_config, "remote_server", remote_server, DEFAULT_SERVER );
-	set_parameter( aws_json_config, "url_path", url_path, DEFAULT_URL_PATH );
-	set_parameter( aws_json_config, "tzname", tzname, DEFAULT_TZNAME );
-
-	msas_calibration_offset = aws_json_config.containsKey( "msas_calibration_offset" ) ? atof( aws_json_config["msas_calibration_offset"] ) : DEFAULT_MSAS_CORRECTION;
-	close_dome_on_rain = aws_json_config.containsKey( "close_dome_on_rain" ) ? ( aws_json_config["close_dome_on_rain"] == 1 ) : DEFAULT_CLOSE_DOME_ON_RAIN;
-	devices |= DOME_DEVICE * ( aws_json_config.containsKey( "has_dome" ) ? aws_json_config["has_dome"] : DEFAULT_HAS_DOME );
-	devices |= BME_SENSOR * ( aws_json_config.containsKey( "has_bme" ) ? aws_json_config["has_bme"] : DEFAULT_HAS_BME );
-	devices |= GPS_SENSOR * ( aws_json_config.containsKey( "has_gps" ) ? aws_json_config["has_gps"] : DEFAULT_HAS_GPS );
-	devices |= MLX_SENSOR * ( aws_json_config.containsKey( "has_mlx" ) ? aws_json_config["has_mlx"] : DEFAULT_HAS_MLX );
-	devices |= RAIN_SENSOR * ( aws_json_config.containsKey( "has_rain_sensor" ) ? aws_json_config["has_rain_sensor"] : DEFAULT_HAS_RAIN_SENSOR );
-	rain_event_guard_time = aws_json_config.containsKey( "rain_event_guard_time" ) ? atof( aws_json_config["rain_event_guard_time"] ) : DEFAULT_RAIN_EVENT_GUARD_TIME;
-	devices |= TSL_SENSOR * ( aws_json_config.containsKey( "has_tsl" ) ? aws_json_config["has_tsl"] : DEFAULT_HAS_TSL );
-	devices |= ANEMOMETER_SENSOR * ( aws_json_config.containsKey( "has_ws" ) ? aws_json_config["has_ws"] : DEFAULT_HAS_WS );
-	devices |= WIND_VANE_SENSOR * ( aws_json_config.containsKey( "has_wv" ) ? aws_json_config["has_wv"] : DEFAULT_HAS_WV );
+	set_missing_parameters_to_default_values();
 
 	return true;
 }
 
-bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
+void AWSConfig::read_root_ca( void )
+{
+	File 	file = SPIFFS.open( "/root_ca.txt", FILE_READ );
+	int		s;
+
+	if ( !file ) {
+
+		Serial.printf( "[ERROR] Cannot read ROOT CA file. Using default CA.\n");
+		s = strlen( DEFAULT_ROOT_CA );
+		if ( s > root_ca.capacity() )
+			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+		else
+			root_ca.assign( DEFAULT_ROOT_CA );
+		return;
+	}
+
+	if (!( s = file.size() )) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Empty ROOT CA file. Using default CA.\n" );
+		s = strlen( DEFAULT_ROOT_CA );
+		if ( s > root_ca.capacity() )
+			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+		else
+			root_ca.assign( DEFAULT_ROOT_CA );
+		return;
+	}
+
+	if ( s > root_ca.capacity() ) {
+
+		Serial.printf( "[ERROR] ROOT CA file is too big. Using default CA.\n" );
+		s = strlen( DEFAULT_ROOT_CA );
+		if ( s > root_ca.capacity() )
+			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+		else
+			root_ca.assign( DEFAULT_ROOT_CA );
+		return;
+	}
+
+	file.readBytes( root_ca.data(), s );
+	file.close();
+	root_ca.uninitialized_resize( s );
+}
+
+bool AWSConfig::read_file( const char *filename )
 {
 	etl::string<5120>	json_string;
 	int					s;
 
+	json_string.assign( 5120, '\0' );
 	// flawfinder: ignore
 	File file = SPIFFS.open( filename, FILE_READ );
 
@@ -451,7 +228,7 @@ bool AWSConfig::read_file( const char *filename, JsonDocument &_json_config )
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] File successfuly read... ");
 
-	if ( DeserializationError::Ok == deserializeJson( _json_config, json_string.data() )) {
+	if ( DeserializationError::Ok == deserializeJson( json_config, json_string.data() )) {
 
 		if ( debug_mode )
 			Serial.printf( "and configuration format is valid... OK!\n");
@@ -528,13 +305,28 @@ bool AWSConfig::rollback()
 	return true;
 }
 
-bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
+void AWSConfig::set_root_ca( JsonVariant &_json_config )
+{
+	if ( _json_config.containsKey( "root_ca" )) {
+
+		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
+			root_ca.assign( _json_config["root_ca"].as<const char *>() );
+			_json_config.remove( "root_ca" );
+			return;
+		}
+	}
+	root_ca.empty();
+}
+
+bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 {
 	size_t	s;
 	
-	if ( !verify_entries( json_config ))
+	if ( !verify_entries( _json_config ))
 		return false;
 
+	set_root_ca( _json_config );
+	
 	Serial.printf( "[INFO] Saving submitted configuration.\n" );
 
 	if ( !SPIFFS.begin( true )) {
@@ -548,7 +340,9 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 
 	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
-	s = serializeJson( json_config, file );
+	s = serializeJson( _json_config, Serial );
+	Serial.printf("OK: %d bytes\n",s);
+	s = serializeJson( _json_config, file );
 	file.close();
 	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
@@ -562,31 +356,168 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &json_config )
 	SPIFFS.rename( "/aws.conf.try", "/aws.conf" );
 	SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
 	Serial.printf( "[INFO] Wrote %d bytes, configuration save successful.\n", s );
+
+	SPIFFS.remove( "/root_ca.txt.try" );
+	SPIFFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
+
+	file = SPIFFS.open( "/root_ca.txt.try", FILE_WRITE );
+	s = file.print( root_ca.data() );
+	file.close();
+	Serial.printf( "[INFO] Wrote %d bytes of ROOT CA.\n", s );
+	SPIFFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
+	
 	_can_rollback = 1;
 	return true;
 }
 
-template <std::size_t sz>
-void AWSConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, etl::string<sz> &config_item, const char *default_value )
+void AWSConfig::set_missing_parameters_to_default_values( void )
 {
-	size_t len;
+	if ( !json_config.containsKey( "wifi_ap_ssid" ))
+		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
 
-	
-	if ( aws_json_config.containsKey( config_key ) ) {
+	if ( !json_config.containsKey( "config_port" ))
+		json_config["config_port"] = DEFAULT_CONFIG_PORT;
 		
-		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {
+	if ( !json_config.containsKey( "eth_ip" ))
+		json_config["eth_ip"] = DEFAULT_ETH_IP;
 
-			config_item.assign( aws_json_config[config_key].as<const char *>() );
+	if ( !json_config.containsKey( "eth_dns" ))
+		json_config["eth_dns"] = DEFAULT_ETH_DNS;
 
-		}
-		
-	} else {
+	if ( !json_config.containsKey( "eth_ip_mode" ))
+		json_config["eth_ip_mode"] = static_cast<int>( DEFAULT_ETH_IP_MODE );
 
-		if ( config_item.compare( default_value )) {
+	if ( !json_config.containsKey( "lookout_enabled" ))
+		json_config["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
 
-			config_item.assign( default_value );
-		}
-	}
+	if ( !json_config.containsKey( "msas_calibration_offset" ))
+		json_config["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
+
+	if ( !json_config.containsKey( "pref_iface" ))
+		json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
+
+	if ( !json_config.containsKey( "rain_event_guard_time" ))
+		json_config["rain_event_guard_time"] = DEFAULT_RAIN_EVENT_GUARD_TIME;
+
+	if ( !json_config.containsKey( "remote_server" ))
+		json_config["remote_server"] = DEFAULT_SERVER;
+
+	if ( !json_config.containsKey( "wifi_sta_ssid" ))
+		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_active_1" ))
+		json_config["safe_cloud_coverage_active_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_1;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_active_2" ))
+		json_config["safe_cloud_coverage_active_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_2;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_delay_1" ))
+		json_config["safe_cloud_coverage_delay_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_1;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_delay_2" ))
+		json_config["safe_cloud_coverage_delay_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_2;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_max_1" ))
+		json_config["safe_cloud_coverage_max_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_MAX_1;
+
+	if ( !json_config.containsKey( "safe_cloud_coverage_max_2" ))
+		json_config["safe_cloud_coverage_max_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_MAX_2;
+
+	if ( !json_config.containsKey( "safe_rain_intensity_active" ))
+		json_config["safe_rain_intensity_active"] = DEFAULT_SAFE_RAIN_INTENSITY_ACTIVE;
+
+	if ( !json_config.containsKey( "safe_rain_intensity_delay" ))
+		json_config["safe_rain_intensity_delay"] = DEFAULT_SAFE_RAIN_INTENSITY_DELAY;
+
+	if ( !json_config.containsKey( "safe_rain_intensity_max" ))
+		json_config["safe_rain_intensity_max"] = DEFAULT_SAFE_RAIN_INTENSITY_MAX;
+
+	if ( !json_config.containsKey( "safe_wind_speed_active_1" ))
+		json_config["safe_wind_speed_active_1"] = DEFAULT_SAFE_WIND_SPEED_ACTIVE_1;
+
+	if ( !json_config.containsKey( "safe_wind_speed_max_1" ))
+		json_config["safe_wind_speed_max_1"] = DEFAULT_SAFE_WIND_SPEED_MAX_1;
+
+	if ( !json_config.containsKey( "safe_wind_speed_delay_1" ))
+		json_config["safe_wind_speed_delay_1"] = DEFAULT_SAFE_WIND_SPEED_DELAY_1;
+
+	if ( !json_config.containsKey( "tzname" ))
+		json_config["tzname"] = DEFAULT_TZNAME;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_active_1" ))
+		json_config["unsafe_cloud_coverage_active_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_1;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_active_2" ))
+		json_config["unsafe_cloud_coverage_active_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_2;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_delay_1" ))
+		json_config["unsafe_cloud_coverage_delay_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_1;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_delay_2" ))
+		json_config["unsafe_cloud_coverage_delay_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_2;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_max_1" ))
+		json_config["unsafe_cloud_coverage_max_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_1;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_max_2" ))
+		json_config["unsafe_cloud_coverage_max_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_2;
+
+	if ( !json_config.containsKey( "unsafe_rain_intensity_active" ))
+		json_config["unsafe_rain_intensity_active"] = DEFAULT_UNSAFE_RAIN_INTENSITY_ACTIVE;
+
+	if ( !json_config.containsKey( "unsafe_rain_intensity_max" ))
+		json_config["unsafe_rain_intensity_max"] = DEFAULT_UNSAFE_RAIN_INTENSITY_MAX;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_active_1" ))
+		json_config["unsafe_wind_speed_active_1"] = DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_1;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_active_2" ))
+		json_config["unsafe_wind_speed_active_2"] = DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_2;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_max_1" ))
+		json_config["unsafe_wind_speed_max_1"] = DEFAULT_UNSAFE_WIND_SPEED_MAX_1;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_max_2" ))
+		json_config["unsafe_wind_speed_max_2"] = DEFAULT_UNSAFE_WIND_SPEED_MAX_2;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_delay_1" ))
+		json_config["unsafe_wind_speed_delay_1"] = DEFAULT_UNSAFE_WIND_SPEED_DELAY_1;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_delay_2" ))
+		json_config["unsafe_wind_speed_delay_1"] = DEFAULT_UNSAFE_WIND_SPEED_DELAY_2;
+
+	if ( !json_config.containsKey( "url_path" ))
+		json_config["url_path"] = DEFAULT_URL_PATH;
+
+	if ( !json_config.containsKey( "wifi_ap_dns" ))
+		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
+
+	if ( !json_config.containsKey( "wifi_ap_gw" ))
+		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
+
+	if ( !json_config.containsKey( "wifi_ap_ip" ))
+		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
+
+	if ( !json_config.containsKey( "wifi_ap_password" ))
+		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
+
+	if ( !json_config.containsKey( "wifi_mode" ))
+		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
+
+	if ( !json_config.containsKey( "wifi_sta_dns" ))
+		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
+
+	if ( !json_config.containsKey( "wifi_sta_gw" ))
+		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
+
+	if ( !json_config.containsKey( "wifi_sta_ip" ))
+		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
+
+	if ( !json_config.containsKey( "wifi_sta_ip_mode" ))
+		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
+
+	if ( !json_config.containsKey( "wifi_sta_password" ))
+		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
 }
 
 bool AWSConfig::verify_entries( JsonVariant &proposed_config )
@@ -603,7 +534,6 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "alpaca_iface" ):
 			case str2int( "anemometer_model" ):
-			case str2int( "ap_ssid" ):
 			case str2int( "eth_dns" ):
 			case str2int( "eth_gw" ):
 			case str2int( "eth_ip" ):
@@ -611,28 +541,51 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "rain_event_guard_time" ):
 			case str2int( "remote_server" ):
 			case str2int( "root_ca" ):
-			case str2int( "safety_cloud_coverage_max" ):
-			case str2int( "safety_rain_intensity_max" ):
-			case str2int( "safety_wind_speed_max" ):
-			case str2int( "sta_ssid" ):
+			case str2int( "safe_cloud_coverage_active_1" ):
+			case str2int( "safe_cloud_coverage_active_2" ):
+			case str2int( "safe_cloud_coverage_delay_1" ):
+			case str2int( "safe_cloud_coverage_delay_2" ):
+			case str2int( "safe_cloud_coverage_max_1" ):
+			case str2int( "safe_cloud_coverage_max_2" ):
+			case str2int( "safe_rain_intensity_active" ):
+			case str2int( "safe_rain_intensity_delay" ):
+			case str2int( "safe_rain_intensity_max" ):
+			case str2int( "safe_wind_speed_active" ):
+			case str2int( "safe_wind_speed_delay" ):
+			case str2int( "safe_wind_speed_max" ):
 			case str2int( "tzname" ):
+			case str2int( "unsafe_cloud_coverage_active_1" ):
+			case str2int( "unsafe_cloud_coverage_active_2" ):
+			case str2int( "unsafe_cloud_coverage_delay_1" ):
+			case str2int( "unsafe_cloud_coverage_delay_2" ):
+			case str2int( "unsafe_cloud_coverage_max_1" ):
+			case str2int( "unsafe_cloud_coverage_max_2" ):
+			case str2int( "unsafe_rain_intensity_active" ):
+			case str2int( "unsafe_rain_intensity_max" ):
+			case str2int( "unsafe_wind_speed_delay_1" ):
+			case str2int( "unsafe_wind_speed_delay_2" ):
+			case str2int( "unsafe_wind_speed_max_1" ):
+			case str2int( "unsafe_wind_speed_max_2" ):
+			case str2int( "unsafe_wind_speed_active_1" ):
+			case str2int( "unsafe_wind_speed_active_2" ):
 			case str2int( "url_path" ):
 			case str2int( "wifi_ap_dns" ):
 			case str2int( "wifi_ap_gw" ):
 			case str2int( "wifi_ap_ip" ):
 			case str2int( "wifi_ap_password" ):
+			case str2int( "wifi_ap_ssid" ):
 			case str2int( "wifi_mode" ):
 			case str2int( "wifi_sta_dns" ):
 			case str2int( "wifi_sta_gw" ):
 			case str2int( "wifi_sta_ip" ):
 			case str2int( "wifi_sta_ip_mode" ):
 			case str2int( "wifi_sta_password" ):
-			case str2int( "windvane_model" ):
+			case str2int( "wifi_sta_ssid" ):
+			case str2int( "wind_vane_model" ):
 				break;
 			case str2int( "eth_ip_mode" ):
 				x = ( item.value() == "0" ) ? aws_ip_mode::dhcp : aws_ip_mode::fixed;
 				break;
-			case str2int( "clone_dome_on_rain" ):
 			case str2int( "has_bme" ):
 			case str2int( "has_dome" ):
 			case str2int( "has_gps" ):
@@ -641,7 +594,8 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "has_tsl" ):
 			case str2int( "has_ws" ):
 			case str2int( "has_wv" ):
-				config_items[item.key().c_str()] = ( item.value() == "on" ) ? 1 : 0;
+			case str2int( "lookout_enabled" ):
+				proposed_config[ item.key().c_str() ] = 1;
 				break;
 			default:
 				Serial.printf( "[ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
@@ -658,173 +612,95 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	return true;	
 }
-
-AWSNetworkConfig::AWSNetworkConfig( void )
+/*
+bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 {
-	wifi_mode = aws_wifi_mode::ap;
-	alpaca_iface = aws_iface::wifi_sta;
-	config_iface = aws_iface::wifi_sta;
-	pref_iface = aws_iface::wifi_sta;
-	eth_ip_mode = aws_ip_mode::dhcp;
-	wifi_sta_ip_mode = aws_ip_mode::dhcp;
-}
+	// proposed_config will de facto be modified in this function as
+	// config_items is only a way of presenting the items in proposed_config
 
-void AWSNetworkConfig::commit_config( JsonDocument &aws_json_config )
-{
-	pref_iface = aws_json_config.containsKey( "pref_iface" ) ? static_cast<aws_iface>( aws_json_config["pref_iface"].as<byte>() ) : aws_iface::wifi_ap;
-	eth_ip_mode = aws_json_config.containsKey( "eth_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["eth_ip_mode"].as<byte>() ) : DEFAULT_ETH_IP_MODE;
-
-	set_parameter( aws_json_config, "eth_ip", eth_ip, DEFAULT_ETH_IP );
-	set_parameter( aws_json_config, "eth_gw", eth_gw, DEFAULT_ETH_GW );
-	set_parameter( aws_json_config, "eth_dns", eth_dns, DEFAULT_ETH_DNS );
-
-	wifi_mode = aws_json_config.containsKey( "wifi_mode" ) ? static_cast<aws_wifi_mode>( aws_json_config["wifi_mode"].as<byte>() ) : DEFAULT_WIFI_MODE;
-		
-	set_parameter( aws_json_config, "sta_ssid", wifi_sta_ssid, DEFAULT_WIFI_STA_SSID );
-	set_parameter( aws_json_config, "wifi_sta_password", wifi_sta_password, DEFAULT_WIFI_STA_PASSWORD );
-
-	wifi_sta_ip_mode = aws_json_config.containsKey( "wifi_sta_ip_mode" ) ? static_cast<aws_ip_mode>( aws_json_config["wifi_sta_ip_mode"].as<byte>() ) : DEFAULT_WIFI_STA_IP_MODE;
-
-	set_parameter( aws_json_config, "wifi_sta_ip", wifi_sta_ip, DEFAULT_WIFI_STA_IP );
-	set_parameter( aws_json_config, "wifi_sta_gw", wifi_sta_gw, DEFAULT_WIFI_STA_GW );
-	set_parameter( aws_json_config, "wifi_sta_dns", wifi_sta_dns, DEFAULT_WIFI_STA_DNS );
-
-	set_parameter( aws_json_config, "ap_ssid", wifi_ap_ssid, DEFAULT_WIFI_AP_SSID );
-	set_parameter( aws_json_config, "wifi_ap_password", wifi_ap_password, DEFAULT_WIFI_AP_PASSWORD );
-	set_parameter( aws_json_config, "wifi_ap_ip", wifi_ap_ip, DEFAULT_WIFI_AP_IP );
-	set_parameter( aws_json_config, "wifi_ap_gw", wifi_ap_gw, DEFAULT_WIFI_AP_GW );
-	set_parameter( aws_json_config, "wifi_ap_dns", wifi_ap_dns, DEFAULT_WIFI_AP_DNS );
-
-	config_iface = static_cast<aws_iface>( static_cast<int>( aws_json_config["config_iface"].as<byte>() ));
+	JsonObject config_items = proposed_config.as<JsonObject>();
+	aws_ip_mode x = aws_ip_mode::dhcp;
 	
-	set_parameter( aws_json_config, "root_ca", root_ca, DEFAULT_ROOT_CA );
-}
+	for( JsonPair item : config_items ) {
 
-aws_iface AWSNetworkConfig::get_alpaca_iface( void )
-{
-	return alpaca_iface;
-}
+		switch( str2int( item.key().c_str() )) {
 
-aws_iface AWSNetworkConfig::get_config_iface( void )
-{
-	return config_iface;
-}
-
-etl::string_view AWSNetworkConfig::get_eth_dns( void )
-{
-	return etl::string_view( eth_dns );
-}
-
-etl::string_view AWSNetworkConfig::get_eth_gw( void )
-{
-	return etl::string_view( eth_gw );
-}
-
-etl::string_view AWSNetworkConfig::get_eth_ip( void )
-{
-	return etl::string_view( eth_ip );
-}
-
-aws_ip_mode AWSNetworkConfig::get_eth_ip_mode( void )
-{
-	return eth_ip_mode;
-}
-
-aws_iface AWSNetworkConfig::get_pref_iface( void )
-{
-	return pref_iface;
-}
-
-etl::string_view AWSNetworkConfig::get_root_ca( void )
-{
-	return etl::string_view( root_ca );
-}
-
-aws_wifi_mode AWSNetworkConfig::get_wifi_mode( void )
-{
-	return wifi_mode;
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_ap_dns( void )
-{
-	return etl::string_view( wifi_ap_dns );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_ap_gw( void )
-{
-	return etl::string_view( wifi_ap_gw );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_ap_ip( void )
-{
-	return etl::string_view( wifi_ap_ip );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_ap_password( void )
-{
-	return etl::string_view( wifi_ap_password );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_ap_ssid( void )
-{
-	return etl::string_view( wifi_ap_ssid );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_sta_dns( void )
-{
-	return etl::string_view( wifi_sta_dns );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_sta_gw( void )
-{
-	return etl::string_view( wifi_sta_gw );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_sta_ip( void )
-{
-	return etl::string_view( wifi_sta_ip );
-}
-
-aws_ip_mode AWSNetworkConfig::get_wifi_sta_ip_mode( void )
-{
-	return wifi_sta_ip_mode;
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_sta_password( void )
-{
-	return etl::string_view( wifi_sta_password );
-}
-
-etl::string_view AWSNetworkConfig::get_wifi_sta_ssid( void )
-{
-	return etl::string_view( wifi_sta_ssid );
-}
-
-template <std::size_t sz>
-void AWSNetworkConfig::set_parameter( JsonDocument &aws_json_config, const char *config_key, etl::string<sz> &config_item, const char *default_value )
-{
-	size_t len;
-
-	if ( aws_json_config.containsKey( config_key ) ) {
-		
-		if ( config_item.compare( aws_json_config[config_key].as<const char *>() )) {
-
-			len = strlen( aws_json_config[config_key] );
-			if ( len > config_item.capacity() )
-				Serial.printf( "[ERROR] Size of configuration key [%s] is too big [%d > %d]. Using default value.\n", config_key, len, config_item.capacity() );
-			else
-				config_item.assign( aws_json_config[config_key].as<const char *>() );
-
-		} else
-			return;
+	.		case str2int( "alpaca_iface" ):
+	.		case str2int( "anemometer_model" ):
+	.		case str2int( "eth_dns" ):
+	.		case str2int( "eth_gw" ):
+	.		case str2int( "eth_ip" ):
+	.		case str2int( "has_bme" ):
+	.		case str2int( "has_dome" ):
+	.		case str2int( "has_gps" ):
+	.		case str2int( "has_mlx" ):
+	.		case str2int( "has_rain_sensor" ):
+	.		case str2int( "has_tsl" ):
+	.		case str2int( "has_ws" ):
+	.		case str2int( "has_wv" ):
+	.		case str2int( "lookout_enabled" ):
+	.		case str2int( "pref_iface" ):
+			case str2int( "rain_event_guard_time" ):
+	.		case str2int( "remote_server" ):
+	.		case str2int( "root_ca" ):
+	.		case str2int( "safe_cloud_coverage_active_1" ):
+	.		case str2int( "safe_cloud_coverage_active_2" ):
+	.		case str2int( "safe_cloud_coverage_delay_1" ):
+	.		case str2int( "safe_cloud_coverage_delay_2" ):
+	.		case str2int( "safe_cloud_coverage_max_1" ):
+	.		case str2int( "safe_cloud_coverage_max_2" ):
+	.		case str2int( "safe_rain_intensity_active" ):
+	.		case str2int( "safe_rain_intensity_delay" ):
+	.		case str2int( "safe_rain_intensity_max" ):
+	.		case str2int( "safe_wind_speed_active" ):
+	.		case str2int( "safe_wind_speed_delay" ):
+	.		case str2int( "safe_wind_speed_max" ):
+	.		case str2int( "tzname" ):
+	.		case str2int( "unsafe_cloud_coverage_active_1" ):
+	.		case str2int( "unsafe_cloud_coverage_active_2" ):
+	.		case str2int( "unsafe_cloud_coverage_delay_1" ):
+	.		case str2int( "unsafe_cloud_coverage_delay_2" ):
+	.		case str2int( "unsafe_cloud_coverage_max_1" ):
+	.		case str2int( "unsafe_cloud_coverage_max_2" ):
+	.		case str2int( "unsafe_rain_intensity_active" ):
+	.		case str2int( "unsafe_rain_intensity_max" ):
+	.		case str2int( "unsafe_wind_speed_delay_1" ):
+	.		case str2int( "unsafe_wind_speed_delay_2" ):
+	.		case str2int( "unsafe_wind_speed_max_1" ):
+	.		case str2int( "unsafe_wind_speed_max_2" ):
+	.		case str2int( "unsafe_wind_speed_active_1" ):
+	.		case str2int( "unsafe_wind_speed_active_2" ):
+	.		case str2int( "url_path" ):
+	.		case str2int( "wifi_ap_dns" ):
+	.		case str2int( "wifi_ap_gw" ):
+	.		case str2int( "wifi_ap_ip" ):
+	.		case str2int( "wifi_ap_password" ):
+	.		case str2int( "wifi_ap_ssid" ):
+	.		case str2int( "wifi_mode" ):
+	.		case str2int( "wifi_sta_dns" ):
+	.		case str2int( "wifi_sta_gw" ):
+	.		case str2int( "wifi_sta_ip" ):
+	.		case str2int( "wifi_sta_ip_mode" ):
+	.		case str2int( "wifi_sta_password" ):
+	.		case str2int( "wifi_sta_ssid" ):
+	.		case str2int( "windvane_model" ):
+				break;
+	.		case str2int( "eth_ip_mode" ):
+				x = ( item.value() == "0" ) ? aws_ip_mode::dhcp : aws_ip_mode::fixed;
+				break;
+			default:
+				Serial.printf( "[ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
+				return false;
+		}
 	}
 
-	if ( config_item.compare( default_value )) {
+	if ( x == aws_ip_mode::dhcp ) {
 
-		len = strlen( default_value );
-		if ( len > config_item.capacity() )
-			Serial.printf( "[BUG] Size of [%s] is too big [%d > %d].\n", config_key, len, config_item.capacity() );
-		else
-			config_item.assign( default_value );
+		config_items.remove( "eth_ip" );
+		config_items.remove( "eth_gw" );
+		config_items.remove( "eth_dns" );
 	}
+
+	return true;	
 }
+*/

@@ -39,28 +39,32 @@ class Dome : public Device {
 
 	private:
 
-		bool					close_dome					= false;
-		bool					is_connected				= false;
-		bool					debug_mode					= false;
-		I2C_SC16IS750			*sc16is750					= nullptr;
+		bool					catch_shutter_moving			= false;
+		bool					do_close_shutter				= false;
+		bool					is_connected					= false;
+		bool					debug_mode						= false;
+		I2C_SC16IS750			*sc16is750						= nullptr;
 		SemaphoreHandle_t		i2c_mutex;
+		bool					do_open_shutter					= false;
 		TaskHandle_t			dome_task_handle;
-		bool					open_dome					= false;
-		dome_shutter_status_t	shutter_status				= dome_shutter_status_t::Error;
-		time_t					shutter_status_change_ts	= 0;
+		bool					_shutter_is_moving				= false;
+		dome_shutter_status_t	shutter_status					= dome_shutter_status_t::Error;
+		time_t					shutter_moving_ts				= 0;
+		uint16_t				dome_shutter_moving_guard_time	= 0;
+
 	public:
 
 		explicit Dome( void );
-		void					close( void );
-		bool					closed( void );
+		void					check_guard_times( void );
+		void					close_shutter( void );
 		void					control_task( void * );
 		bool					get_connected( void );
-		dome_shutter_status_t	get_status( void );
-		void					initialise( bool );
-		void					initialise( I2C_SC16IS750 *, SemaphoreHandle_t, bool );
-		void					open( void );
+		bool					get_shutter_closed_status( void );
+		void					initialise( uint16_t, bool );
+		void					initialise( I2C_SC16IS750 *, SemaphoreHandle_t, uint16_t, bool );
+		void					open_shutter( void );
 		void 					shutter_is_moving( void );
-		void					trigger_close( void );
+		void					trigger_close_shutter( void );
 };
 
 #endif

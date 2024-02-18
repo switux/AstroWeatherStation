@@ -65,7 +65,7 @@
 // Dome control
 const	uint8_t	GPIO_DOME_1			= 0;
 const	uint8_t	GPIO_DOME_2			= 1;
-const	uint8_t	GPIO_DOME_1_DIRECT	= 12;
+const	uint8_t	GPIO_DOME_1_DIRECT	= 13;
 const	uint8_t	GPIO_DOME_2_DIRECT	= 14;
 
 #define	GPIO_DOME_STATUS		GPIO_NUM_39
