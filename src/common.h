@@ -66,6 +66,7 @@ struct sensor_data_t {
 	float			ambient_temperature;
 	float			sky_temperature;
 	float			cloud_cover;
+	byte			cloud_coverage;
 	
 	float			msas;
 	float			nelm;

@@ -55,8 +55,8 @@ alpaca_telescope::alpaca_telescope( void ) : alpaca_device( TELESCOPE_INTERFACE_
 
 void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char *transaction_details )
 {
-	double		longitude;
-	double		latitude;
+	float		longitude;
+	float		latitude;
 
 	if ( get_is_connected() ) {
 
@@ -249,7 +249,7 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, const 
 	if ( request->hasParam( "SiteElevation", true ) ) {
 
 		char	*e;
-		double	x = strtof( request->getParam( "SiteElevation", true )->value().c_str(), &e );
+		float	x = strtof( request->getParam( "SiteElevation", true )->value().c_str(), &e );
 
 		if (( *e != '\0' ) || ( x >10000 ) || ( x < -300 ))
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteElevation", true )->value().c_str() );
@@ -272,7 +272,7 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, const c
 	if ( request->hasParam( "SiteLatitude", true ) ) {
 
 		char	*e;
-		double	x = strtof( request->getParam( "SiteLatitude", true )->value().c_str(), &e );
+		float	x = strtof( request->getParam( "SiteLatitude", true )->value().c_str(), &e );
 		if (( *e != '\0' ) || ( x > 90 ) || ( x < -90 ))
 			
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLatitude", true )->value().c_str() );
@@ -294,7 +294,7 @@ void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, const 
 	if ( request->hasParam( "SiteLongitude", true ) ) {
 
 		char *e;
-		double	x = strtof( request->getParam( "SiteLongitude", true )->value().c_str(), &e );
+		float	x = strtof( request->getParam( "SiteLongitude", true )->value().c_str(), &e );
 		if (( *e != '\0' ) || ( x > 180 ) || ( x < -180 ))
 			
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "SiteLongitude", true )->value().c_str() );

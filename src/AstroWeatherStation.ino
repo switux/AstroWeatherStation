@@ -23,7 +23,6 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
@@ -105,14 +104,26 @@ void loop()
 
 void IRAM_ATTR _handle_dome_shutter_is_moving( void )
 {
-	Serial.printf( "[INFO] EVENT: Dome shutter is moving.\n" );
-	esp_task_wdt_reset();	// Serial.printf() may starve wdt
+Serial.printf("EVENT DOME MOVING\n");
+	esp_task_wdt_reset();
 	station.handle_dome_shutter_is_moving();
+}
+
+void IRAM_ATTR _handle_dome_shutter_is_closed( void )
+{
+Serial.printf("EVENT DOME CLOSED\n");
+	esp_task_wdt_reset();
+	station.handle_dome_shutter_is_closed();
+}
+
+void IRAM_ATTR _handle_dome_shutter_is_opening( void )
+{
+Serial.printf("EVENT DOME OPENING\n");
+	esp_task_wdt_reset();
+	station.handle_dome_shutter_is_opening();
 }
 
 void IRAM_ATTR _handle_rain_event( void )
 {
-	Serial.printf( "[INFO] EVENT: Rain detected.\n" );
-	esp_task_wdt_reset();	// Serial.printf() may starve wdt
 	station.handle_rain_event();
 }

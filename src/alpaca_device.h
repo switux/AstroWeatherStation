@@ -71,7 +71,7 @@ class alpaca_device {
 		void		send_supportedactions( AsyncWebServerRequest *, const char * );
 		void		send_value( AsyncWebServerRequest *, const char *, bool );
 		void		send_value( AsyncWebServerRequest *, const char *, byte );
-		void		send_value( AsyncWebServerRequest *, const char *, double );
+		void		send_value( AsyncWebServerRequest *, const char *, float );
 		void		set_debug_mode( bool );
 		void		set_description( char * );
 		void		set_device_name( char * );

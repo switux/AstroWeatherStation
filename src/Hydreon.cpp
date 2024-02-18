@@ -17,9 +17,9 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <esp_task_wdt.h>
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#include <esp_task_wdt.h>
 
 #include "device.h"
 #include "Hydreon.h"
@@ -151,6 +151,9 @@ byte Hydreon::get_rain_intensity( void )
 	sensor.println( "R" );
 	read_string();
 	intensity = static_cast<byte>( str[2] - '0' );
+
+	if ( intensity > 7 )	// Most probably during initialisation phase
+		intensity = 0;
 
 	if ( get_debug_mode() )
 		Serial.printf( "[DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str.data(), intensity );

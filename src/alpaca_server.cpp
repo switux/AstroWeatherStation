@@ -662,7 +662,7 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 
 		case str2int( "declination" ):
 			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, 0.0 );
+				telescope.send_value( request, transaction_details, (float)0.0 );
 			else
 				does_not_exist( request );
 			break;
@@ -676,21 +676,21 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 
 		case str2int( "declinationrate" ):
 			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, 0.0 );
+				telescope.send_value( request, transaction_details, (float)0.0 );
 			else
 				not_implemented( request, "This is a fake telescope" );
 			break;
 
 		case str2int( "rightascension" ):
 			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, 0.0 );
+				telescope.send_value( request, transaction_details, (float)0.0 );
 			else
 				does_not_exist( request );
 			break;
 
 		case str2int( "rightascensionrate" ):
 			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, 0.0 );
+				telescope.send_value( request, transaction_details, (float)0.0 );
 			else
 				not_implemented( request, "This is a fake telescope" );
 			break;

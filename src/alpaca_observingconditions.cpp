@@ -57,40 +57,40 @@ void alpaca_observingconditions::build_timesincelastupdate_answer( char *sensor_
 			if ( !station.is_sensor_initialised( BME_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 		case str2int("skybrightness"):
 		case str2int("skyquality"):
 			if ( !station.is_sensor_initialised( TSL_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 		case str2int("cloudcover"):
 		case str2int("skytemperature"):
 			if ( !station.is_sensor_initialised( MLX_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 		case str2int("rainrate"):
 			if ( !station.is_sensor_initialised( RAIN_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 		case str2int("windspeed"):
 		case str2int("windgust"):
 			if ( !station.is_sensor_initialised( ANEMOMETER_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 		case str2int("winddirection"):
 			if ( !station.is_sensor_initialised( WIND_VANE_SENSOR ))
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"%s is not available",%s})json", orig_sensor_name, transaction_details );
 			else
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			break;
 
 		case str2int(""):
@@ -100,7 +100,7 @@ void alpaca_observingconditions::build_timesincelastupdate_answer( char *sensor_
 					station.is_sensor_initialised( MLX_SENSOR ) ||
 					station.is_sensor_initialised( TSL_SENSOR ) ||
 					station.is_sensor_initialised( BME_SENSOR ))
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)( now - station.get_sensor_data()->timestamp ), transaction_details );
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)( now - station.get_sensor_data()->timestamp ), transaction_details );
 			else
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"No sensor is available",%s})json", transaction_details );
 			break;
@@ -350,7 +350,7 @@ void alpaca_observingconditions::set_connected( AsyncWebServerRequest *request, 
 void alpaca_observingconditions::skybrightness( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( get_is_connected() && station.is_sensor_initialised( TSL_SENSOR ))
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%6.4f,%s})json", (double)station.get_sensor_data()->lux, transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%6.4f,%s})json", (float)station.get_sensor_data()->lux, transaction_details );
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"Sensor is not available",%s})json", transaction_details );
 
@@ -424,7 +424,7 @@ void alpaca_observingconditions::winddirection( AsyncWebServerRequest *request, 
 		x = 0;
 
 	if ( get_is_connected() && station.is_sensor_initialised( WIND_VANE_SENSOR ))
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (double)x, transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%3.1f,%s})json", (float)x, transaction_details );
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"No sensor is available",%s})json", transaction_details );
 

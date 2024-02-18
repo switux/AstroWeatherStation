@@ -360,6 +360,9 @@ void AWSSensorManager::read_MLX( void )
 		sensor_data.ambient_temperature = mlx->readAmbientTempC();
 		sensor_data.sky_temperature = mlx->readObjectTempC();
 
+		// Basic formula, clear / overcast
+		sensor_data.cloud_coverage = (( sensor_data.sky_temperature - sensor_data.ambient_temperature ) <= -15 ) ? 0 : 2;
+		
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );

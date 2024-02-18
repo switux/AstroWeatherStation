@@ -21,21 +21,44 @@
 #ifndef _AWSLookout_H
 #define _AWSLookout_H
 
+template <typename T>
+struct lookout_rule_t {
+	bool active;
+	T max;
+	int delay;
+	int	ts;
+};
+
 class AWSLookout
 {
 	private:
 
-		TaskHandle_t		watcher_task_handle;
-		bool 				debug_mode;
-		Dome				*dome;
-		AWSSensorManager	*sensor_manager;
-		AWSConfig			*config;
+		TaskHandle_t			watcher_task_handle;
+		bool 					debug_mode				= false;
+		Dome					*dome					= nullptr;
+		bool					enabled 				= false;
+		bool					rain_event				= false;
+		AWSSensorManager		*sensor_manager			= nullptr;
+		AWSConfig				*config					= nullptr;
+		lookout_rule_t<float>	unsafe_wind_speed_1;
+		lookout_rule_t<float>	unsafe_wind_speed_2;
+		lookout_rule_t<uint8_t>	unsafe_cloud_coverage_1;
+		lookout_rule_t<uint8_t>	unsafe_cloud_coverage_2;
+		lookout_rule_t<uint8_t>	unsafe_rain_intensity;
+		lookout_rule_t<float>	safe_wind_speed;
+		lookout_rule_t<float>	safe_cloud_coverage_1;
+		lookout_rule_t<float>	safe_cloud_coverage_2;
+		lookout_rule_t<uint8_t>	safe_rain_intensity;
+
+		void check_rules( void );
+		void initialise_rules( AWSConfig * );
 
 	public:
 
 		AWSLookout( void ) = default;
 		void initialise( AWSConfig *, AWSSensorManager *, Dome *, bool _debug_mode );
 		void loop( void * );
+		void set_rain_event( void );
 };
 
 #endif

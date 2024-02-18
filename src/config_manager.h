@@ -152,6 +152,7 @@ class AWSConfig {
 		void read_root_ca( void );
 		void set_missing_parameters_to_default_values( void );
 		void set_root_ca( JsonVariant & );
+		void list_files( void );
 		bool verify_entries( JsonVariant & );
 };
 
@@ -171,29 +172,56 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "wind_vane_model" ):
 			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
 
-		case str2int( "eth_ip_mode" ):
-		case str2int( "msas_calibration_offset" ):
-		case str2int( "rain_event_guard_time" ):
-		case str2int( "pref_iface" ):
-		case str2int( "wifi_mode" ):
-		case str2int( "wifi_sta_ip_mode" ):
-
-		case str2int( "wifi_ap_ssid" ):
-		case str2int( "eth_ip" ):
 		case str2int( "eth_dns" ):
 		case str2int( "eth_gw" ):
+		case str2int( "eth_ip" ):
+		case str2int( "eth_ip_mode" ):
+		case str2int( "lookout_enabled" ):
+		case str2int( "msas_calibration_offset" ):
+		case str2int( "pref_iface" ):
+		case str2int( "rain_event_guard_time" ):
 		case str2int( "remote_server" ):
-		case str2int( "wifi_sta_ssid" ):
+		case str2int( "safe_cloud_coverage_active_1" ):
+		case str2int( "safe_cloud_coverage_active_2" ):
+		case str2int( "safe_cloud_coverage_delay_1" ):
+		case str2int( "safe_cloud_coverage_delay_2" ):
+		case str2int( "safe_cloud_coverage_max_1" ):
+		case str2int( "safe_cloud_coverage_max_2" ):
+		case str2int( "safe_rain_intensity_active" ):
+		case str2int( "safe_rain_intensity_delay" ):
+		case str2int( "safe_rain_intensity_max" ):
+		case str2int( "safe_wind_speed_active" ):
+		case str2int( "safe_wind_speed_delay" ):
+		case str2int( "safe_wind_speed_max" ):
 		case str2int( "tzname" ):
+		case str2int( "unsafe_cloud_coverage_active_1" ):
+		case str2int( "unsafe_cloud_coverage_active_2" ):
+		case str2int( "unsafe_cloud_coverage_delay_1" ):
+		case str2int( "unsafe_cloud_coverage_delay_2" ):
+		case str2int( "unsafe_cloud_coverage_max_1" ):
+		case str2int( "unsafe_cloud_coverage_max_2" ):
+		case str2int( "unsafe_rain_intensity_active" ):
+		case str2int( "unsafe_rain_intensity_max" ):
+		case str2int( "unsafe_wind_speed_active_1" ):
+		case str2int( "unsafe_wind_speed_active_2" ):
+		case str2int( "unsafe_wind_speed_delay_1" ):
+		case str2int( "unsafe_wind_speed_delay_2" ):
+		case str2int( "unsafe_wind_speed_max_1" ):
+		case str2int( "unsafe_wind_speed_max_2" ):
+		
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
 		case str2int( "wifi_ap_gw" ):
 		case str2int( "wifi_ap_ip" ):
 		case str2int( "wifi_ap_password" ):
+		case str2int( "wifi_ap_ssid" ):
+		case str2int( "wifi_mode" ):
 		case str2int( "wifi_sta_dns" ):
 		case str2int( "wifi_sta_gw" ):
 		case str2int( "wifi_sta_ip" ):
+		case str2int( "wifi_sta_ip_mode" ):
 		case str2int( "wifi_sta_password" ):
+		case str2int( "wifi_sta_ssid" ):
 			return json_config[key].as<T>();
 			
 	}

@@ -162,7 +162,7 @@ class AstroWeatherStation {
 		char				*get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
-		bool				get_location_coordinates( double *, double * );
+		bool				get_location_coordinates( float *, float * );
         etl::string_view	get_root_ca( void );
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
@@ -173,7 +173,9 @@ class AstroWeatherStation {
 		IPAddress			*get_wifi_sta_gw( void );
 		IPAddress			*get_wifi_sta_ip( void );
 		etl::string_view	get_wind_vane_sensorname( void );
+		void				handle_dome_shutter_is_closed( void );
 		void				handle_dome_shutter_is_moving( void );
+		void				handle_dome_shutter_is_opening( void );
 		void				handle_rain_event( void );
 		bool				has_gps( void );
 		bool				has_rain_sensor( void );
@@ -191,7 +193,7 @@ class AstroWeatherStation {
 		void				report_unavailable_sensors( void );
 		void				send_alarm( const char *, const char * );
 		void				send_data( void );
-		bool				sync_time( void );
+		bool				sync_time( bool );
 		bool				update_config( JsonVariant & );
 };
 

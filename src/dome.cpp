@@ -30,6 +30,8 @@
 #include "AstroWeatherStation.h"
 
 extern void IRAM_ATTR		_handle_dome_shutter_is_moving( void );
+extern void IRAM_ATTR		_handle_dome_shutter_is_closed( void );
+extern void IRAM_ATTR		_handle_dome_shutter_is_opening( void );
 
 extern AstroWeatherStation	station;
 extern time_t 				last_ntp_time;
@@ -70,7 +72,9 @@ void Dome::check_guard_times( void )
 
 	if ( !catch_shutter_moving && (( now - shutter_moving_ts ) > dome_shutter_moving_guard_time )) {
 		
-		attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
+	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_closed, RISING );
+	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_opening, FALLING );
+	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
 		catch_shutter_moving = true;
 
 	}
@@ -148,18 +152,20 @@ void Dome::initialise( uint16_t _dome_shutter_moving_guard_time, bool _debug_mod
 {
 	set_debug_mode( _debug_mode );
 	dome_shutter_moving_guard_time = _dome_shutter_moving_guard_time;
-Serial.printf("INIT DOME\n");
+
 	if ( sc16is750 ) {
 		
 		pinMode( GPIO_DOME_1, OUTPUT );
+		digitalWrite( GPIO_DOME_1, HIGH );
 		pinMode( GPIO_DOME_2, OUTPUT );
+		digitalWrite( GPIO_DOME_2, HIGH );
 
 	} else {
 
-Serial.printf("PIN MODE\n");
 		pinMode( GPIO_DOME_1_DIRECT, OUTPUT );
+		digitalWrite( GPIO_DOME_1_DIRECT, HIGH );
 		pinMode( GPIO_DOME_2_DIRECT, OUTPUT );
-		delay(5000);
+		digitalWrite( GPIO_DOME_2_DIRECT, HIGH );
 	}
 
 	pinMode( GPIO_DOME_MOVING, INPUT );
@@ -167,7 +173,10 @@ Serial.printf("PIN MODE\n");
 	
 	get_shutter_closed_status();
 	
+	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_closed, RISING );
+	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_is_opening, FALLING );
 	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
+	
 	catch_shutter_moving = true;
 
 	std::function<void(void *)> _control = std::bind( &Dome::control_task, this, std::placeholders::_1 );
@@ -208,11 +217,25 @@ void Dome::open_shutter( void )
 	}
 }
 
+void Dome::shutter_is_closed( void )
+{
+	shutter_status = dome_shutter_status_t::Closed;
+	time( &shutter_moving_ts );
+	detachInterrupt( GPIO_DOME_STATUS );
+}
+
 void Dome::shutter_is_moving( void )
 {
 	_shutter_is_moving = true;
 	time( &shutter_moving_ts );
 	detachInterrupt( GPIO_DOME_MOVING );
+}
+
+void Dome::shutter_is_opening( void )
+{
+	shutter_status = dome_shutter_status_t::Opening;
+	time( &shutter_moving_ts );
+	detachInterrupt( GPIO_DOME_STATUS );
 }
 
 void Dome::trigger_close_shutter( void )
