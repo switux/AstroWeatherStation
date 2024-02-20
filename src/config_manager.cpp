@@ -428,23 +428,23 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "wifi_sta_ssid" ))
 		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_active_1" ))
-		json_config["safe_cloud_coverage_active_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_1;
+	if ( !json_config.containsKey( "safe_cloud_coverage_1_active" ))
+		json_config["safe_cloud_coverage_1_active"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_active_2" ))
-		json_config["safe_cloud_coverage_active_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_2;
+	if ( !json_config.containsKey( "safe_cloud_coverage_2_active" ))
+		json_config["safe_cloud_coverage_2_active"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_delay_1" ))
-		json_config["safe_cloud_coverage_delay_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_1;
+	if ( !json_config.containsKey( "safe_cloud_coverage_1_delay" ))
+		json_config["safe_cloud_coverage_1_delay"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_DELAY;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_delay_2" ))
-		json_config["safe_cloud_coverage_delay_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_2;
+	if ( !json_config.containsKey( "safe_cloud_coverage_2_delay" ))
+		json_config["safe_cloud_coverage_2_delay"] = DEFAULT_SAFE_CLOUD_COVERAGE_2_DELAY;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_max_1" ))
-		json_config["safe_cloud_coverage_max_1"] = DEFAULT_SAFE_CLOUD_COVERAGE_MAX_1;
+	if ( !json_config.containsKey( "safe_cloud_coverage_1_max" ))
+		json_config["safe_cloud_coverage_1_max"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_MAX;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_max_2" ))
-		json_config["safe_cloud_coverage_max_2"] = DEFAULT_SAFE_CLOUD_COVERAGE_MAX_2;
+	if ( !json_config.containsKey( "safe_cloud_coverage_2_max" ))
+		json_config["safe_cloud_coverage_2_max"] = DEFAULT_SAFE_CLOUD_COVERAGE_2_MAX;
 
 	if ( !json_config.containsKey( "safe_rain_intensity_active" ))
 		json_config["safe_rain_intensity_active"] = DEFAULT_SAFE_RAIN_INTENSITY_ACTIVE;
@@ -455,35 +455,47 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "safe_rain_intensity_max" ))
 		json_config["safe_rain_intensity_max"] = DEFAULT_SAFE_RAIN_INTENSITY_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_active_1" ))
-		json_config["safe_wind_speed_active_1"] = DEFAULT_SAFE_WIND_SPEED_ACTIVE_1;
+	if ( !json_config.containsKey( "safe_wind_speed_1_active" ))
+		json_config["safe_wind_speed_1_active"] = DEFAULT_SAFE_WIND_SPEED_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_wind_speed_max_1" ))
-		json_config["safe_wind_speed_max_1"] = DEFAULT_SAFE_WIND_SPEED_MAX_1;
+	if ( !json_config.containsKey( "safe_wind_speed_1_max" ))
+		json_config["safe_wind_speed_1_max"] = DEFAULT_SAFE_WIND_SPEED_1_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_delay_1" ))
-		json_config["safe_wind_speed_delay_1"] = DEFAULT_SAFE_WIND_SPEED_DELAY_1;
+	if ( !json_config.containsKey( "safe_wind_speed_1_delay" ))
+		json_config["safe_wind_speed_1_delay"] = DEFAULT_SAFE_WIND_SPEED_1_DELAY;
 
 	if ( !json_config.containsKey( "tzname" ))
 		json_config["tzname"] = DEFAULT_TZNAME;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_active_1" ))
-		json_config["unsafe_cloud_coverage_active_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_1;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_active" ))
+		json_config["unsafe_cloud_coverage_1_active"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_active_2" ))
-		json_config["unsafe_cloud_coverage_active_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_2;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_active" ))
+		json_config["unsafe_cloud_coverage_2_active"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_delay_1" ))
-		json_config["unsafe_cloud_coverage_delay_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_1;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_delay" ))
+		json_config["unsafe_cloud_coverage_1_delay"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_DELAY;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_delay_2" ))
-		json_config["unsafe_cloud_coverage_delay_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_2;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_delay" ))
+		json_config["unsafe_cloud_coverage_2_delay"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_DELAY;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_max_1" ))
-		json_config["unsafe_cloud_coverage_max_1"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_1;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_max" ))
+		json_config["unsafe_cloud_coverage_1_max"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MAX;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_max_2" ))
-		json_config["unsafe_cloud_coverage_max_2"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_2;
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_max" ))
+		json_config["unsafe_cloud_coverage_2_max"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MAX;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_missing" ))
+		json_config["unsafe_cloud_coverage_1_missing"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MISSING;
+
+	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_missing" ))
+		json_config["unsafe_cloud_coverage_2_missing"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MISSING;
+
+	if ( !json_config.containsKey( "unsafe_rain_event_active" ))
+		json_config["unsafe_rain_event_active"] = DEFAULT_UNSAFE_RAIN_EVENT_ACTIVE;
+
+	if ( !json_config.containsKey( "unsafe_rain_event_missing" ))
+		json_config["unsafe_rain_event_missing"] = DEFAULT_UNSAFE_RAIN_EVENT_MISSING;
 
 	if ( !json_config.containsKey( "unsafe_rain_intensity_active" ))
 		json_config["unsafe_rain_intensity_active"] = DEFAULT_UNSAFE_RAIN_INTENSITY_ACTIVE;
@@ -491,23 +503,32 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "unsafe_rain_intensity_max" ))
 		json_config["unsafe_rain_intensity_max"] = DEFAULT_UNSAFE_RAIN_INTENSITY_MAX;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_active_1" ))
-		json_config["unsafe_wind_speed_active_1"] = DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_1;
+	if ( !json_config.containsKey( "unsafe_rain_intensity_missing" ))
+		json_config["unsafe_rain_intensity_missing"] = DEFAULT_UNSAFE_RAIN_INTENSITY_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_active_2" ))
-		json_config["unsafe_wind_speed_active_2"] = DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_2;
+	if ( !json_config.containsKey( "unsafe_wind_speed_1_active" ))
+		json_config["unsafe_wind_speed_1_active"] = DEFAULT_UNSAFE_WIND_SPEED_1_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_max_1" ))
-		json_config["unsafe_wind_speed_max_1"] = DEFAULT_UNSAFE_WIND_SPEED_MAX_1;
+	if ( !json_config.containsKey( "unsafe_wind_speed_2_active" ))
+		json_config["unsafe_wind_speed_2_active"] = DEFAULT_UNSAFE_WIND_SPEED_2_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_max_2" ))
-		json_config["unsafe_wind_speed_max_2"] = DEFAULT_UNSAFE_WIND_SPEED_MAX_2;
+	if ( !json_config.containsKey( "unsafe_wind_speed_1_max" ))
+		json_config["unsafe_wind_speed_1_max"] = DEFAULT_UNSAFE_WIND_SPEED_1_MAX;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_delay_1" ))
-		json_config["unsafe_wind_speed_delay_1"] = DEFAULT_UNSAFE_WIND_SPEED_DELAY_1;
+	if ( !json_config.containsKey( "unsafe_wind_speed_2_max" ))
+		json_config["unsafe_wind_speed_2_max"] = DEFAULT_UNSAFE_WIND_SPEED_2_MAX;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_delay_2" ))
-		json_config["unsafe_wind_speed_delay_1"] = DEFAULT_UNSAFE_WIND_SPEED_DELAY_2;
+	if ( !json_config.containsKey( "unsafe_wind_speed_1_missing" ))
+		json_config["unsafe_wind_speed_1_missing"] = DEFAULT_UNSAFE_WIND_SPEED_1_MISSING;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_2_missing" ))
+		json_config["unsafe_wind_speed_2_missing"] = DEFAULT_UNSAFE_WIND_SPEED_2_MISSING;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_1_delay" ))
+		json_config["unsafe_wind_speed_1_delay"] = DEFAULT_UNSAFE_WIND_SPEED_1_DELAY;
+
+	if ( !json_config.containsKey( "unsafe_wind_speed_2_delay" ))
+		json_config["unsafe_wind_speed_2_delay"] = DEFAULT_UNSAFE_WIND_SPEED_2_DELAY;
 
 	if ( !json_config.containsKey( "url_path" ))
 		json_config["url_path"] = DEFAULT_URL_PATH;
@@ -577,12 +598,12 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "rain_event_guard_time" ):
 			case str2int( "remote_server" ):
 			case str2int( "root_ca" ):
-			case str2int( "safe_cloud_coverage_active_1" ):
-			case str2int( "safe_cloud_coverage_active_2" ):
-			case str2int( "safe_cloud_coverage_delay_1" ):
-			case str2int( "safe_cloud_coverage_delay_2" ):
-			case str2int( "safe_cloud_coverage_max_1" ):
-			case str2int( "safe_cloud_coverage_max_2" ):
+			case str2int( "safe_cloud_coverage_1_active" ):
+			case str2int( "safe_cloud_coverage_2_active" ):
+			case str2int( "safe_cloud_coverage_1_delay" ):
+			case str2int( "safe_cloud_coverage_2_delay" ):
+			case str2int( "safe_cloud_coverage_1_max" ):
+			case str2int( "safe_cloud_coverage_2_max" ):
 			case str2int( "safe_rain_intensity_active" ):
 			case str2int( "safe_rain_intensity_delay" ):
 			case str2int( "safe_rain_intensity_max" ):
@@ -590,20 +611,27 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "safe_wind_speed_delay" ):
 			case str2int( "safe_wind_speed_max" ):
 			case str2int( "tzname" ):
-			case str2int( "unsafe_cloud_coverage_active_1" ):
-			case str2int( "unsafe_cloud_coverage_active_2" ):
-			case str2int( "unsafe_cloud_coverage_delay_1" ):
-			case str2int( "unsafe_cloud_coverage_delay_2" ):
-			case str2int( "unsafe_cloud_coverage_max_1" ):
-			case str2int( "unsafe_cloud_coverage_max_2" ):
+			case str2int( "unsafe_cloud_coverage_1_active" ):
+			case str2int( "unsafe_cloud_coverage_2_active" ):
+			case str2int( "unsafe_cloud_coverage_1_delay" ):
+			case str2int( "unsafe_cloud_coverage_2_delay" ):
+			case str2int( "unsafe_cloud_coverage_1_max" ):
+			case str2int( "unsafe_cloud_coverage_2_max" ):
+			case str2int( "unsafe_cloud_coverage_1_missing" ):
+			case str2int( "unsafe_cloud_coverage_2_missing" ):
+			case str2int( "unsafe_rain_event_active" ):
+			case str2int( "unsafe_rain_event_missing" ):
 			case str2int( "unsafe_rain_intensity_active" ):
 			case str2int( "unsafe_rain_intensity_max" ):
-			case str2int( "unsafe_wind_speed_delay_1" ):
-			case str2int( "unsafe_wind_speed_delay_2" ):
-			case str2int( "unsafe_wind_speed_max_1" ):
-			case str2int( "unsafe_wind_speed_max_2" ):
-			case str2int( "unsafe_wind_speed_active_1" ):
-			case str2int( "unsafe_wind_speed_active_2" ):
+			case str2int( "unsafe_rain_intensity_missing" ):
+			case str2int( "unsafe_wind_speed_1_active" ):
+			case str2int( "unsafe_wind_speed_2_active" ):
+			case str2int( "unsafe_wind_speed_1_delay" ):
+			case str2int( "unsafe_wind_speed_2_delay" ):
+			case str2int( "unsafe_wind_speed_1_max" ):
+			case str2int( "unsafe_wind_speed_2_max" ):
+			case str2int( "unsafe_wind_speed_1_missing" ):
+			case str2int( "unsafe_wind_speed_2_missing" ):
 			case str2int( "url_path" ):
 			case str2int( "wifi_ap_dns" ):
 			case str2int( "wifi_ap_gw" ):

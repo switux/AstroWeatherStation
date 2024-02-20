@@ -533,7 +533,9 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( config.get_parameter<bool>( "lookout_enabled" ))
 		lookout.initialise( &config, &sensor_manager, &dome, debug_mode );
-	
+	else
+		dome.close_shutter();	// FIXME: add parameter to set default behaviour
+
 	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
@@ -885,8 +887,7 @@ void AstroWeatherStation::send_data( void )
 			if ( debug_mode )
 				Serial.printf( "[DEBUG] Waiting for sensor data update to complete.\n" );
 
-	} else
-		compute_uptime();
+	}
 
 	get_json_sensor_data();
 

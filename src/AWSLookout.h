@@ -23,10 +23,12 @@
 
 template <typename T>
 struct lookout_rule_t {
-	bool active;
-	T max;
-	int delay;
-	int	ts;
+	bool	active;
+	bool	check_available;
+	T 		max;
+	int 	delay;
+	int		ts;
+	bool	satisfied;
 };
 
 class AWSLookout
@@ -37,6 +39,7 @@ class AWSLookout
 		bool 					debug_mode				= false;
 		Dome					*dome					= nullptr;
 		bool					enabled 				= false;
+		bool					is_safe					= false;
 		bool					rain_event				= false;
 		AWSSensorManager		*sensor_manager			= nullptr;
 		AWSConfig				*config					= nullptr;
@@ -46,11 +49,15 @@ class AWSLookout
 		lookout_rule_t<uint8_t>	unsafe_cloud_coverage_2;
 		lookout_rule_t<uint8_t>	unsafe_rain_intensity;
 		lookout_rule_t<float>	safe_wind_speed;
-		lookout_rule_t<float>	safe_cloud_coverage_1;
-		lookout_rule_t<float>	safe_cloud_coverage_2;
+		lookout_rule_t<uint8_t>	safe_cloud_coverage_1;
+		lookout_rule_t<uint8_t>	safe_cloud_coverage_2;
 		lookout_rule_t<uint8_t>	safe_rain_intensity;
 
 		void check_rules( void );
+		template <typename T>
+		bool check_unsafe_rule( const char *, lookout_rule_t<T> &, bool, T, time_t, time_t );
+		template <typename T>
+		bool check_safe_rule( const char *, lookout_rule_t<T> &, T, time_t, time_t );
 		void initialise_rules( AWSConfig * );
 
 	public:
