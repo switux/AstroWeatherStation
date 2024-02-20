@@ -201,7 +201,8 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "safe_wind_speed_delay" ):
 		case str2int( "safe_wind_speed_max" ):
 		case str2int( "tzname" ):
-		case str2int( "unsafe_cloud_coverage_1_active" ):
+
+    case str2int( "unsafe_cloud_coverage_1_active" ):
 		case str2int( "unsafe_cloud_coverage_2_active" ):
 		case str2int( "unsafe_cloud_coverage_1_delay" ):
 		case str2int( "unsafe_cloud_coverage_2_delay" ):

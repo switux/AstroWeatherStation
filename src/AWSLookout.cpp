@@ -166,6 +166,7 @@ void AWSLookout::check_rules( void )
 	snprintf( str.data(), str.capacity(), "[INFO] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
+
 }
 
 void AWSLookout::loop( void * )	// NOSONAR
@@ -254,6 +255,7 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	safe_rain_intensity.max = _config->get_parameter<int>( "safe_rain_intensity_max" );
 	safe_rain_intensity.delay = _config->get_parameter<int>( "safe_rain_intensity_delay" );
 	safe_rain_intensity.check_available = false;
+
 	safe_rain_intensity.ts = 0;
 }
 
