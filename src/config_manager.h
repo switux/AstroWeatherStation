@@ -80,36 +80,43 @@ const aws_iface			DEFAULT_PREF_IFACE						= aws_iface::wifi_ap;
 
 const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME			= 60;
 
-const bool				DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_1	= false;
-const bool				DEFAULT_SAFE_CLOUD_COVERAGE_ACTIVE_2	= false;
-const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_1		= 0;
-const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_DELAY_2		= 0;
-const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_MAX_1		= 0;
-const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_MAX_2		= 0;
+const bool				DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE	= false;
+const bool				DEFAULT_SAFE_CLOUD_COVERAGE_2_ACTIVE	= false;
+const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_1_DELAY		= 0;
+const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_2_DELAY		= 0;
+const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_1_MAX		= 0;
+const uint16_t			DEFAULT_SAFE_CLOUD_COVERAGE_2_MAX		= 0;
 const bool				DEFAULT_SAFE_RAIN_INTENSITY_ACTIVE		= false;
 const uint16_t			DEFAULT_SAFE_RAIN_INTENSITY_DELAY			= 0;
 const uint16_t			DEFAULT_SAFE_RAIN_INTENSITY_MAX			= 0;
-const bool				DEFAULT_SAFE_WIND_SPEED_ACTIVE_1		= false;
-const bool				DEFAULT_SAFE_WIND_SPEED_ACTIVE_2		= false;
-const uint16_t			DEFAULT_SAFE_WIND_SPEED_DELAY_1			= 0;
-const uint16_t			DEFAULT_SAFE_WIND_SPEED_DELAY_2			= 0;
-const uint16_t			DEFAULT_SAFE_WIND_SPEED_MAX_1			= 0;
-const uint16_t			DEFAULT_SAFE_WIND_SPEED_MAX_2			= 0;
+const bool				DEFAULT_SAFE_WIND_SPEED_1_ACTIVE		= false;
+const bool				DEFAULT_SAFE_WIND_SPEED_2_ACTIVE		= false;
+const uint16_t			DEFAULT_SAFE_WIND_SPEED_1_DELAY			= 0;
+const uint16_t			DEFAULT_SAFE_WIND_SPEED_2_DELAY			= 0;
+const uint16_t			DEFAULT_SAFE_WIND_SPEED_1_MAX			= 0;
+const uint16_t			DEFAULT_SAFE_WIND_SPEED_2_MAX			= 0;
 
-const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_1	= false;
-const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_ACTIVE_2	= false;
-const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_1	= 0;
-const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_DELAY_2	= 0;
-const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_1		= 0;
-const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_MAX_2		= 0;
+const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_1_ACTIVE	= false;
+const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_2_ACTIVE	= false;
+const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_1_DELAY	= 0;
+const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_2_DELAY	= 0;
+const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MAX		= 0;
+const uint16_t			DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MAX		= 0;
+const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MISSING	= true;
+const bool				DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MISSING	= true;
+const bool				DEFAULT_UNSAFE_RAIN_EVENT_ACTIVE		= true;
+const bool				DEFAULT_UNSAFE_RAIN_EVENT_MISSING		= true;
 const bool				DEFAULT_UNSAFE_RAIN_INTENSITY_ACTIVE	= false;
 const uint16_t			DEFAULT_UNSAFE_RAIN_INTENSITY_MAX		= 0;
-const bool				DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_1		= false;
-const bool				DEFAULT_UNSAFE_WIND_SPEED_ACTIVE_2		= false;
-const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_DELAY_1		= 0;
-const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_DELAY_2		= 0;
-const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_MAX_1			= 0;
-const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_MAX_2			= 0;
+const bool				DEFAULT_UNSAFE_RAIN_INTENSITY_MISSING	= true;
+const bool				DEFAULT_UNSAFE_WIND_SPEED_1_ACTIVE		= false;
+const bool				DEFAULT_UNSAFE_WIND_SPEED_2_ACTIVE		= false;
+const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_1_DELAY		= 0;
+const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_2_DELAY		= 0;
+const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_1_MAX			= 0;
+const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_2_MAX			= 0;
+const bool				DEFAULT_UNSAFE_WIND_SPEED_1_MISSING		= true;
+const bool				DEFAULT_UNSAFE_WIND_SPEED_2_MISSING		= true;
 
 const aws_wifi_mode		DEFAULT_WIFI_MODE					= aws_wifi_mode::both;
 const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE			= aws_ip_mode::dhcp;
@@ -181,12 +188,12 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "pref_iface" ):
 		case str2int( "rain_event_guard_time" ):
 		case str2int( "remote_server" ):
-		case str2int( "safe_cloud_coverage_active_1" ):
-		case str2int( "safe_cloud_coverage_active_2" ):
-		case str2int( "safe_cloud_coverage_delay_1" ):
-		case str2int( "safe_cloud_coverage_delay_2" ):
-		case str2int( "safe_cloud_coverage_max_1" ):
-		case str2int( "safe_cloud_coverage_max_2" ):
+		case str2int( "safe_cloud_coverage_1_active" ):
+		case str2int( "safe_cloud_coverage_2_active" ):
+		case str2int( "safe_cloud_coverage_1_delay" ):
+		case str2int( "safe_cloud_coverage_2_delay" ):
+		case str2int( "safe_cloud_coverage_1_max" ):
+		case str2int( "safe_cloud_coverage_2_max" ):
 		case str2int( "safe_rain_intensity_active" ):
 		case str2int( "safe_rain_intensity_delay" ):
 		case str2int( "safe_rain_intensity_max" ):
@@ -194,20 +201,28 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "safe_wind_speed_delay" ):
 		case str2int( "safe_wind_speed_max" ):
 		case str2int( "tzname" ):
-		case str2int( "unsafe_cloud_coverage_active_1" ):
-		case str2int( "unsafe_cloud_coverage_active_2" ):
-		case str2int( "unsafe_cloud_coverage_delay_1" ):
-		case str2int( "unsafe_cloud_coverage_delay_2" ):
-		case str2int( "unsafe_cloud_coverage_max_1" ):
-		case str2int( "unsafe_cloud_coverage_max_2" ):
+
+    case str2int( "unsafe_cloud_coverage_1_active" ):
+		case str2int( "unsafe_cloud_coverage_2_active" ):
+		case str2int( "unsafe_cloud_coverage_1_delay" ):
+		case str2int( "unsafe_cloud_coverage_2_delay" ):
+		case str2int( "unsafe_cloud_coverage_1_max" ):
+		case str2int( "unsafe_cloud_coverage_2_max" ):
+		case str2int( "unsafe_cloud_coverage_1_missing" ):
+		case str2int( "unsafe_cloud_coverage_2_missing" ):
+		case str2int( "unsafe_rain_event_active" ):
+		case str2int( "unsafe_rain_event_missing" ):
 		case str2int( "unsafe_rain_intensity_active" ):
 		case str2int( "unsafe_rain_intensity_max" ):
-		case str2int( "unsafe_wind_speed_active_1" ):
-		case str2int( "unsafe_wind_speed_active_2" ):
-		case str2int( "unsafe_wind_speed_delay_1" ):
-		case str2int( "unsafe_wind_speed_delay_2" ):
-		case str2int( "unsafe_wind_speed_max_1" ):
-		case str2int( "unsafe_wind_speed_max_2" ):
+		case str2int( "unsafe_rain_intensity_missing" ):
+		case str2int( "unsafe_wind_speed_1_active" ):
+		case str2int( "unsafe_wind_speed_2_active" ):
+		case str2int( "unsafe_wind_speed_1_delay" ):
+		case str2int( "unsafe_wind_speed_2_delay" ):
+		case str2int( "unsafe_wind_speed_1_max" ):
+		case str2int( "unsafe_wind_speed_2_max" ):
+		case str2int( "unsafe_wind_speed_1_missing" ):
+		case str2int( "unsafe_wind_speed_2_missing" ):
 		
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):

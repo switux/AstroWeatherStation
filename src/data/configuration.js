@@ -1,66 +1,50 @@
+function config_section_active( section_name, yes_no )
+{
+	if ( yes_no == true ) {
+
+		document.getElementById( section_name ).style.display = 'flex';
+		document.getElementById( section_name ).style.backgroundColor = '#f6f6f6';
+		document.getElementById( "banner_"+section_name ).style.backgroundColor = "#f6f6f6";
+
+	} else {
+
+		document.getElementById( section_name ).style.display = 'none';
+		document.getElementById( section_name ).style.backgroundColor = '#dbdbdb';
+		document.getElementById( "banner_"+section_name ).style.backgroundColor = "#dbdbdb";
+
+	}
+}
+
 function toggle_panel( panel_id )
 {
 	switch( panel_id ) {
 
 		case 0:
-			document.getElementById("general").style.display = 'flex';
-			document.getElementById("general").style.backgroundColor = '#f6f6f6';
-			document.getElementById("network").style.display = 'none';
-			document.getElementById("network").style.backgroundColor = '#dbdbdb';
-			document.getElementById("sensors").style.display = 'none';
-			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
-			document.getElementById("lookout").style.display = 'none';
-			document.getElementById("lookout").style.backgroundColor = '#dbdbdb';
-			document.getElementById("banner_general").style.backgroundColor = "#f6f6f6";
-			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
-			
+			config_section_active( "general", true );
+			config_section_active( "network", false );
+			config_section_active( "sensors", false );
+			config_section_active( "lookout", false );
 			break;
 
 		case 1:
-			document.getElementById("general").style.display = 'none';
-			document.getElementById("general").style.backgroundColor = '#dbdbdb';
-			document.getElementById("network").style.display = 'flex';
-			document.getElementById("network").style.backgroundColor = '#f6f6f6';
-			document.getElementById("sensors").style.display = 'none';
-			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
-			document.getElementById("lookout").style.display = 'none';
-			document.getElementById("lookout").style.backgroundColor = '#dbdbdb';
-			document.getElementById("banner_network").style.backgroundColor = "#f6f6f6";
-			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
+			config_section_active( "general", false );
+			config_section_active( "network", true );
+			config_section_active( "sensors", false );
+			config_section_active( "lookout", false );
 			break;
 
 		case 2:
-			document.getElementById("general").style.display = 'none';
-			document.getElementById("general").style.backgroundColor = '#dbdbdb';
-			document.getElementById("network").style.display = 'none';
-			document.getElementById("network").style.backgroundColor = '#dbdbdb';
-			document.getElementById("sensors").style.display = 'flex';
-			document.getElementById("sensors").style.backgroundColor = '#f6f6f6';
-			document.getElementById("lookout").style.display = 'none';
-			document.getElementById("lookout").style.backgroundColor = '#dbdbdb';
-			document.getElementById("banner_sensors").style.backgroundColor = "#f6f6f6";
-			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_controls").style.backgroundColor = "#dbdbdb";
+			config_section_active( "general", false );
+			config_section_active( "network", false );
+			config_section_active( "sensors", true );
+			config_section_active( "lookout", false );
 			break;
 
 		case 3:
-			document.getElementById("general").style.display = 'none';
-			document.getElementById("general").style.backgroundColor = '#dbdbdb';
-			document.getElementById("network").style.display = 'none';
-			document.getElementById("network").style.backgroundColor = '#dbdbdb';
-			document.getElementById("sensors").style.display = 'none';
-			document.getElementById("sensors").style.backgroundColor = '#dbdbdb';
-			document.getElementById("lookout").style.display = 'flex';
-			document.getElementById("lookout").style.backgroundColor = '#f6f6f6';
-			document.getElementById("banner_sensors").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_network").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_general").style.backgroundColor = "#dbdbdb";
-			document.getElementById("banner_controls").style.backgroundColor = "#f6f6f6";
+			config_section_active( "general", false );
+			config_section_active( "network", false );
+			config_section_active( "sensors", false );
+			config_section_active( "lookout", true );
 			break;
 
 	}
@@ -68,10 +52,22 @@ function toggle_panel( panel_id )
 
 function send_config()
 {
-	var req = new XMLHttpRequest();
+	let req = new XMLHttpRequest();
 	req.open( "POST", "/set_config", true );
-	req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+	req.setRequestHeader( "Content-Type", "application/json;charset=UTF-8" );
 	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
+}
+
+function fill_lookout_value( parameter, from_list, sensor_available, values )
+{
+	document.getElementById( parameter+"_active" ).checked = ( values[ parameter+"_active" ] == "1" )? 'true' : 'false';
+	if ( from_list )
+		document.querySelector( "#"+parameter+"_max").value = values[parameter+"_max" ];
+	else
+		document.getElementById( parameter+"_max" ).value = values[ parameter+"_max" ];
+	document.getElementById( parameter+"_delay" ).value = values[ parameter+"_delay" ];
+	if ( sensor_available )
+		document.getElementById( parameter+"_active" ).checked = ( values[ parameter+"_missing" ] == "1" )? 'true' : 'false';
 }
 
 function fill_lookout_values( values )
@@ -80,34 +76,16 @@ function fill_lookout_values( values )
 	
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
 
-	document.getElementById("unsafe_wind_speed_active_1").checked = ( values['unsafe_wind_speed_active_1'] == "1" )? 'true' : 'false';
-	document.getElementById("unsafe_wind_speed_max_1").value = values['unsafe_wind_speed_max_1'];
-	document.getElementById("unsafe_wind_speed_delay_1").value = values['unsafe_wind_speed_delay_1'];
-	document.getElementById("unsafe_wind_speed_active_2").checked = ( values['unsafe_wind_speed_active_2'] == "1" )? 'true' : 'false';
-	document.getElementById("unsafe_wind_speed_max_2").value = values['unsafe_wind_speed_max_2'];
-	document.getElementById("unsafe_wind_speed_delay_2").value = values['unsafe_wind_speed_delay_2'];
-	document.getElementById("unsafe_cloud_coverage_active_1").checked = ( values['unsafe_cloud_coverage_active_1'] == "1" )? 'true' : 'false';
-	document.querySelector("#unsafe_cloud_coverage_max_1").value = values['unsafe_cloud_coverage_max_1'];
-	document.getElementById("unsafe_cloud_coverage_delay_1").value = values['unsafe_cloud_coverage_delay_1'];
-	document.getElementById("unsafe_cloud_coverage_active_2").checked = ( values['unsafe_cloud_coverage_active_2'] == "1" )? 'true' : 'false';
-	document.querySelector("#unsafe_cloud_coverage_max_2").value = values['unsafe_cloud_coverage_max_2'];
-	document.getElementById("unsafe_cloud_coverage_delay_2").value = values['unsafe_cloud_coverage_delay_2'];
-	document.getElementById("unsafe_rain_intensity_active").checked = ( values['unsafe_rain_intensity_active'] == "1" )? 'true' : 'false';
-	document.querySelector("#unsafe_rain_intensity_max").value = values['unsafe_rain_intensity_max'];
+	fill_lookout_value( "unsafe_wind_speed_1", false, true, values );
+	fill_lookout_value( "unsafe_wind_speed_2", false, true, values );
+	fill_lookout_value( "unsafe_cloud_coverage_1", true, true, values );
+	fill_lookout_value( "unsafe_cloud_coverage_2", true, true, values );
+	fill_lookout_value( "unsafe_rain_intensity", true, true, values );
 
-	document.getElementById("safe_wind_speed_active").checked = ( values['safe_wind_speed_active'] == "1" )? 'true' : 'false';
-	document.getElementById("safe_wind_speed_max").value = values['safe_wind_speed_max'];
-	document.getElementById("safe_wind_speed_delay").value = values['safe_wind_speed_delay'];
-	document.getElementById("safe_cloud_coverage_active_1").checked = ( values['safe_cloud_coverage_active_1'] == "1" )? 'true' : 'false';
-	document.querySelector("#safe_cloud_coverage_max_1").value = values['safe_cloud_coverage_max_1'];
-	document.getElementById("safe_cloud_coverage_delay_1").value = values['safe_cloud_coverage_delay_1'];
-	document.getElementById("safe_cloud_coverage_active_2").checked = ( values['safe_cloud_coverage_active_2'] == "1" )? 'true' : 'false';
-	document.querySelector("#safe_cloud_coverage_max_2").value = values['safe_cloud_coverage_max_2'];
-	document.getElementById("safe_cloud_coverage_delay_2").value = values['safe_cloud_coverage_delay_2'];
-	document.getElementById("safe_rain_intensity_active").checked = ( values['safe_rain_intensity_active'] == "1" )? 'true' : 'false';
-	document.getElementById("safe_rain_intensity_delay").value = values['safe_rain_intensity_delay'];
-	document.querySelector("#safe_rain_intensity_max").value = values['safe_rain_intensity_max'];
-
+	fill_lookout_value( "safe_wind_speed_active", false, false, values );
+	fill_lookout_value( "safe_cloud_coverage_1", true, false, values );
+	fill_lookout_value( "safe_cloud_coverage_2", true, false, values );
+	fill_lookout_value( "safe_rain_intensity", false, false, values );
 }
 
 function fill_network_values( values )
@@ -194,8 +172,8 @@ function fill_sensor_values( values )
 function display_values()
 {
 	toggle_panel( 0 );
-	req = new XMLHttpRequest();
-	var req2 = new XMLHttpRequest();
+	let req = new XMLHttpRequest();
+	let req2 = new XMLHttpRequest();
 	req2.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
 			document.getElementById("root_ca").value = req2.responseText;
@@ -205,7 +183,7 @@ function display_values()
 
 		if ( this.readyState == 4 && this.status == 200 ) {
 
-			var values = JSON.parse( req.responseText );
+			let values = JSON.parse( req.responseText );
 			document.getElementById("tzname").value = values['tzname'];
 			fill_network_values( values );
 			fill_sensor_values( values );
@@ -254,10 +232,6 @@ function toggle_wifi_mode( wifi_mode )
 			show_wifi();
 			break;
 	}
-}
-
-function toggle_lookout()
-{
 }
 
 function toggle_sta_ipgw( show )

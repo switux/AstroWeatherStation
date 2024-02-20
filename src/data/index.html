@@ -16,7 +16,7 @@
 		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(0);">General</div>
 		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(1);">Network</div>
 		<div id="banner_sensors" style="border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(2);">Sensors</div>
-		<div id="banner_controls" style="border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(3);">Controls</div>
+		<div id="banner_lookout" style="border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(3);">Lookout</div>
 	</div>
 
 	<div id="config_panel">
@@ -213,53 +213,76 @@
 		<div id="lookout" style="display: flex; flex-direction: column">
 
 			<div id="enabled" style="text-align:center; width:15%; display:flex; border: 2px solid; border-color: red; border-radius: 5px; margin: 10px">
-				<p style="font-weight: bold;color: red;display:inline-block;margin: auto; padding: 20px">Lookout enabled : <input form="config" type="checkbox" name="lookout_enabled" id="lookout_enabled" onclick="toggle_lookout();"></p>
+				<p style="font-weight: bold;color: red;display:inline-block;margin: auto; padding: 20px">Lookout enabled : <input form="config" type="checkbox" name="lookout_enabled" id="lookout_enabled"></p>
 			</div> <!-- enabled -->
-			
+			<div id="cloud_coverage_formula" style="text-align:center;width: 20%;isplay:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
+				Cloud coverage formula: <input form="config" type="radio" name="aag_formula" value="aag"> AAG <input form="config" type="radio" name="aag_formula" value="aws"> AWS
+			</div>			
 			<div id="conditions" style="flex-direction: row;display: flex; margin: 10px">
 				<div id="unsafe" style="width: 40%;border:2px solid; border-radius: 10px; padding: 10px; background-color: #e0cccc">
 					<p style="font-weight: bold;text-align: center">Unsafe conditions</p>
-					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Controls config">
-						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th></tr>
+					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Lookout config">
+						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th><th style="border-bottom: 1px solid">Sensor issue</th></tr>
+						<tr>
+							<td>Rain alarm</td>
+							<td><input form="" type="checkbox" name="unsafe_rain_event_active" id="unsafe_rain_event_active" checked onclick="return false;"></td>
+							<td>&ge; 
+								<select form="config" name="unsafe_rain_event_max" id="unsafe_rain_event_max" disabled>
+									<option value="0" >Dry</option>
+									<option value="1"selected>Rain drops</option>
+									<option value="2">Very light</option>
+									<option value="3">Medium light</option>
+									<option value="4">Medium</option>
+									<option value="5">Medium heavy</option>
+									<option value="6">Heavy</option>
+									<option value="7">Violent</option>
+								</select>
+							<td>Immediate</td>
+							<td><input form="config" type="checkbox" name="unsafe_rain_event_missing" id="unsafe_rain_event_missing" checked onclick="return false;"></td>
+						</tr>
 						<tr>
 							<td>Wind speed 1</td>
-							<td><input form="config" type="checkbox" name="unsafe_wind_speed_active_1" id="unsafe_wind_speed_active_1"></td>
-							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_max_1" id="unsafe_wind_speed_max_1" size="4" value="1.0"> m/s</td>
-							<td>&gt;= <input form="config" type="text" name="unsafe_wind_speed_delay_1" id="unsafe_wind_speed_delay_1" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_wind_speed_1_active" id="unsafe_wind_speed_1_active"></td>
+							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_1_max" id="unsafe_wind_speed_1_max" size="4" value="1.0"> m/s</td>
+							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_1_delay" id="unsafe_wind_speed_1_delay" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_wind_speed_1_missing" id="unsafe_wind_speed_1_missing"></td>
 						</tr>
 						<tr>
 							<td>Wind speed 2</td>
-							<td><input form="config" type="checkbox" name="unsafe_wind_speed_active_2" id="unsafe_wind_speed_active_2"></td>
-							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_max_2" id="unsafe_wind_speed_max_2" size="4" value="1.0"> m/s</td>
-							<td>&gt;= <input form="config" type="text" name="unsafe_wind_speed_delay_2" id="unsafe_wind_speed_delay_2" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_wind_speed_2_active" id="unsafe_wind_speed_2_active"></td>
+							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_2_max" id="unsafe_wind_speed_2_max" size="4" value="1.0"> m/s</td>
+							<td>&ge; <input form="config" type="text" name="unsafe_wind_speed_2_delay" id="unsafe_wind_speed_2_delay" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_wind_speed_2_missing" id="unsafe_wind_speed_2_missing"></td>
 						</tr>
 						<tr>
 							<td>Cloud coverage 1</td>
-							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_active_1" id="unsafe_cloud_coverage_active_1"></td>
+							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_1_active" id="unsafe_cloud_coverage_1_active"></td>
 							<td>&ge; 
-								<select form="config" name="unsafe_cloud_coverage_max_1" id="unsafe_cloud_coverage_max_1">
+								<select form="config" name="unsafe_cloud_coverage_1_max" id="unsafe_cloud_coverage_1_max">
 									<option value="0" selected>Clear</option>
 									<option value="1">Cloudy</option>
 									<option value="2">Overcast</option>
 								</select>
-							<td>&gt;= <input form="config" type="text" name="unsafe_cloud_coverage_delay_1" id="unsafe_cloud_coverage_delay_1" size="4" value="0"> s</td>
+							<td>&gt;= <input form="config" type="text" name="unsafe_cloud_coverage_1_delay" id="unsafe_cloud_coverage_1_delay" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_1_missing" id="unsafe_cloud_coverage_1_missing"></td>
 						</tr>
 						<tr>
 							<td>Cloud coverage 2</td>
-							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_active_2" id="unsafe_cloud_coverage_active_2"></td>
+							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_2_active" id="unsafe_cloud_coverage_2_active"></td>
 							<td>&ge; 
-								<select form="config" name="unsafe_cloud_coverage_max_2" id="unsafe_cloud_coverage_max_2">
+								<select form="config" name="unsafe_cloud_coverage_2_max" id="unsafe_cloud_coverage_2_max">
 									<option value="0" selected>Clear</option>
 									<option value="1">Cloudy</option>
 									<option value="2">Overcast</option>
 								</select>
 							</td>
-							<td>&gt;= <input form="config" type="text" name="unsafe_cloud_coverage_delay_2" id="unsafe_cloud_coverage_delay_2" size="4" value="0"> s</td>
+							<td>&gt;= <input form="config" type="text" name="unsafe_cloud_coverage_2_delay" id="unsafe_cloud_coverage_2_delay" size="4" value="0"> s</td>
+							<td><input form="config" type="checkbox" name="unsafe_cloud_coverage_2_missing" id="unsafe_cloud_coverage_2_missing"></td>
 						</tr>
 						<tr>
 							<td>Rain intensity</td>
 							<td><input form="config" type="checkbox" name="unsafe_rain_intensity_active" id="unsafe_rain_intensity_active"></td>
-							<td>&gt; 
+							<td>&ge; 
 								<select form="config" name="unsafe_rain_intensity_max" id="unsafe_rain_intensity_max">
 									<option value="0" selected>Dry</option>
 									<option value="1">Rain drops</option>
@@ -271,13 +294,15 @@
 									<option value="7">Violent</option>
 								</select>
 							</td>
+							<td>Immediate</td>
+							<td><input form="config" type="checkbox" name="unsafe_rain_intensity_missing" id="unsafe_rain_intensity_missing"></td>
 						</tr>
 					</table>
 					<p>Once conditions are considered as unsafe, they will remain alike until safe conditions are met</p>
 				</div> <!-- unsafe -->
 				<div id="safe" style="width: 40%;border:2px solid; border-radius: 10px; padding: 10px; background-color: #cce0cc;margin-left: 10px">
 					<p style="font-weight: bold;text-align: center">Safe conditions</p>
-					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Controls config">
+					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Lookout config">
 						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th></tr>
 						<tr>
 							<td>Wind speed</td>
@@ -287,26 +312,26 @@
 						</tr>
 						<tr>
 							<td>Cloud coverage 1</td>
-							<td><input form="config" type="checkbox" name="safe_cloud_coverage_active_1" id="safe_cloud_coverage_active_1"></td>
+							<td><input form="config" type="checkbox" name="safe_cloud_coverage_1_active" id="safe_cloud_coverage_1_active"></td>
 							<td>&le; 
-								<select form="config" name="safe_cloud_coverage_max_1" id="safe_cloud_coverage_max_1">
+								<select form="config" name="safe_cloud_coverage_1_max" id="safe_cloud_coverage_1_max">
 									<option value="0" selected>Clear</option>
 									<option value="1">Cloudy</option>
 									<option value="2">Overcast</option>
 								</select>
-							<td>&gt;= <input form="config" type="text" name="safe_cloud_coverage_delay_1" id="safe_cloud_coverage_delay_1" size="4" value="0"> s</td>
+							<td>&gt;= <input form="config" type="text" name="safe_cloud_coverage_1_delay" id="safe_cloud_coverage_1_delay" size="4" value="0"> s</td>
 						</tr>
 						<tr>
 							<td>Cloud coverage 2</td>
-							<td><input form="config" type="checkbox" name="safe_cloud_coverage_active_2" id="safe_cloud_coverage_active_2"></td>
+							<td><input form="config" type="checkbox" name="safe_cloud_coverage_2_active" id="safe_cloud_coverage_2_active"></td>
 							<td>&le; 
-								<select form="config" name="safe_cloud_coverage_max_2" id="safe_cloud_coverage_max_2">
+								<select form="config" name="safe_cloud_coverage_2_max" id="safe_cloud_coverage_2_max">
 									<option value="0" selected>Clear</option>
 									<option value="1">Cloudy</option>
 									<option value="2">Overcast</option>
 								</select>
 							</td>
-							<td>&gt;= <input form="config" type="text" name="safe_cloud_coverage_delay_2" id="safe_cloud_coverage_delay_2" size="4" value="0"> s</td>
+							<td>&gt;= <input form="config" type="text" name="safe_cloud_coverage_2_delay" id="safe_cloud_coverage_2_delay" size="4" value="0"> s</td>
 						</tr>
 						<tr>
 							<td>Rain intensity</td>
