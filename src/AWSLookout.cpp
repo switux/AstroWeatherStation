@@ -114,12 +114,14 @@ void AWSLookout::check_rules( void )
 			safe_wind_speed.ts = 0;
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #1", unsafe_cloud_coverage_1, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
+
 		if ( b ) {
 			safe_cloud_coverage_1.ts = 0;
 			safe_cloud_coverage_2.ts = 0;
 		}
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #2", unsafe_cloud_coverage_2, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
+
 		if ( b ) {
 			safe_cloud_coverage_1.ts = 0;
 			safe_cloud_coverage_2.ts = 0;
@@ -134,17 +136,20 @@ void AWSLookout::check_rules( void )
 			unsafe_wind_speed_1.ts = 0;
 			unsafe_wind_speed_2.ts = 0;
 		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #1", safe_cloud_coverage_1, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
+
+    tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #1", safe_cloud_coverage_1, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b ) {
 			unsafe_cloud_coverage_1.ts = 0;
 			unsafe_cloud_coverage_2.ts = 0;
 		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #2", safe_cloud_coverage_2, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
+
+    tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #2", safe_cloud_coverage_2, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b ) {
 			unsafe_cloud_coverage_1.ts = 0;
 			unsafe_cloud_coverage_2.ts = 0;
 		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
+
+    tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b )
 			unsafe_rain_intensity.ts = 0;
 	}

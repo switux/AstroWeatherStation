@@ -255,6 +255,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "rain_event_guard_time" ):
 		case str2int( "remote_server" ):
 		case str2int( "tzname" ):
+
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
 		case str2int( "wifi_ap_gw" ):
