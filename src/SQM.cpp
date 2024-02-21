@@ -28,10 +28,10 @@
 #include "Hydreon.h"
 #include "sensor_manager.h"
 
-void SQM::initialise( Adafruit_TSL2591 *_tsl, sensor_data_t *data, float calibration_offset, bool _debug_mode )
+void SQM::initialise( Adafruit_TSL2591 *_tsl, sqm_data_t *data, float calibration_offset, bool _debug_mode )
 {
 	tsl = _tsl;
-	sensor_data = data;
+	sqm_data = data;
 	msas_calibration_offset = calibration_offset;
 	debug_mode = _debug_mode;
 }
@@ -99,7 +99,8 @@ void SQM::read_SQM( float ambient_temp )
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 
-	while ( !SQM_get_msas_nelm( ambient_temp, &sensor_data->msas, &sensor_data->nelm, &sensor_data->full_luminosity, &sensor_data->ir_luminosity, &sensor_data->gain, &sensor_data->integration_time ));
+	// FIXME: no need to pass sqm_data!
+	while ( !SQM_get_msas_nelm( ambient_temp, &sqm_data->msas, &sqm_data->nelm, &sqm_data->full_luminosity, &sqm_data->ir_luminosity, &sqm_data->gain, &sqm_data->integration_time ));
 
 }
 

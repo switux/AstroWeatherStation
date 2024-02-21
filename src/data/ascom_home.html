@@ -43,14 +43,14 @@
 	
 function reboot()
 {
-	req = new XMLHttpRequest();
+	let req = new XMLHttpRequest();
 	req.open( "GET", "/reboot", true );
 	req.send();	
 }
 	
 function initialise_page()
 {
-	var req = new XMLHttpRequest();
+	let req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
 			var values = JSON.parse( req.responseText );
