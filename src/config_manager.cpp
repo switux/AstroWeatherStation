@@ -62,7 +62,7 @@ etl::string_view AWSConfig::get_anemometer_model_str( void )
 	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ get_parameter<int>( "anemometer_model" ) ].c_str() );	
 }
 
-const etl::string_view AWSConfig::get_pcb_version( void )
+etl::string_view AWSConfig::get_pcb_version( void )
 {
 	return etl::string_view( pcb_version );
 }
@@ -82,7 +82,7 @@ bool AWSConfig::get_has_device( unsigned long dev )
 	return( devices & dev );
 }
 
-const etl::string_view AWSConfig::get_json_string_config( void )
+etl::string_view AWSConfig::get_json_string_config( void )
 {
 	static etl::string<5120>	json_string;
 	int							i;
@@ -393,7 +393,7 @@ Serial.printf(" REMOVED AWS.CONF\n");
 	return true;
 }
 
-void AWSConfig::set_missing_parameters_to_default_values( void )
+void AWSConfig::set_missing_network_parameters_to_default_values( void )
 {
 	if ( !json_config.containsKey( "wifi_ap_ssid" ))
 		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
@@ -410,17 +410,8 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "eth_ip_mode" ))
 		json_config["eth_ip_mode"] = static_cast<int>( DEFAULT_ETH_IP_MODE );
 
-	if ( !json_config.containsKey( "lookout_enabled" ))
-		json_config["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
-
-	if ( !json_config.containsKey( "msas_calibration_offset" ))
-		json_config["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
-
 	if ( !json_config.containsKey( "pref_iface" ))
 		json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
-
-	if ( !json_config.containsKey( "rain_event_guard_time" ))
-		json_config["rain_event_guard_time"] = DEFAULT_RAIN_EVENT_GUARD_TIME;
 
 	if ( !json_config.containsKey( "remote_server" ))
 		json_config["remote_server"] = DEFAULT_SERVER;
@@ -428,6 +419,42 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "wifi_sta_ssid" ))
 		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
 
+	if ( !json_config.containsKey( "url_path" ))
+		json_config["url_path"] = DEFAULT_URL_PATH;
+
+	if ( !json_config.containsKey( "wifi_ap_dns" ))
+		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
+
+	if ( !json_config.containsKey( "wifi_ap_gw" ))
+		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
+
+	if ( !json_config.containsKey( "wifi_ap_ip" ))
+		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
+
+	if ( !json_config.containsKey( "wifi_ap_password" ))
+		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
+
+	if ( !json_config.containsKey( "wifi_mode" ))
+		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
+
+	if ( !json_config.containsKey( "wifi_sta_dns" ))
+		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
+
+	if ( !json_config.containsKey( "wifi_sta_gw" ))
+		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
+
+	if ( !json_config.containsKey( "wifi_sta_ip" ))
+		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
+
+	if ( !json_config.containsKey( "wifi_sta_ip_mode" ))
+		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
+
+	if ( !json_config.containsKey( "wifi_sta_password" ))
+		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
+}
+
+void AWSConfig::set_missing_lookout_safe_parameters_to_default_values( void )
+{
 	if ( !json_config.containsKey( "safe_cloud_coverage_1_active" ))
 		json_config["safe_cloud_coverage_1_active"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE;
 
@@ -455,18 +482,18 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "safe_rain_intensity_max" ))
 		json_config["safe_rain_intensity_max"] = DEFAULT_SAFE_RAIN_INTENSITY_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_1_active" ))
+	if ( !json_config.containsKey( "safe_wind_speed_active" ))
 		json_config["safe_wind_speed_1_active"] = DEFAULT_SAFE_WIND_SPEED_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_wind_speed_1_max" ))
+	if ( !json_config.containsKey( "safe_wind_speed_max" ))
 		json_config["safe_wind_speed_1_max"] = DEFAULT_SAFE_WIND_SPEED_1_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_1_delay" ))
+	if ( !json_config.containsKey( "safe_wind_speed_delay" ))
 		json_config["safe_wind_speed_1_delay"] = DEFAULT_SAFE_WIND_SPEED_1_DELAY;
+}
 
-	if ( !json_config.containsKey( "tzname" ))
-		json_config["tzname"] = DEFAULT_TZNAME;
-
+void AWSConfig::set_missing_lookout_unsafe_parameters_to_default_values( void )
+{
 	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_active" ))
 		json_config["unsafe_cloud_coverage_1_active"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_ACTIVE;
 
@@ -530,38 +557,29 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config.containsKey( "unsafe_wind_speed_2_delay" ))
 		json_config["unsafe_wind_speed_2_delay"] = DEFAULT_UNSAFE_WIND_SPEED_2_DELAY;
 
-	if ( !json_config.containsKey( "url_path" ))
-		json_config["url_path"] = DEFAULT_URL_PATH;
+}
+void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
+{
+	if ( !json_config.containsKey( "lookout_enabled" ))
+		json_config["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
 
-	if ( !json_config.containsKey( "wifi_ap_dns" ))
-		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
+	set_missing_lookout_safe_parameters_to_default_values();
+	set_missing_lookout_unsafe_parameters_to_default_values();
+}
 
-	if ( !json_config.containsKey( "wifi_ap_gw" ))
-		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
+void AWSConfig::set_missing_parameters_to_default_values( void )
+{
+	set_missing_network_parameters_to_default_values();
+	set_missing_lookout_parameters_to_default_values();
+		
+	if ( !json_config.containsKey( "msas_calibration_offset" ))
+		json_config["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
 
-	if ( !json_config.containsKey( "wifi_ap_ip" ))
-		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
+	if ( !json_config.containsKey( "rain_event_guard_time" ))
+		json_config["rain_event_guard_time"] = DEFAULT_RAIN_EVENT_GUARD_TIME;
 
-	if ( !json_config.containsKey( "wifi_ap_password" ))
-		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
-
-	if ( !json_config.containsKey( "wifi_mode" ))
-		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
-
-	if ( !json_config.containsKey( "wifi_sta_dns" ))
-		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
-
-	if ( !json_config.containsKey( "wifi_sta_gw" ))
-		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
-
-	if ( !json_config.containsKey( "wifi_sta_ip" ))
-		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
-
-	if ( !json_config.containsKey( "wifi_sta_ip_mode" ))
-		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
-
-	if ( !json_config.containsKey( "wifi_sta_password" ))
-		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
+	if ( !json_config.containsKey( "tzname" ))
+		json_config["tzname"] = DEFAULT_TZNAME;
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )

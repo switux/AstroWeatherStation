@@ -35,6 +35,7 @@
 #include <SPIFFS.h>
 #include <charconv>
 #include <optional>
+#include <TinyGPSPlus.h>
 
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
@@ -44,6 +45,7 @@
 #include "gpio_config.h"
 #include "SC16IS750.h"
 #include "common.h"
+#include "AWSGPS.h"
 #include "sensor_manager.h"
 #include "config_manager.h"
 #include "config_server.h"
@@ -52,8 +54,8 @@
 #include "alpaca_server.h"
 #include "AstroWeatherStation.h"
 
-extern void IRAM_ATTR		_handle_rain_event( void );
 
+extern void IRAM_ATTR		_handle_rain_event( void );
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
 std::array<std::string, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
@@ -66,12 +68,13 @@ RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
 RTC_DATA_ATTR time_t 	last_ntp_time = 0;				// NOSONAR
 RTC_DATA_ATTR uint16_t	ntp_time_misses = 0;			// NOSONAR
 RTC_DATA_ATTR bool		catch_rain_event = false;		// NOSONAR
+RTC_DATA_ATTR uint16_t 	low_battery_event_count = 0;	// NOSONAR
 
 AstroWeatherStation::AstroWeatherStation( void )
 {
-	station_health_data.init_heap_size = xPortGetFreeHeapSize();
-	station_health_data.current_heap_size = station_health_data.init_heap_size;
-	station_health_data.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
+	station_data.health.init_heap_size = xPortGetFreeHeapSize();
+	station_data.health.current_heap_size = station_data.health.init_heap_size;
+	station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 	location = DEFAULT_LOCATION;
 }
 
@@ -116,7 +119,7 @@ void AstroWeatherStation::compute_uptime( void )
 {
 	if ( !on_solar_panel() )
 
-		station_health_data.uptime = round( esp_timer_get_time() / 1000000 );
+		station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
 
  	else {
 
@@ -124,12 +127,12 @@ void AstroWeatherStation::compute_uptime( void )
 		time( &now );
 		if ( !boot_timestamp ) {
 
-			station_health_data.uptime = round( esp_timer_get_time() / 1000000 );
-			boot_timestamp = now - station_health_data.uptime;
+			station_data.health.uptime = round( esp_timer_get_time() / 1000000 );
+			boot_timestamp = now - station_data.health.uptime;
 
 		} else
 
-			station_health_data.uptime = now - boot_timestamp;
+			station_data.health.uptime = now - boot_timestamp;
 	}
 }
 
@@ -226,7 +229,7 @@ bool AstroWeatherStation::get_debug_mode( void )
 
 Dome *AstroWeatherStation::get_dome( void )
 {
-	return &dome;
+	return &station_devices.dome;
 }
 
 byte AstroWeatherStation::get_eth_cidr_prefix( void )
@@ -236,10 +239,10 @@ byte AstroWeatherStation::get_eth_cidr_prefix( void )
 
 bool AstroWeatherStation::get_location_coordinates( float *latitude, float *longitude )
 {
-	if ( sensor_manager.get_sensor_data()->gps.fix ) {
+	if ( station_data.gps.fix ) {
 
-		*longitude = sensor_manager.get_sensor_data()->gps.longitude;
-		*latitude = sensor_manager.get_sensor_data()->gps.latitude;
+		*longitude = station_data.gps.longitude;
+		*latitude = station_data.gps.latitude;
 		return true;
 	}
 	return false;
@@ -260,51 +263,59 @@ IPAddress *AstroWeatherStation::get_eth_ip( void )
 	return network.get_eth_ip();
 }
 
-char *AstroWeatherStation::get_json_sensor_data( void )
+etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
 	DynamicJsonDocument	json_data(768);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 
-	json_data["battery_level"] = sensor_data->battery_level;
+	json_data["battery_level"] = station_data.health.battery_level;
 	json_data["timestamp"] = sensor_data->timestamp;
-	json_data["rain_event"] = sensor_data->rain_event;
-	json_data["temperature"] = sensor_data->temperature;
-	json_data["pressure"] = sensor_data->pressure;
-	json_data["sl_pressure"] = sensor_data->sl_pressure;
-	json_data["rh"] = sensor_data->rh;
-	json_data["ota_board"] = ota_board;
-	json_data["ota_device"] = ota_device;
-	json_data["ota_config"] = ota_config;
-	json_data["wind_speed"] = sensor_data->wind_speed;
-	json_data["wind_gust"] = sensor_data->wind_gust;
-	json_data["wind_direction"] = sensor_data->wind_direction;
-	json_data["dew_point"] = sensor_data->dew_point;
-	json_data["rain_intensity"] = sensor_data->rain_intensity;
-	json_data["sky_temperature"] = sensor_data->sky_temperature;
-	json_data["ambient_temperature"] = sensor_data->ambient_temperature;
-	json_data["cloud_coverage"] = sensor_data->cloud_coverage;
-	json_data["msas"] = sensor_data->msas;
-	json_data["nelm"] = sensor_data->nelm;
-	json_data["integration_time"] = sensor_data->integration_time;
-	json_data["gain"] = sensor_data->gain;
-	json_data["ir_luminosity"] = sensor_data->ir_luminosity;
-	json_data["full_luminosity"] = sensor_data->full_luminosity;
-	json_data["lux"] = sensor_data->lux;
-	json_data["irradiance"] = sensor_data->irradiance;
-	json_data["ntp_time_sec"] = sensor_data->ntp_time.tv_sec;
-	json_data["ntp_time_usec"] = sensor_data->ntp_time.tv_usec;
-	json_data["gps_fix"] = sensor_data->gps.fix;
-	json_data["gps_longitude"] = sensor_data->gps.longitude;
-	json_data["gps_latitude"] = sensor_data->gps.latitude;
-	json_data["gps_altitude"] = sensor_data->gps.altitude;
-	json_data["gps_time_sec"] = sensor_data->gps.time.tv_sec;
-	json_data["gps_time_usec"] = sensor_data->gps.time.tv_usec;
+	json_data["rain_event"] = sensor_data->weather.rain_event;
+	json_data["temperature"] = sensor_data->weather.temperature;
+	json_data["pressure"] = sensor_data->weather.pressure;
+	json_data["sl_pressure"] = sensor_data->weather.sl_pressure;
+	json_data["rh"] = sensor_data->weather.rh;
+	json_data["ota_board"] = ota_setup.board;
+	json_data["ota_device"] = ota_setup.device;
+	json_data["ota_config"] = ota_setup.config;
+	json_data["wind_speed"] = sensor_data->weather.wind_speed;
+	json_data["wind_gust"] = sensor_data->weather.wind_gust;
+	json_data["wind_direction"] = sensor_data->weather.wind_direction;
+	json_data["dew_point"] = sensor_data->weather.dew_point;
+	json_data["rain_intensity"] = sensor_data->weather.rain_intensity;
+	json_data["sky_temperature"] = sensor_data->weather.sky_temperature;
+	json_data["ambient_temperature"] = sensor_data->weather.ambient_temperature;
+	json_data["cloud_coverage"] = sensor_data->weather.cloud_coverage;
+	json_data["msas"] = sensor_data->sqm.msas;
+	json_data["nelm"] = sensor_data->sqm.nelm;
+	json_data["integration_time"] = sensor_data->sqm.integration_time;
+	json_data["gain"] = sensor_data->sqm.gain;
+	json_data["ir_luminosity"] = sensor_data->sqm.ir_luminosity;
+	json_data["full_luminosity"] = sensor_data->sqm.full_luminosity;
+	json_data["lux"] = sensor_data->sun.lux;
+	json_data["irradiance"] = sensor_data->sun.irradiance;
+	json_data["ntp_time_sec"] = station_data.ntp_time.tv_sec;
+	json_data["ntp_time_usec"] = station_data.ntp_time.tv_usec;
+	json_data["gps_fix"] = station_data.gps.fix;
+	json_data["gps_longitude"] = station_data.gps.longitude;
+	json_data["gps_latitude"] = station_data.gps.latitude;
+	json_data["gps_altitude"] = station_data.gps.altitude;
+	json_data["gps_time_sec"] = station_data.gps.time.tv_sec;
+	json_data["gps_time_usec"] = station_data.gps.time.tv_usec;
 	json_data["uptime"] = get_uptime();
-	json_data["init_heap_size"] = station_health_data.init_heap_size;
-	json_data["current_heap_size"] = station_health_data.current_heap_size;
-	json_data["largest_free_heap_block" ] = station_health_data.largest_free_heap_block;
-	
-	json_sensor_data_len = serializeJson( json_data, json_sensor_data, DATA_JSON_STRING_MAXLEN );
+	json_data["init_heap_size"] = station_data.health.init_heap_size;
+	json_data["current_heap_size"] = station_data.health.current_heap_size;
+	json_data["largest_free_heap_block" ] = station_data.health.largest_free_heap_block;
+
+	if ( measureJson( json_data ) > json_sensor_data.capacity() ) {
+
+		Serial.printf( "[BUG] sensor_data json is too small. Please report to support!\n" );
+		return etl::string_view( "" );
+
+	}
+	int l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
 	return json_sensor_data;
 }
 
@@ -328,6 +339,11 @@ sensor_data_t *AstroWeatherStation::get_sensor_data( void )
 	return sensor_manager.get_sensor_data();
 }
 
+station_data_t *AstroWeatherStation::get_station_data( void )
+{
+	return &station_data;
+}
+
 etl::string_view AstroWeatherStation::get_unique_build_id( void )
 {
 	return unique_build_id;
@@ -347,7 +363,7 @@ time_t AstroWeatherStation::get_timestamp( void )
 
 uint32_t AstroWeatherStation::get_uptime( void )
 {
-	return station_health_data.uptime;
+	return station_data.health.uptime;
 }
 
 etl::string_view AstroWeatherStation::get_uptime_str( void )
@@ -392,17 +408,17 @@ etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 
 void AstroWeatherStation::handle_dome_shutter_is_closed( void )
 {
-	dome.shutter_is_closed();
+	station_devices.dome.shutter_is_closed();
 }
 
 void AstroWeatherStation::handle_dome_shutter_is_moving( void )
 {
-	dome.shutter_is_moving();
+	station_devices.dome.shutter_is_moving();
 }
 
 void AstroWeatherStation::handle_dome_shutter_is_opening( void )
 {
-	dome.shutter_is_opening();
+	station_devices.dome.shutter_is_opening();
 }
 
 void AstroWeatherStation::handle_rain_event( void )
@@ -449,7 +465,7 @@ bool AstroWeatherStation::initialise( void )
 
 	// FIXME: all this OTA setup is messy, use etl::string and drop strdup()
 	snprintf( string.data(), string.capacity(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
-	ota_board = strdup( string.data() );
+	ota_setup.board = strdup( string.data() );
 
 	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
 		boot_timestamp = 0;
@@ -458,13 +474,13 @@ bool AstroWeatherStation::initialise( void )
 
 	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
 	snprintf( string.data(), string.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
-	ota_device = strdup( string.data() );
+	ota_setup.device = strdup( string.data() );
 
 	snprintf( string.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV, BUILD_DATE );
-	ota_config = strdup( unique_build_id.data() );
+	ota_setup.config = strdup( unique_build_id.data() );
 
 	if ( solar_panel )
-		sensor_manager.read_battery_level();
+		read_battery_level();
 
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
 	if ( !network.initialise( &config, debug_mode ) && config.can_rollback() )
@@ -494,11 +510,11 @@ bool AstroWeatherStation::initialise( void )
 	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
 
 			//FIXME: make guard time a config parameter
-			dome.initialise( &sc16is750, sensor_manager.get_i2c_mutex(), 30, debug_mode );
+			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), 30, debug_mode );
 
 	    } else {
 
-			dome.initialise( 30, debug_mode );
+			station_devices.dome.initialise( 30, debug_mode );
 	    }
 	}
 
@@ -511,12 +527,15 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( rain_event ) {
 
-		sensor_manager.initialise( &sc16is750, &config, rain_event );
+		sensor_manager.initialise( &station_devices.sc16is750, &config, rain_event );
 		handle_rain_event();
 		return true;
 	}
 
-	if ( !sensor_manager.initialise( &sc16is750, &config, false ))
+	if ( config.get_has_device( GPS_SENSOR ) )
+		initialise_GPS();
+
+	if ( !sensor_manager.initialise( &station_devices.sc16is750, &config, false ))
 		return false;
 
 	if ( solar_panel )
@@ -532,9 +551,9 @@ bool AstroWeatherStation::initialise( void )
 	}
 
 	if ( config.get_parameter<bool>( "lookout_enabled" ))
-		lookout.initialise( &config, &sensor_manager, &dome, debug_mode );
+		lookout.initialise( &config, &sensor_manager, &station_devices.dome, debug_mode );
 	else
-		dome.close_shutter();	// FIXME: add parameter to set default behaviour
+		station_devices.dome.close_shutter();	// FIXME: add parameter to set default behaviour
 
 	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
@@ -546,9 +565,25 @@ bool AstroWeatherStation::initialise( void )
 	return true;
 }
 
+void AstroWeatherStation::initialise_GPS( void )
+{
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] Initialising GPS.\n" );
+
+	if ( ( config.get_has_device( SC16IS750_DEVICE ) && !station_devices.gps.initialise( &station_data.gps, &station_devices.sc16is750, sensor_manager.get_i2c_mutex() )) || !station_devices.gps.initialise( &station_data.gps )) {
+
+			Serial.printf( "[ERROR] GPS initialisation failed.\n" );
+			return;
+	}
+	station_devices.gps.start();
+	station_devices.gps.pilot_rtc( true );
+	delay( 1000 );						// Wait a little to get a fix
+
+}
+
 void AstroWeatherStation::initialise_sensors( void )
 {
-	sensor_manager.initialise_sensors( &sc16is750 );
+	sensor_manager.initialise_sensors( &station_devices.sc16is750 );
 }
 
 bool AstroWeatherStation::is_ntp_synced( void )
@@ -632,8 +667,8 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 
 		else {
 
-			station_health_data.current_heap_size =	xPortGetFreeHeapSize();
-			station_health_data.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
+			station_data.health.current_heap_size =	xPortGetFreeHeapSize();
+			station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 			sync_time( false );
 			sync_time_mod = 1;
 		}
@@ -644,20 +679,17 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 		else
 			now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
 
-		if ( ( now - rain_event_timestamp ) > config.get_parameter<int>( "rain_event_guard_time" ) )
-			if ( request_dome_shutter_open && ( sensor_manager.get_sensor_data()->rain_intensity == 0 )) {
-				Serial.printf("RAIN OVER: open dome\n");
-				dome.open_shutter();
-				request_dome_shutter_open = false;
-			}
 		if ( config.get_has_device( RAIN_SENSOR ))
 			check_rain_event_guard_time( rain_event_guard_time );
+
 		delay( 1000 );
 	}
 }
 
 bool AstroWeatherStation::poll_sensors( void )
 {
+	if ( config.get_has_device( GPS_SENSOR ) )
+		read_GPS();
 	return sensor_manager.poll_sensors();
 }
 
@@ -687,6 +719,55 @@ void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
 		string.append( "#\n" );
 	}
 	Serial.printf( "%s", string.data() );
+}
+
+void AstroWeatherStation::read_battery_level( void )
+{
+	int		adc_value = 0;
+
+	WiFi.mode ( WIFI_OFF );
+
+	if ( debug_mode )
+		Serial.print( "[DEBUG] Battery level: " );
+
+	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
+	delay( 500 );
+
+	for( uint8_t i = 0; i < 5; i++ ) {
+
+		adc_value += analogRead( GPIO_BAT_ADC );
+	}
+	adc_value = adc_value / 5;
+	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
+
+	if ( debug_mode ) {
+
+		float adc_v_in = adc_value * VCC / ADC_V_MAX;
+		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
+		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", station_data.health.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
+	}
+
+	digitalWrite( GPIO_BAT_ADC_EN, LOW );
+}
+
+void AstroWeatherStation::read_GPS( void )
+{
+
+	if ( station_data.gps.fix ) {
+
+		if ( debug_mode ) {
+
+			// flawfinder: ignore
+			etl::string<32> buf;
+			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime( &station_data.gps.time.tv_sec ) );
+			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", station_data.gps.latitude, station_data.gps.longitude, station_data.gps.altitude, buf.data() );
+		}
+
+	} else
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] NO GPS FIX.\n" );
+
 }
 
 int AstroWeatherStation::reformat_ca_root_line( std::array<char,97> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
@@ -776,6 +857,22 @@ bool AstroWeatherStation::rain_sensor_available( void )
 void AstroWeatherStation::read_sensors( void )
 {
 	sensor_manager.read_sensors();
+
+	//FIXME: done during sensor_manager.retrieve_sensor_data()
+	
+	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
+
+		etl::string<64> string;
+		snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", station_data.health.battery_level );
+
+		// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
+		if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
+			send_alarm( "Low battery", string.data() );
+
+		low_battery_event_count++;
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] %s", string.data() );
+	}
 }
 
 void AstroWeatherStation::reboot( void )
@@ -826,7 +923,7 @@ void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 
 void AstroWeatherStation::send_backlog_data( void )
 {
-	std::array<char,DATA_JSON_STRING_MAXLEN> line;
+	etl::string<1024> line;
 	bool	empty = true;
 
 	SPIFFS.begin( FORMAT_SPIFFS_IF_FAILED );
@@ -892,12 +989,12 @@ void AstroWeatherStation::send_data( void )
 	get_json_sensor_data();
 
 	if ( debug_mode )
-    	Serial.printf( "[DEBUG] Sensor data: %s\n", json_sensor_data );
+    	Serial.printf( "[DEBUG] Sensor data: %s\n", json_sensor_data.data() );
 
-	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data ))
+	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() ))
 		send_backlog_data();
 	else
-		store_unsent_data( json_sensor_data, json_sensor_data_len );
+		store_unsent_data( json_sensor_data );
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
@@ -952,7 +1049,7 @@ bool AstroWeatherStation::startup_sanity_check( void )
 	return false;
 }
 
-bool AstroWeatherStation::store_unsent_data( char *data, size_t len )
+bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 {
 	bool ok = false;
 
@@ -968,10 +1065,10 @@ bool AstroWeatherStation::store_unsent_data( char *data, size_t len )
 	}
 
 	// flawfinder: ignore
-	if (( ok = ( backlog.printf( "%s\n", data ) == ( len + 1 )) )) {
+	if (( ok = ( backlog.printf( "%s\n", data.data() ) == ( data.size() + 1 )) )) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Ok, data secured for when server is available. data=%s\n", data );
+			Serial.printf( "[DEBUG] Ok, data secured for when server is available. data=%s\n", data.data() );
 
 	} else
 
@@ -987,7 +1084,7 @@ bool AstroWeatherStation::sync_time( bool verbose )
 	uint8_t		ntp_retries = 5;
    	struct 		tm timeinfo;
 
-	if ( config.get_has_device( GPS_SENSOR ) && sensor_manager.get_sensor_data()->gps.fix )
+	if ( config.get_has_device( GPS_SENSOR ) && station_data.gps.fix )
 		return true;
 
 	if ( debug_mode && verbose )
@@ -1013,7 +1110,7 @@ bool AstroWeatherStation::sync_time( bool verbose )
 	if ( ntp_synced ) {
 
 		time( &sensor_manager.get_sensor_data()->timestamp );
-		sensor_manager.get_sensor_data()->ntp_time.tv_sec = sensor_manager.get_sensor_data()->timestamp;
+		station_data.ntp_time.tv_sec = sensor_manager.get_sensor_data()->timestamp;
 		if ( ntp_time_misses )
 			ntp_time_misses = 0;
 		last_ntp_time = sensor_manager.get_sensor_data()->timestamp;
@@ -1129,17 +1226,6 @@ bool AWSNetwork::connect_to_wifi()
 	Serial.printf( "NOK.\n" );
 
 	return false;
-}
-
-bool AWSNetwork::disconnect_from_wifi( void )
-{
-	byte i = 0;
-
-	WiFi.disconnect();
-	while ( (i++ < 20) && ( WiFi.status() == WL_CONNECTED ))
-    	delay( 100 );
-
-	return ( WiFi.status() != WL_CONNECTED );
 }
 
 byte AWSNetwork::get_eth_cidr_prefix( void )
@@ -1405,18 +1491,6 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	}
 
 	return sent;
-}
-
-bool AWSNetwork::shutdown_wifi( void )
-{
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Shutting down WIFI.\n" );
-
-	if ( !stop_hotspot() || !disconnect_from_wifi() )
-		return false;
-
-	WiFi.mode( WIFI_OFF );
-	return true;
 }
 
 bool AWSNetwork::start_hotspot( void )

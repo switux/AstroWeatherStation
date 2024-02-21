@@ -47,7 +47,7 @@ class AWSGPS
 		gps_data_t			*gps_data		= nullptr;
 		bool				debug_mode		= false;
 		bool				update_rtc		= false;
-
+	
 		void update_data( void );
 		void feed( void * );
 		void read_GPS( void );

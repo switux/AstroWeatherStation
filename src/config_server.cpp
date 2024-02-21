@@ -49,14 +49,13 @@ void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 		request->send( 500, "text/plain", "[ERROR] get_configuration() had a problem, please contact support." );
 }
 
-void AWSWebServer::get_data( AsyncWebServerRequest *request )
+void AWSWebServer::get_sensor_data( AsyncWebServerRequest *request )
 {
 	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE )
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Waiting for sensor data update to complete.\n" );
 
-	char *json_data = station.get_json_sensor_data();
-	request->send( 200, "application/json", json_data );
+	request->send( 200, "application/json", station.get_json_sensor_data().data() );
 	xSemaphoreGive( sensors_read_mutex );
 }
 
@@ -95,7 +94,7 @@ bool AWSWebServer::initialise( bool _debug_mode )
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/configuration.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
-	server->on( "/get_data", HTTP_GET, std::bind( &AWSWebServer::get_data, this, std::placeholders::_1 ));
+	server->on( "/get_sensor_data", HTTP_GET, std::bind( &AWSWebServer::get_sensor_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
 	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
 	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));

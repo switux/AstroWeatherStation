@@ -36,52 +36,71 @@ extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;
 
-struct aws_health_data_t {
+struct health_data_t {
 
 	float			battery_level;
 	uint32_t		uptime;
 	uint32_t		init_heap_size;
 	uint32_t		current_heap_size;
 	uint32_t		largest_free_heap_block;
+
+};
+
+struct sqm_data_t {
+
+	float		msas;
+	float		nelm;
+	uint16_t	gain;
+	uint16_t	integration_time;
+	uint16_t	ir_luminosity;
+	uint16_t	vis_luminosity;
+	uint16_t	full_luminosity;
+	
+};
+
+struct weather_data_t {
+
+	float	temperature;
+	float	pressure;
+	float	sl_pressure;
+	float	rh;
+	float	wind_speed;
+	float	wind_gust;
+	int		wind_direction;
+	float	dew_point;
+
+	bool	rain_event;
+	byte	rain_intensity;
+
+	float	ambient_temperature;
+	float	sky_temperature;
+	float	cloud_cover;
+	byte	cloud_coverage;
+	
+};
+
+struct sun_data_t {
+
+	int		lux;
+	float	irradiance;
+	
 };
 
 struct sensor_data_t {
 
 	time_t			timestamp;
+	sun_data_t		sun;
+	weather_data_t	weather;
+	sqm_data_t		sqm;
 
-	float			battery_level;
+};
 
-	float			temperature;
-	float			pressure;
-	float			sl_pressure;
-	float			rh;
-	float			wind_speed;
-	float			wind_gust;
-	int				wind_direction;
-	float			dew_point;
-
-	bool			rain_event;
-	byte			rain_intensity;
-
-	float			ambient_temperature;
-	float			sky_temperature;
-	float			cloud_cover;
-	byte			cloud_coverage;
-	
-	float			msas;
-	float			nelm;
-	uint16_t		gain;
-	uint16_t		integration_time;
-
-	uint16_t		ir_luminosity;
-	uint16_t		vis_luminosity;
-	uint16_t		full_luminosity;
-	int				lux;
-	float			irradiance;
-
-	struct timeval	ntp_time;
+struct station_data_t {
 
 	gps_data_t		gps;
+	health_data_t	health;
+	struct timeval	ntp_time;
+
 };
 
 void loop( void );

@@ -44,25 +44,18 @@ void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const 
 {
 	if ( request->hasParam( "Connected", true ) ) {
 
-		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
+		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" ) || !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" ) ) {
 
 			set_is_connected( true );
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 
-		} else {
+		} else
 
-			if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" )) {
+			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
 
-				set_is_connected( false );
-				snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
-
-			} else
-
-				snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
-		}
 		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 		return;
+		
 	}
-
 	request->send( 400, "text/plain", "Missing Connected parameter" );
 }

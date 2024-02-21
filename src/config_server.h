@@ -36,7 +36,7 @@ class AWSWebServer {
 
 				AWSWebServer( void ) = default;
 		void get_configuration( AsyncWebServerRequest * );
-		void get_data( AsyncWebServerRequest * );
+		void get_sensor_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );
 		bool initialise( bool );
 

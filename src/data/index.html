@@ -215,7 +215,7 @@
 			<div id="enabled" style="text-align:center; width:15%; display:flex; border: 2px solid; border-color: red; border-radius: 5px; margin: 10px">
 				<p style="font-weight: bold;color: red;display:inline-block;margin: auto; padding: 20px">Lookout enabled : <input form="config" type="checkbox" name="lookout_enabled" id="lookout_enabled"></p>
 			</div> <!-- enabled -->
-			<div id="cloud_coverage_formula" style="text-align:center;width: 20%;isplay:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
+			<div id="cloud_coverage_formula" style="text-align:center;width: 20%;display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
 				Cloud coverage formula: <input form="config" type="radio" name="aag_formula" value="aag"> AAG <input form="config" type="radio" name="aag_formula" value="aws"> AWS
 			</div>			
 			<div id="conditions" style="flex-direction: row;display: flex; margin: 10px">
@@ -294,7 +294,7 @@
 									<option value="7">Violent</option>
 								</select>
 							</td>
-							<td>Immediate</td>
+							<td>Immediate<input form="" type="checkbox" name="unsafe_rain_intensity_delay" id="unsafe_rain_intensity_delay" style="display:hidden"></td>
 							<td><input form="config" type="checkbox" name="unsafe_rain_intensity_missing" id="unsafe_rain_intensity_missing"></td>
 						</tr>
 					</table>

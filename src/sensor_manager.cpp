@@ -37,7 +37,6 @@
 #include "sensor_manager.h"
 #include "AstroWeatherStation.h"
 
-RTC_DATA_ATTR uint16_t low_battery_event_count = 0;		// NOSONAR
 //RTC_DATA_ATTR byte	prev_available_sensors = 0;
 //RTC_DATA_ATTR byte	available_sensors = 0;
 
@@ -113,23 +112,6 @@ void AWSSensorManager::initialise_BME( void )
 	}
 }
 
-void AWSSensorManager::initialise_GPS( I2C_SC16IS750 *sc16is750 )
-{
-	if ( debug_mode )
-		Serial.printf( "[DEBUG] Initialising GPS.\n" );
-
-	if ( ( config->get_has_device( SC16IS750_DEVICE ) && !gps.initialise( &sensor_data.gps, sc16is750, i2c_mutex )) || !gps.initialise( &sensor_data.gps )) {
-
-			Serial.printf( "[ERROR] GPS initialisation failed.\n" );
-			return;
-	}
-	gps.start();
-	gps.pilot_rtc( true );
-	available_sensors |= GPS_SENSOR;
-	delay( 1000 );						// Wait a little to get a fix
-
-}
-
 void AWSSensorManager::initialise_MLX( void )
 {
 	if ( !mlx->begin() )
@@ -166,7 +148,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 	if ( !rain_event && config->get_has_device( TSL_SENSOR ) ) {
 
 		initialise_TSL();
-		sqm.initialise( tsl, &sensor_data, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
+		sqm.initialise( tsl, &sensor_data.sqm, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
 	}
 
 	if ( !rain_event &&  config->get_has_device( ANEMOMETER_SENSOR ) ) {
@@ -198,8 +180,6 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 	if ( config->get_has_device( RAIN_SENSOR ) && initialise_rain_sensor())
 		available_sensors |= RAIN_SENSOR;
 
-	if ( !rain_event && config->get_has_device( GPS_SENSOR ) )
-		initialise_GPS( _sc16is750 );
 }
 
 bool AWSSensorManager::initialise_rain_sensor( void )
@@ -231,7 +211,7 @@ bool AWSSensorManager::poll_sensors( void )
 
 		retrieve_sensor_data();
 		xSemaphoreGive( sensors_read_mutex );
-		sensor_data.wind_gust = anemometer.get_wind_gust();
+		sensor_data.weather.wind_gust = anemometer.get_wind_gust();
 		return true;
 	}
 	return false;
@@ -246,9 +226,9 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
 			if ( config->get_has_device( ANEMOMETER_SENSOR ) )
-				sensor_data.wind_gust = anemometer.get_wind_gust();
+				sensor_data.weather.wind_gust = anemometer.get_wind_gust();
 			else
-				sensor_data.wind_gust = 0.F;
+				sensor_data.weather.wind_gust = 0.F;
 
 		}
 		delay( polling_ms_interval );
@@ -270,145 +250,76 @@ void AWSSensorManager::read_anemometer( void )
 	if ( ( x = anemometer.get_wind_speed( true ) ) == -1 )
 		return;
 
-	sensor_data.wind_speed = x;
-}
-
-void AWSSensorManager::read_battery_level( void )
-{
-	int		adc_value = 0;
-
-	WiFi.mode ( WIFI_OFF );
-
-	if ( debug_mode )
-		Serial.print( "[DEBUG] Battery level: " );
-
-	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
-	delay( 500 );
-
-	for( uint8_t i = 0; i < 5; i++ ) {
-
-		adc_value += analogRead( GPIO_BAT_ADC );
-	}
-	adc_value = adc_value / 5;
-	sensor_data.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
-
-	if ( debug_mode ) {
-
-		float adc_v_in = adc_value * VCC / ADC_V_MAX;
-		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
-		Serial.printf( "%03.2f%% (ADC value=%d, ADC voltage=%1.3fV, battery voltage=%1.3fV)\n", sensor_data.battery_level, adc_value, adc_v_in / 1000.F, bat_v / 1000.F );
-	}
-
-	digitalWrite( GPIO_BAT_ADC_EN, LOW );
+	sensor_data.weather.wind_speed = x;
 }
 
 void AWSSensorManager::read_BME( void  )
 {
 	if ( ( available_sensors & BME_SENSOR ) == BME_SENSOR ) {
 
-		sensor_data.temperature = bme->readTemperature();
-		sensor_data.pressure = bme->readPressure() / 100.F;
-		sensor_data.rh = bme->readHumidity();
+		sensor_data.weather.temperature = bme->readTemperature();
+		sensor_data.weather.pressure = bme->readPressure() / 100.F;
+		sensor_data.weather.rh = bme->readHumidity();
 
 		// "Arden Buck" equation
-		float gammaM = log( ( sensor_data.rh / 100 )*exp( ( 18.68 - sensor_data.temperature / 234.5 ) * ( sensor_data.temperature / ( 257.14 + sensor_data.temperature )) ));
-		if ( sensor_data.temperature >= 0 )
-			sensor_data.dew_point = ( 238.88 * gammaM ) / ( 17.368 - gammaM );
+		float gammaM = log( ( sensor_data.weather.rh / 100 )*exp( ( 18.68 - sensor_data.weather.temperature / 234.5 ) * ( sensor_data.weather.temperature / ( 257.14 + sensor_data.weather.temperature )) ));
+		if ( sensor_data.weather.temperature >= 0 )
+			sensor_data.weather.dew_point = ( 238.88 * gammaM ) / ( 17.368 - gammaM );
 		else
-			sensor_data.dew_point = ( 247.15 * gammaM ) / ( 17.966 - gammaM );
+			sensor_data.weather.dew_point = ( 247.15 * gammaM ) / ( 17.966 - gammaM );
 
 		if ( debug_mode ) {
 
-			Serial.printf( "[DEBUG] Temperature = %2.2f °C\n", sensor_data.temperature  );
-			Serial.printf( "[DEBUG] Pressure = %4.2f hPa\n", sensor_data.pressure );
-			Serial.printf( "[DEBUG] RH = %3.2f %%\n", sensor_data.rh );
-			Serial.printf( "[DEBUG] Dew point = %2.2f °C\n", sensor_data.dew_point );
+			Serial.printf( "[DEBUG] Temperature = %2.2f °C\n", sensor_data.weather.temperature  );
+			Serial.printf( "[DEBUG] Pressure = %4.2f hPa\n", sensor_data.weather.pressure );
+			Serial.printf( "[DEBUG] RH = %3.2f %%\n", sensor_data.weather.rh );
+			Serial.printf( "[DEBUG] Dew point = %2.2f °C\n", sensor_data.weather.dew_point );
 		}
 		return;
 	}
 
-	sensor_data.temperature = -99.F;
-	sensor_data.pressure = 0.F;
-	sensor_data.rh = 0.F;
-	sensor_data.dew_point = -99.F;
-}
-
-void AWSSensorManager::read_GPS( void )
-{
-
-	if ( sensor_data.gps.fix ) {
-
-		if ( debug_mode ) {
-
-			// flawfinder: ignore
-			etl::string<32> buf;
-			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime( &sensor_data.gps.time.tv_sec ) );
-			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", sensor_data.gps.latitude, sensor_data.gps.longitude, sensor_data.gps.altitude, buf.data() );
-		}
-
-	} else
-
-		if ( debug_mode )
-			Serial.printf( "[DEBUG] NO GPS FIX.\n" );
-
+	sensor_data.weather.temperature = -99.F;
+	sensor_data.weather.pressure = 0.F;
+	sensor_data.weather.rh = 0.F;
+	sensor_data.weather.dew_point = -99.F;
 }
 
 void AWSSensorManager::read_MLX( void )
 {
 	if ( ( available_sensors & MLX_SENSOR ) == MLX_SENSOR ) {
 
-		sensor_data.ambient_temperature = mlx->readAmbientTempC();
-		sensor_data.sky_temperature = mlx->readObjectTempC();
+		sensor_data.weather.ambient_temperature = mlx->readAmbientTempC();
+		sensor_data.weather.sky_temperature = mlx->readObjectTempC();
 
 		// Basic formula, clear / overcast
-		sensor_data.cloud_coverage = (( sensor_data.sky_temperature - sensor_data.ambient_temperature ) <= -15 ) ? 0 : 2;
+		sensor_data.weather.cloud_coverage = (( sensor_data.weather.sky_temperature - sensor_data.weather.ambient_temperature ) <= -15 ) ? 0 : 2;
 		
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );
-			Serial.print( sensor_data.ambient_temperature );
+			Serial.print( sensor_data.weather.ambient_temperature );
 			Serial.print( "°C / Raw sky temperature = " );
-			Serial.print( sensor_data.sky_temperature );
+			Serial.print( sensor_data.weather.sky_temperature );
 			Serial.printf( "°C\n" );
 		}
 		return;
 	}
-	sensor_data.ambient_temperature = -99.F;
-	sensor_data.sky_temperature = -99.F;
+	sensor_data.weather.ambient_temperature = -99.F;
+	sensor_data.weather.sky_temperature = -99.F;
 }
 
 void AWSSensorManager::read_rain_sensor( void )
 {
-	sensor_data.rain_intensity = rain_sensor.get_rain_intensity();
+	sensor_data.weather.rain_intensity = rain_sensor.get_rain_intensity();
 }
 
 void AWSSensorManager::read_sensors( void )
 {
+	retrieve_sensor_data();
 
-	if ( solar_panel ) {
-
-		retrieve_sensor_data();
-
-		digitalWrite( GPIO_ENABLE_3_3V, LOW );
-		digitalWrite( GPIO_ENABLE_12V, LOW );
-
-		if ( sensor_data.battery_level <= BAT_LEVEL_MIN ) {
-
-			etl::string<64> string;
-			snprintf( string.data(), string.capacity(), "LOW Battery level = %03.2f%%\n", sensor_data.battery_level );
-
-			// Deal with ADC output accuracy, no need to stress about it, a few warnings are enough to get the message through :-)
-			if (( low_battery_event_count >= LOW_BATTERY_COUNT_MIN ) && ( low_battery_event_count <= LOW_BATTERY_COUNT_MAX ))
-				station.send_alarm( "Low battery", string.data() );
-
-			low_battery_event_count++;
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] %s", string.data() );
-		}
-
-	} else
-		sensor_data.battery_level = 100.0L;		// When running on 12V, convention is to report 100%
-
+	digitalWrite( GPIO_ENABLE_3_3V, LOW );
+	digitalWrite( GPIO_ENABLE_12V, LOW );
+	
 /*	if ( prev_available_sensors != available_sensors ) {
 
 		prev_available_sensors = available_sensors;
@@ -433,8 +344,8 @@ void AWSSensorManager::read_TSL( void )
 	}
 
 	// Avoid aberrant readings
-	sensor_data.lux = ( lux < TSL_MAX_LUX ) ? lux : -1;
-	sensor_data.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
+	sensor_data.sun.lux = ( lux < TSL_MAX_LUX ) ? lux : -1;
+	sensor_data.sun.irradiance = ( lux == -1 ) ? 0 : lux * LUX_TO_IRRADIANCE_FACTOR;
 }
 
 void AWSSensorManager::read_wind_vane( void )
@@ -447,7 +358,7 @@ void AWSSensorManager::read_wind_vane( void )
 	if ( ( x = wind_vane.get_wind_direction( true ) ) == -1 )
 		return;
 
-	sensor_data.wind_direction = x;
+	sensor_data.weather.wind_direction = x;
 }
 
 void AWSSensorManager::reset_rain_event( void )
@@ -459,7 +370,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 {
 	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
-		sensor_data.rain_event = rain_event;
+		sensor_data.weather.rain_event = rain_event;
 		if ( station.is_ntp_synced() )
 			time( &sensor_data.timestamp );
 
@@ -478,7 +389,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			// FIXME: what if mlx is down, since we get the temperature from it?
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
-				sqm.read_SQM( sensor_data.ambient_temperature );		// TSL and MLX are in the same enclosure
+				sqm.read_SQM( sensor_data.weather.ambient_temperature );		// FIXME: TSL and MLX are in the same enclosure but it's not relevant
 		}
 
 		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
@@ -494,10 +405,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		xSemaphoreGive( i2c_mutex );
 
 		if ( config->get_has_device( RAIN_SENSOR ) )
-			sensor_data.rain_intensity = rain_sensor.get_rain_intensity();
-
-		if ( config->get_has_device( GPS_SENSOR ) )
-			read_GPS();
+			sensor_data.weather.rain_intensity = rain_sensor.get_rain_intensity();
 
 	}
 }

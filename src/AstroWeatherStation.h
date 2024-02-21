@@ -27,12 +27,39 @@
 #include "AWSLookout.h"
 #include "alpaca_server.h"
 
-constexpr size_t DATA_JSON_STRING_MAXLEN = 1024;
+const byte LOW_BATTERY_COUNT_MIN = 5;
+const byte LOW_BATTERY_COUNT_MAX = 10;
+
+const unsigned short 	BAT_V_MAX		= 4200;		// in mV
+const unsigned short	BAT_V_MIN		= 3000;		// in mV
+const byte 				BAT_LEVEL_MIN	= 33;		// in %, corresponds to ~3.4V for a typical Li-ion battery
+const unsigned short	VCC				= 3300;		// in mV
+const unsigned int		V_DIV_R1		= 82000;	// voltage divider R1 in ohms
+const unsigned int		V_DIV_R2		= 300000;	// voltage divider R2 in ohms
+const unsigned short	ADC_MAX			= 4096;		// 12 bits resolution
+const float				V_MAX_IN		= ( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
+const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
+const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
 extern const unsigned long DOME_DEVICE;
 extern const unsigned long ETHERNET_DEVICE;
 extern const unsigned long SC16IS750_DEVICE;
 
+struct ota_setup_t {
+	char	*board	= nullptr;
+	char	*config	= nullptr;
+	char	*device	= nullptr;
+	
+};
+
+struct station_devices_t {
+
+	Dome			dome;
+	I2C_SC16IS750	sc16is750;
+	AWSGPS			gps;
+
+};
 
 void OTA_callback( int, int );
 
@@ -65,7 +92,6 @@ class AWSNetwork {
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
-		bool		disconnect_from_wifi( void );
 		byte		get_eth_cidr_prefix( void );
 		IPAddress 	*get_eth_dns( void );
 		IPAddress	*get_eth_gw( void );
@@ -80,7 +106,6 @@ class AWSNetwork {
 		bool		initialise_wifi( void );
 		byte		mask_to_cidr( uint32_t );
 		bool		post_content( const char *, size_t, const char * );
-		bool		shutdown_wifi( void );
 		bool		start_hotspot( void );
 		bool		stop_hotspot( void );
 
@@ -94,22 +119,18 @@ class AstroWeatherStation {
 		TaskHandle_t		aws_periodic_task_handle;
 		AWSConfig			config;
 		bool				debug_mode	= false;
-		Dome				dome;
-		char				json_sensor_data[ DATA_JSON_STRING_MAXLEN ];	// NOSONAR
-		size_t				json_sensor_data_len;
+		etl::string<1024>	json_sensor_data;
 		etl::string<128>	location;
 		AWSNetwork			network;
 		bool				ntp_synced	= false;
-		char				*ota_board	= nullptr;
-		char				*ota_config	= nullptr;
-		char				*ota_device	= nullptr;
+		ota_setup_t			ota_setup;
 		bool				rain_event	= false;
 		bool				request_dome_shutter_open = false;
-		I2C_SC16IS750		sc16is750;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
 		bool				solar_panel;
-		aws_health_data_t	station_health_data;
+		station_data_t		station_data;
+		station_devices_t	station_devices;
 		etl::string<32>		unique_build_id;
 		etl::string<32>		uptime_str;
 		AWSLookout			lookout;
@@ -119,12 +140,12 @@ class AstroWeatherStation {
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
 		bool 			determine_boot_mode( void );
-		bool			disconnect_from_wifi( void );
 		void			display_banner( void );
 		void			enter_config_mode( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
 		bool			initialise_ethernet( void );
+		void			initialise_GPS( void );
 		bool			initialise_network( void );
 		bool			initialise_wifi( void );
 		byte			mask_to_cidr( uint32_t );
@@ -134,16 +155,18 @@ class AstroWeatherStation {
 		template<typename... Args>
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
+		void			read_battery_level( void );
+		    void read_GPS( void );
+
 		int				reformat_ca_root_line( std::array<char,97> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		void			send_rain_event_alarm( const char * );
-		bool			shutdown_wifi( void );
 		void			start_alpaca_server( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
 		bool			startup_sanity_check( void );
 		bool			stop_hotspot( void );
-		bool			store_unsent_data( char *, size_t );
+		bool			store_unsent_data( etl::string_view );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:
@@ -154,12 +177,13 @@ class AstroWeatherStation {
 		bool				get_debug_mode( void );
 		Dome				*get_dome( void );
 		sensor_data_t		*get_sensor_data( void );
+		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
 		byte				get_eth_cidr_prefix( void );
 		IPAddress			*get_eth_dns( void );
 		IPAddress			*get_eth_gw( void );
 		IPAddress			*get_eth_ip( void );
-		char				*get_json_sensor_data( void );
+		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( float *, float * );

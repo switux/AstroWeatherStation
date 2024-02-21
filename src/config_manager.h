@@ -129,10 +129,14 @@ class AWSConfig {
 		bool					can_rollback( void );
 		etl::string_view		get_anemometer_model_str( void );
 		template <typename T>
+		T 						get_lookout_safe_parameter( const char * );
+		template <typename T>
+		T 						get_lookout_unsafe_parameter( const char * );
+		template <typename T>
 		T 						get_parameter( const char * );
 		bool					get_has_device( unsigned long );
-		const etl::string_view	get_json_string_config( void );
-		const etl::string_view	get_pcb_version( void );
+		etl::string_view		get_json_string_config( void );
+		etl::string_view		get_pcb_version( void );
 		aws_pwr_src				get_pwr_mode( void );
 		etl::string_view		get_root_ca( void );
 		etl::string_view		get_wind_vane_model_str( void );
@@ -157,6 +161,10 @@ class AWSConfig {
 		bool read_file( const char * );
 		bool read_hw_info_from_nvs( void );
 		void read_root_ca( void );
+		void set_missing_lookout_parameters_to_default_values( void );
+		void set_missing_lookout_safe_parameters_to_default_values( void );
+		void set_missing_lookout_unsafe_parameters_to_default_values( void );
+		void set_missing_network_parameters_to_default_values( void );
 		void set_missing_parameters_to_default_values( void );
 		void set_root_ca( JsonVariant & );
 		void list_files( void );
@@ -169,25 +177,9 @@ constexpr unsigned int str2int( const char* str, int h = 0 )
 }
 
 template <typename T>
-T AWSConfig::get_parameter( const char *key )
+T AWSConfig::get_lookout_safe_parameter( const char *key )
 {
 	switch( str2int( key )) {
-
-		case str2int( "anemometer_model" ):
-		case str2int( "config_iface" ):
-		case str2int( "config_port" ):
-		case str2int( "wind_vane_model" ):
-			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
-
-		case str2int( "eth_dns" ):
-		case str2int( "eth_gw" ):
-		case str2int( "eth_ip" ):
-		case str2int( "eth_ip_mode" ):
-		case str2int( "lookout_enabled" ):
-		case str2int( "msas_calibration_offset" ):
-		case str2int( "pref_iface" ):
-		case str2int( "rain_event_guard_time" ):
-		case str2int( "remote_server" ):
 		case str2int( "safe_cloud_coverage_1_active" ):
 		case str2int( "safe_cloud_coverage_2_active" ):
 		case str2int( "safe_cloud_coverage_1_delay" ):
@@ -200,9 +192,17 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "safe_wind_speed_active" ):
 		case str2int( "safe_wind_speed_delay" ):
 		case str2int( "safe_wind_speed_max" ):
-		case str2int( "tzname" ):
+			return json_config[key].as<T>();
+	}
+	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
+}
 
-    case str2int( "unsafe_cloud_coverage_1_active" ):
+template <typename T>
+T AWSConfig::get_lookout_unsafe_parameter( const char *key )
+{
+	switch( str2int( key )) {
+		case str2int( "unsafe_cloud_coverage_1_active" ):
 		case str2int( "unsafe_cloud_coverage_2_active" ):
 		case str2int( "unsafe_cloud_coverage_1_delay" ):
 		case str2int( "unsafe_cloud_coverage_2_delay" ):
@@ -223,7 +223,39 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "unsafe_wind_speed_2_max" ):
 		case str2int( "unsafe_wind_speed_1_missing" ):
 		case str2int( "unsafe_wind_speed_2_missing" ):
+			return json_config[key].as<T>();
+	}
+	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
+}
+template <typename T>
+T AWSConfig::get_parameter( const char *key )
+{
+	if ( !strncmp( key, "unsafe_", 7 ))
+		return get_lookout_unsafe_parameter<T>( key );
+
+	if ( !strncmp( key, "safe_", 5 ))
+		return get_lookout_safe_parameter<T>( key );
 		
+	switch( str2int( key )) {
+
+		case str2int( "anemometer_model" ):
+		case str2int( "config_iface" ):
+		case str2int( "config_port" ):
+		case str2int( "wind_vane_model" ):
+			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
+
+		case str2int( "eth_dns" ):
+		case str2int( "eth_gw" ):
+		case str2int( "eth_ip" ):
+		case str2int( "eth_ip_mode" ):
+		case str2int( "lookout_enabled" ):
+		case str2int( "msas_calibration_offset" ):
+		case str2int( "pref_iface" ):
+		case str2int( "rain_event_guard_time" ):
+		case str2int( "remote_server" ):
+		case str2int( "tzname" ):
+
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
 		case str2int( "wifi_ap_gw" ):

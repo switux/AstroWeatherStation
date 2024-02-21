@@ -26,9 +26,7 @@
 #include "Adafruit_TSL2591.h"
 #include <Preferences.h>
 #include <ArduinoJson.h>
-#include <TinyGPSPlus.h>
 
-#include "AWSGPS.h"
 #include "config_manager.h"
 #include "SQM.h"
 #include "device.h"
@@ -36,24 +34,8 @@
 #include "anemometer.h"
 #include "wind_vane.h"
 
-const byte LOW_BATTERY_COUNT_MIN = 5;
-const byte LOW_BATTERY_COUNT_MAX = 10;
-
-const unsigned short 	BAT_V_MAX		= 4200;		// in mV
-const unsigned short	BAT_V_MIN		= 3000;		// in mV
-const byte 				BAT_LEVEL_MIN	= 33;		// in %, corresponds to ~3.4V for a typical Li-ion battery
-const unsigned short	VCC				= 3300;		// in mV
-const unsigned int		V_DIV_R1		= 82000;	// voltage divider R1 in ohms
-const unsigned int		V_DIV_R2		= 300000;	// voltage divider R2 in ohms
-const unsigned short	ADC_MAX			= 4096;		// 12 bits resolution
-const float				V_MAX_IN		= ( BAT_V_MAX*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
-const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in mV
-const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
-const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
-
 const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
 const unsigned int	TSL_MAX_LUX					= 88000;
-
 
 class AWSSensorManager {
 
@@ -64,7 +46,6 @@ class AWSSensorManager {
     Adafruit_TSL2591	*tsl				= nullptr;
     Hydreon				rain_sensor;
     SQM					sqm;
-    AWSGPS				gps;
 	Anemometer			anemometer;
 	Wind_vane			wind_vane;
 	
@@ -93,7 +74,6 @@ class AWSSensorManager {
     bool				poll_sensors( void );
     const char 			*rain_intensity_str( void );
     bool				rain_sensor_available( void );
-    void 				read_battery_level( void );
     void				read_rain_sensor( void );
     void				read_sensors( void );
     void				reset_rain_event( void );
@@ -106,13 +86,11 @@ class AWSSensorManager {
 bool sync_time( void );
 
     void initialise_BME( void );
-    void initialise_GPS( I2C_SC16IS750 * );
     void initialise_MLX( void );
     void initialise_TSL( void );
     void poll_sensors_task( void * );
     void read_anemometer();
     void read_BME( void );
-    void read_GPS( void );
     void read_MLX( void );
     void read_TSL( void );
     void read_wind_vane( void );

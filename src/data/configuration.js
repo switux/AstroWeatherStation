@@ -1,6 +1,6 @@
 function config_section_active( section_name, yes_no )
 {
-	if ( yes_no == true ) {
+	if ( yes_no ) {
 
 		document.getElementById( section_name ).style.display = 'flex';
 		document.getElementById( section_name ).style.backgroundColor = '#f6f6f6';
@@ -82,7 +82,7 @@ function fill_lookout_values( values )
 	fill_lookout_value( "unsafe_cloud_coverage_2", true, true, values );
 	fill_lookout_value( "unsafe_rain_intensity", true, true, values );
 
-	fill_lookout_value( "safe_wind_speed_active", false, false, values );
+	fill_lookout_value( "safe_wind_speed", false, false, values );
 	fill_lookout_value( "safe_cloud_coverage_1", true, false, values );
 	fill_lookout_value( "safe_cloud_coverage_2", true, false, values );
 	fill_lookout_value( "safe_rain_intensity", false, false, values );
