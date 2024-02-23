@@ -132,7 +132,6 @@ class AstroWeatherStation {
 		station_data_t		station_data;
 		station_devices_t	station_devices;
 		etl::string<32>		unique_build_id;
-		etl::string<32>		uptime_str;
 		AWSLookout			lookout;
 
 		void			check_rain_event_guard_time( uint16_t );
@@ -191,7 +190,6 @@ class AstroWeatherStation {
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );
-		etl::string_view	get_uptime_str( void );
 		byte				get_wifi_sta_cidr_prefix( void );
 		IPAddress			*get_wifi_sta_dns( void );
 		IPAddress			*get_wifi_sta_gw( void );

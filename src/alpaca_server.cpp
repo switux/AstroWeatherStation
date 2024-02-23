@@ -910,7 +910,6 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 		strlcat( json_string, "]", len );
 	else
 		return false;
-		Serial.printf("CONFIGDEV=%s\n",json_string);
 	return true;
 }
 

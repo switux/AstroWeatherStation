@@ -78,6 +78,14 @@ const bool				DEFAULT_LOOKOUT_ENABLED					= false;
 const float				DEFAULT_MSAS_CORRECTION					= -0.55;
 const aws_iface			DEFAULT_PREF_IFACE						= aws_iface::wifi_ap;
 
+const int				DEFAULT_K1								= 33;
+const int				DEFAULT_K2								= 0;
+const int				DEFAULT_K3								= 8;
+const int				DEFAULT_K4								= 100;
+const int				DEFAULT_K5								= 100;
+const int				DEFAULT_K6								= 0;
+const int				DEFAULT_K7								= 0;
+
 const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME			= 60;
 
 const bool				DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE	= false;
@@ -157,18 +165,20 @@ class AWSConfig {
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;
 				
-		bool read_config( void );
-		bool read_file( const char * );
-		bool read_hw_info_from_nvs( void );
-		void read_root_ca( void );
-		void set_missing_lookout_parameters_to_default_values( void );
-		void set_missing_lookout_safe_parameters_to_default_values( void );
-		void set_missing_lookout_unsafe_parameters_to_default_values( void );
-		void set_missing_network_parameters_to_default_values( void );
-		void set_missing_parameters_to_default_values( void );
-		void set_root_ca( JsonVariant & );
-		void list_files( void );
-		bool verify_entries( JsonVariant & );
+		template <typename T>
+		T 		get_aag_parameter( const char * );
+		void	list_files( void );
+		bool	read_config( void );
+		bool	read_file( const char * );
+		bool	read_hw_info_from_nvs( void );
+		void	read_root_ca( void );
+		void	set_missing_lookout_parameters_to_default_values( void );
+		void	set_missing_lookout_safe_parameters_to_default_values( void );
+		void	set_missing_lookout_unsafe_parameters_to_default_values( void );
+		void	set_missing_network_parameters_to_default_values( void );
+		void	set_missing_parameters_to_default_values( void );
+		void	set_root_ca( JsonVariant & );
+		bool	verify_entries( JsonVariant & );
 };
 
 constexpr unsigned int str2int( const char* str, int h = 0 )
@@ -228,6 +238,24 @@ T AWSConfig::get_lookout_unsafe_parameter( const char *key )
 	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
+
+template <typename T>
+T AWSConfig::get_aag_parameter( const char *key )
+{
+	switch( str2int( key )) {
+		case str2int( "k1" ):
+		case str2int( "k2" ):
+		case str2int( "k3" ):
+		case str2int( "k4" ):
+		case str2int( "k5" ):
+		case str2int( "k6" ):
+		case str2int( "k7" ):
+			return json_config[key].as<T>();
+	}
+	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
+}
+
 template <typename T>
 T AWSConfig::get_parameter( const char *key )
 {
@@ -236,10 +264,15 @@ T AWSConfig::get_parameter( const char *key )
 
 	if ( !strncmp( key, "safe_", 5 ))
 		return get_lookout_safe_parameter<T>( key );
-		
+
+	if ( *key == 'k' )
+		return get_aag_parameter<T>( key );
+
 	switch( str2int( key )) {
 
+		case str2int( "alpaca_iface" ):
 		case str2int( "anemometer_model" ):
+		case str2int( "cloud_coverage_formula" ):
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
 		case str2int( "wind_vane_model" ):
@@ -255,7 +288,6 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "rain_event_guard_time" ):
 		case str2int( "remote_server" ):
 		case str2int( "tzname" ):
-
 		case str2int( "url_path" ):
 		case str2int( "wifi_ap_dns" ):
 		case str2int( "wifi_ap_gw" ):

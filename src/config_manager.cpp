@@ -560,6 +560,27 @@ void AWSConfig::set_missing_lookout_unsafe_parameters_to_default_values( void )
 }
 void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
 {
+	if ( !json_config.containsKey( "k1" ))
+		json_config["k1"] = DEFAULT_K1;
+
+	if ( !json_config.containsKey( "k2" ))
+		json_config["k2"] = DEFAULT_K3;
+
+	if ( !json_config.containsKey( "k3" ))
+		json_config["k3"] = DEFAULT_K3;
+
+	if ( !json_config.containsKey( "k4" ))
+		json_config["k4"] = DEFAULT_K4;
+
+	if ( !json_config.containsKey( "k5" ))
+		json_config["k5"] = DEFAULT_K5;
+
+	if ( !json_config.containsKey( "k6" ))
+		json_config["k6"] = DEFAULT_K6;
+
+	if ( !json_config.containsKey( "k7" ))
+		json_config["k7"] = DEFAULT_K7;
+
 	if ( !json_config.containsKey( "lookout_enabled" ))
 		json_config["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
 
@@ -609,9 +630,17 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "alpaca_iface" ):
 			case str2int( "anemometer_model" ):
+			case str2int( "cloud_coverage_formula" ):
 			case str2int( "eth_dns" ):
 			case str2int( "eth_gw" ):
 			case str2int( "eth_ip" ):
+			case str2int( "k1" ):
+			case str2int( "k2" ):
+			case str2int( "k3" ):
+			case str2int( "k4" ):
+			case str2int( "k5" ):
+			case str2int( "k6" ):
+			case str2int( "k7" ):
 			case str2int( "pref_iface" ):
 			case str2int( "rain_event_guard_time" ):
 			case str2int( "remote_server" ):

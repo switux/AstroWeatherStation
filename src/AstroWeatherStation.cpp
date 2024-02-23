@@ -1,5 +1,5 @@
-/*
-  	AstroWeatherStation.cpp
+/*  	
+	AstroWeatherStation.cpp
 
 	(c) 2023-2024 F.Lesage
 
@@ -363,20 +363,8 @@ time_t AstroWeatherStation::get_timestamp( void )
 
 uint32_t AstroWeatherStation::get_uptime( void )
 {
+	compute_uptime();
 	return station_data.health.uptime;
-}
-
-etl::string_view AstroWeatherStation::get_uptime_str( void )
-{
-	int32_t aws_uptime = get_uptime();
-
-	int days = floor( aws_uptime / ( 3600 * 24 ));
-	int hours = floor( fmod( aws_uptime, 3600 * 24 ) / 3600 );
-	int minutes = floor( fmod( aws_uptime, 3600 ) / 60 );
-	int seconds = fmod( aws_uptime, 60 );
-
-	snprintf( uptime_str.data(), uptime_str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
-	return etl::string_view( uptime_str );
 }
 
 byte AstroWeatherStation::get_wifi_sta_cidr_prefix( void )
@@ -759,7 +747,8 @@ void AstroWeatherStation::read_GPS( void )
 
 			// flawfinder: ignore
 			etl::string<32> buf;
-			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime( &station_data.gps.time.tv_sec ) );
+			struct tm dummy;
+			strftime( buf.data(), buf.capacity(), "%Y-%m-%d %H:%M:%S", localtime_r( &station_data.gps.time.tv_sec, &dummy ) );
 			Serial.printf( "[DEBUG] GPS FIX. LAT=%f LON=%f ALT=%f DATETIME=%s\n", station_data.gps.latitude, station_data.gps.longitude, station_data.gps.altitude, buf.data() );
 		}
 
