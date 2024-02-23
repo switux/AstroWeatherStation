@@ -311,6 +311,7 @@ void AWSSensorManager::read_MLX( void )
 			t += t67;
 			sensor_data.weather.sky_temperature -= t;
 		}
+
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );
