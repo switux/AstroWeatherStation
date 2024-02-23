@@ -66,7 +66,15 @@ void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
 
 void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 {
-	request->send( 200, "text/plain", station.get_uptime_str().data() );
+	int32_t			uptime	= station.get_uptime();
+	int				days	= floor( uptime / ( 3600 * 24 ));
+	int				hours	= floor( fmod( uptime, 3600 * 24 ) / 3600 );
+	int				minutes	= floor( fmod( uptime, 3600 ) / 60 );
+	int				seconds	= fmod( uptime, 60 );
+	etl::string<16>	str;
+	
+	snprintf( str.data(), str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
+	request->send( 200, "text/plain", str.data() );
 }
 
 void AWSWebServer::index( AsyncWebServerRequest *request )

@@ -48,7 +48,7 @@ class AWSSensorManager {
     SQM					sqm;
 	Anemometer			anemometer;
 	Wind_vane			wind_vane;
-	
+	std::array<int,7>	k;
 	AWSConfig 			*config				= nullptr;
 	SoftwareSerial		rs485_bus;
 	
@@ -95,7 +95,14 @@ bool sync_time( void );
     void read_TSL( void );
     void read_wind_vane( void );
     void retrieve_sensor_data( void );
+	template <typename T>
+	int	sign( T );
 
 };
 
+template <typename T>
+int AWSSensorManager::sign(T val)
+{
+    return (T(0) < val) - (val < T(0));
+}
 #endif

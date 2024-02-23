@@ -93,7 +93,14 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
         	    (*poll_proxy)( NULL );
 			}, "SensorsTask", 3000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
 	}
-
+	k[0] = config->get_parameter<int>( "k1" );
+	k[1] = config->get_parameter<int>( "k2" );
+	k[2] = config->get_parameter<int>( "k3" );
+	k[3] = config->get_parameter<int>( "k4" );
+	k[4] = config->get_parameter<int>( "k5" );
+	k[5] = config->get_parameter<int>( "k6" );
+	k[6] = config->get_parameter<int>( "k7" );
+	
 	return true;
 }
 
@@ -291,9 +298,20 @@ void AWSSensorManager::read_MLX( void )
 		sensor_data.weather.ambient_temperature = mlx->readAmbientTempC();
 		sensor_data.weather.sky_temperature = mlx->readObjectTempC();
 
-		// Basic formula, clear / overcast
-		sensor_data.weather.cloud_coverage = (( sensor_data.weather.sky_temperature - sensor_data.weather.ambient_temperature ) <= -15 ) ? 0 : 2;
-		
+		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 )
+			sensor_data.weather.cloud_coverage = (( sensor_data.weather.sky_temperature - sensor_data.weather.ambient_temperature ) <= -15 ) ? 0 : 2;
+		else {
+			Serial.printf("AAG FORMULA\n");
+			float t = ( k[0] / 100 ) * ( sensor_data.weather.ambient_temperature - k[1] / 10 ) * ( k[2] / 100 ) * pow( exp( k[3] / 1000 * sensor_data.weather.ambient_temperature ), k[4]/100 );
+			float t67;
+			if ( abs( k[1] / 10 - sensor_data.weather.ambient_temperature ) < 1 )
+				t67 = sign<int>( k[5] ) * sign<float>( sensor_data.weather.ambient_temperature - k[1]/10) * ( k[1] / 10 - sensor_data.weather.ambient_temperature );
+			else
+				t67 = k[5] / 10 * sign( sensor_data.weather.ambient_temperature - k[1]/10 ) * ( log( abs( k[1]/10 - sensor_data.weather.ambient_temperature ))/log(10) + k[6] / 100 );
+			t += t67;
+			sensor_data.weather.sky_temperature -= t;
+		}
+
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );

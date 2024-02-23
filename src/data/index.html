@@ -5,39 +5,46 @@
 		AstroWeatherStation -- Configuration
 	</title>
 	<style>
-			body { background-color: #bcc3cb; }
+		body { background: black; font-family: helvetica;}
+		td { border-bottom: 1px dotted #606060; }
 	</style>
 	<script src="configuration.js"></script>
 </head>
 	
-<body onload="display_values();">
+<body onload="retrieve_display_data();">
 
-	<div id="banner" style="display:flex;flex-direction: row">
-		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(0);">General</div>
-		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(1);">Network</div>
-		<div id="banner_sensors" style="border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(2);">Sensors</div>
-		<div id="banner_lookout" style="border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel(3);">Lookout</div>
-	</div>
+	<div id="banners" style="display:flex;flex-direction: row">
+		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('general');">General</div>
+		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('network');">Network</div>
+		<div id="banner_sensors" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('sensors');">Sensors</div>
+		<div id="banner_others" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('others');">Devices</div>
+		<div id="banner_lookout" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('lookout');">Lookout</div>
+		<div id="banner_alpaca" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('alpaca');">ALPACA</div>
+		<div id="banner_dashboard" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('dashboard');">Dashboard</div>
+	</div> <!-- banners -->
+
+	<form method="post" action="" id="config"/>
 
 	<div id="config_panel">
 
-		<div id="general">
+		<div id="general" style="border-radius: 0px 5px 5px 5px">
 
-			<form method="post" action="" id="config"/>
+			<div id="_general" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
-			<table aria-describedby="General config">
-				<tr><th/></tr>
-				<tr><td>TZ Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
-				<tr><td>Dome control</td><td><input id="has_dome" form="config" name="has_dome" type="checkbox"/></td></tr>
-			</table>
+				<table aria-describedby="General config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr><td>Timezone Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
+				</table>
 
+			</div> <!-- _general -->
+			
 		</div> <!-- general -->
 	
 		<div id="network" style="flex-direction:line">
 
-			<div>
-				<table aria-describedby="Network config">
-					<tr><th/></tr>
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+				<table aria-describedby="Network config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
 					<tr id="iface_option" style="display:none">
 						<td>Preferred interface</td>
 						<td>
@@ -144,7 +151,7 @@
 					</tr>
 				</table>
 			</div>
-			<div>
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 				<table aria-describedby="ROOT CA">
 					<tr><th/></tr>
 					<tr>
@@ -157,69 +164,114 @@
 		
 		<div id="sensors">
 	
-			<table aria-describedby="Sensors config">
-				<tr><th/></tr>
-				<tr>
-					<td>Temperature/Pressure/Humidity</td>
-					<td><input form="config" name="has_bme" type="checkbox" id="has_bme"/></td>
-				</tr>
-				<tr>
-					<td>Luminosity</td>
-					<td><input form="config" name="has_tsl" type="checkbox" id="has_tsl"/></td>
-				</tr>
-				<tr>
-					<td>Clouds</td>
-					<td><input form="config" name="has_mlx" type="checkbox" id="has_mlx"/></td>
-				</tr>
-				<tr>
-					<td>Wind speed</td>
-					<td><input form="config" name="has_ws" type="checkbox" id="has_ws"/></td>
-				</tr>
-				<tr id="ws_config">
-					<td> - Model</td>
-					<td>
-						<select form="config" name="anemometer_model" id="anemometer_model">
-							<option id="ws_0" value="0">PR-3000-FSJT-N01</option>
-							<option id="ws_1" value="1">GD-FS-RS485</option>
-							<option id="ws_2" value="2">VMS-3003-CFSFX-N01</option>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<td>Wind direction</td>
-					<td><input form="config" name="has_wv" type="checkbox" id="has_wv"/></td>
-				</tr>
-				<tr id="wv_config">
-					<td> - Model</td>
-					<td>
-						<select form="config" name="wind_vane_model" id="wind_vane_model">
-							<option id="wv_0" value="0">PR-3000-FXJT-N01</option>
-							<option id="wv_1" value="1">GD-FX-RS485</option>
-							<option id="wv_2" value="2">VMS-3003-CFSFX-N01</option>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<td>Rain</td>
-					<td><input form="config" name="has_rain_sensor" type="checkbox" id="has_rain_sensor"/></td>
-				</tr>
-				<tr>
-					<td>GPS</td>
-					<td><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
-				</tr>
-			</table>
+			<div id="sensor_list" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Sensors config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Sensor</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Parameters</th></tr>
+					<tr>
+						<td>Temperature / Pressure / Humidity</td>
+						<td style="text-align:center"><input form="config" name="has_bme" type="checkbox" id="has_bme"/></td>
+					</tr>
+					<tr>
+						<td>Luminosity / SQM</td>
+						<td style="text-align:center"><input form="config" name="has_tsl" type="checkbox" id="has_tsl"/></td>
+					</tr>
+					<tr>
+						<td>Cloud detection</td>
+						<td style="text-align:center"><input form="config" name="has_mlx" type="checkbox" id="has_mlx"/></td>
+						<td>
+							K1=<input style="border: 0px" form="config" name="k1" type="text" id="k1" size=3 value="33"/>
+							K2=<input style="border: 0px" form="config" name="k2" type="text" id="k2" size=3 value="0"/>
+							K3=<input style="border: 0px" form="config" name="k3" type="text" id="k3" size=3 value="8"/>
+							K4=<input style="border: 0px" form="config" name="k4" type="text" id="k4" size=3 value="100"/>
+							K5=<input style="border: 0px" form="config" name="k5" type="text" id="k5" size=3 value="100"/>
+							K6=<input style="border: 0px" form="config" name="k6" type="text" id="k6" size=3 value="0"/>
+							K7=<input style="border: 0px" form="config" name="k7" type="text" id="k7" size=3 value="0"/>
+						</td>
+					</tr>
+					<tr>
+						<td>Anemometer</td>
+						<td style="text-align:center"><input form="config" name="has_ws" type="checkbox" id="has_ws" onclick="checkbox_change(this);"/></td>
+						<td> Model:
+							<select form="config" name="anemometer_model" id="anemometer_model">
+								<option id="ws_none" value="">None</option>
+								<option id="ws_0" value="0">PR-3000-FSJT-N01</option>
+								<option id="ws_1" value="1">GD-FS-RS485</option>
+								<option id="ws_2" value="2">VMS-3003-CFSFX-N01</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Wind vane</td>
+						<td style="text-align:center"><input form="config" name="has_wv" type="checkbox" id="has_wv" onclick="checkbox_change(this);"/></td>
+						<td> Model:
+							<select form="config" name="wind_vane_model" id="wind_vane_model">
+								<option id="wv_none" value="">None</option>
+								<option id="wv_0" value="0">PR-3000-FXJT-N01</option>
+								<option id="wv_1" value="1">GD-FX-RS485</option>
+								<option id="wv_2" value="2">VMS-3003-CFSFX-N01</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Rain</td>
+						<td style="text-align:center"><input form="config" name="has_rain_sensor" type="checkbox" id="has_rain_sensor"/></td>
+					</tr>
+				</table>
+
+			</div> <!-- sensor_list -->
+
 		</div> <!-- sensors -->
+
+		<div id="others">
+
+			<div id="devices" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Other devices config"  style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Device</th><th  style="border-bottom: 1px solid">Enabled</th></tr>
+					<tr>
+						<td>GPS</td>
+						<td style="text-align:center"><input form="config" name="has_gps" type="checkbox" id="has_gps"/></td>
+					</tr>
+					<tr>
+						<td>Dome</td>
+						<td style="text-align:center"><input id="has_dome" form="config" name="has_dome" type="checkbox"/></td>
+					</tr>
+				</table>
+
+			</div> <!-- devices -->
+			
+		</div> <!-- others -->
+
+		<div id="alpaca">
+
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="ALPACA setup"   style="margin: 0 auto">
+					<tr><th></tr>
+					<tr><td>Name</td><td>AstroWeatherStation</td></tr>
+					<tr><td>Manufacturer</td><td>Lesage F. (lesage@loads.ch)</td></tr>
+					<tr><td>ALPACA Discovery service</td><td id="discovery_svc"></td></tr>
+					<tr><td>ALPACA Discovery port </td><td id="discovery_port"></td></tr>
+					<tr><td>Information</td><td><a href="https://github.com/switux/AstroWeatherStation">GitHub page</a></td></tr>
+				</table>
+			</div> <!-- devices -->
+			
+		</div> <!-- alpaca -->
 
 		<div id="lookout" style="display: flex; flex-direction: column">
 
-			<div id="enabled" style="text-align:center; width:15%; display:flex; border: 2px solid; border-color: red; border-radius: 5px; margin: 10px">
+			<div id="enabled" style="text-align:center; width:auto; display:flex; border: 2px solid; border-color: red; border-radius: 5px; margin: 10px">
 				<p style="font-weight: bold;color: red;display:inline-block;margin: auto; padding: 20px">Lookout enabled : <input form="config" type="checkbox" name="lookout_enabled" id="lookout_enabled"></p>
 			</div> <!-- enabled -->
-			<div id="cloud_coverage_formula" style="text-align:center;width: 20%;display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
-				Cloud coverage formula: <input form="config" type="radio" name="aag_formula" value="aag"> AAG <input form="config" type="radio" name="aag_formula" value="aws"> AWS
-			</div>			
+
+			<div id="cloud_coverage_formula" style="text-align:center;width: auto;display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
+				Cloud coverage formula: <input form="config" type="radio" name="cloud_coverage_formula" value="1"> AAG <input form="config" type="radio" name="cloud_coverage_formula" value="0"> AWS
+			</div> <!-- cloud_coverage_formula -->
+
 			<div id="conditions" style="flex-direction: row;display: flex; margin: 10px">
-				<div id="unsafe" style="width: 40%;border:2px solid; border-radius: 10px; padding: 10px; background-color: #e0cccc">
+
+				<div id="unsafe" style="width: auto;border:2px solid; border-radius: 10px; padding: 10px; background-color: #e0cccc">
 					<p style="font-weight: bold;text-align: center">Unsafe conditions</p>
 					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Lookout config">
 						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th><th style="border-bottom: 1px solid">Sensor issue</th></tr>
@@ -294,13 +346,14 @@
 									<option value="7">Violent</option>
 								</select>
 							</td>
-							<td>Immediate<input form="" type="checkbox" name="unsafe_rain_intensity_delay" id="unsafe_rain_intensity_delay" style="display:hidden"></td>
+							<td>Immediate<input form="" type="checkbox" name="unsafe_rain_intensity_delay" id="unsafe_rain_intensity_delay" style="display:none"></td>
 							<td><input form="config" type="checkbox" name="unsafe_rain_intensity_missing" id="unsafe_rain_intensity_missing"></td>
 						</tr>
 					</table>
 					<p>Once conditions are considered as unsafe, they will remain alike until safe conditions are met</p>
 				</div> <!-- unsafe -->
-				<div id="safe" style="width: 40%;border:2px solid; border-radius: 10px; padding: 10px; background-color: #cce0cc;margin-left: 10px">
+
+				<div id="safe" style="width: auto;border:2px solid; border-radius: 10px; padding: 10px; background-color: #cce0cc;margin-left: 10px">
 					<p style="font-weight: bold;text-align: center">Safe conditions</p>
 					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Lookout config">
 						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th></tr>
@@ -353,13 +406,58 @@
 					</table>
 					<p>If no safe conditions are set, the lookout will not take action to switch back to safe mode</p>
 				</div> <!-- unsafe -->
+
 			</div> <!-- conditions -->
-		</div>
-		<div id="apply">
-			<input type="button" onclick="send_config();" id="toto" form="config" value="Apply">
+
+		</div> <!-- loookout -->
+
+		<div id="dashboard">
+
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Station health" style="margin: 0 auto">
+					<tr><th colspan="2" style="border-bottom: 1px solid">Health report</th></tr>
+					<tr><td>Battery level</td><td><span id="battery_level"></span></td></tr>
+					<tr><td>Uptime</td><td><span id="uptime"></span></td></tr>
+					<tr><td>Initial heap size</td><td id="initial_heap"></td></tr>
+					<tr><td>Current heap size</td><td id="current_heap"></td></tr>
+					<tr><td>Largest free heap block</td><td id="largest_heap_block"></td></tr>
+				</table>
+			</div> <!-- health -->
+			
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="OTA" style="margin: 0 auto">
+					<tr><th colspan="2" style="border-bottom: 1px solid">OTA</tr>
+					<tr><td>OTA board model</td><td><span id="ota_board"></span></td></tr>
+					<tr><td>OTA device ID</td><td><span id="ota_device"></span></td></tr>
+					<tr><td>OTA config</td><td id="ota_config"></td></tr>
+					<tr><td>OTA status</td><td id="ota_status"></td></tr>
+				</table>
+
+			</div> <!-- OTA -->
+
+			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="OTA" style="margin: 0 auto">
+					<tr><th colspan="2" style="border-bottom: 1px solid">GPS</tr>
+					<tr><td>GPS Fix</td><td><span id="gps_fix"></span></td></tr>
+					<tr><td>Longitude</td><td><span id="gps_longitude"></span></td></tr>
+					<tr><td>Latitude</td><td id="gps_latitude"></td></tr>
+					<tr><td>Altitude</td><td id="gps_altitude"></td></tr>
+					<tr><td>GPS time</td><td id="gps_time"></td></tr>
+				</table>
+
+			</div> <!-- GPS -->
+
+		</div> <!-- dashboard -->
+
+		<div id="apply" style="margin: 10px">
+			<input style="text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
+			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="send_config();" id="toto" onclick="reboot();" value="REBOOT">
 			<p style="font-weight: bold" id="feedback"></p>
 		</div>
 	
-	</div> <!-- lookout -->
+	</div> <!-- config_panel -->
 </body>
 </html>
