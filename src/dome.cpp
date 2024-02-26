@@ -33,19 +33,15 @@ extern void IRAM_ATTR		_handle_dome_shutter_is_moving( void );
 extern void IRAM_ATTR		_handle_dome_shutter_closed_change( void );
 
 extern AstroWeatherStation	station;
-extern time_t 				last_ntp_time;
-extern uint16_t				ntp_time_misses;
-
-extern AstroWeatherStation	station;
-extern time_t 				last_ntp_time;
-extern uint16_t				ntp_time_misses;
+extern time_t 				last_ntp_time;		// NOSONAR
+extern uint16_t				ntp_time_misses;	// NOSONAR
 
 //
 // IMPORTANT: Some indications about dome shutter status handling by this driver
 //
 //	==> There are 4 pins to control and monitor the dome shutter
 //
-//		Control: two independant systems can be attached, for redundancy, and they are connected to a pull-down resistor (the relay will switch when the signal is down)
+//		Control: two independant systems can be attached, for redundancy, and they are connected to a pull-down resistor (the relay will trigger when the signal is down)
 //				GPIO_DOME_1 & GPIO_DOME_2 if a SC16IS750 GPIO extender is used
 //				GPIO_DOME_1_DIRECT & GPIO_DOME_2_DIRECT if not
 //

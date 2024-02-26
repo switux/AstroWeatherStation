@@ -301,7 +301,7 @@ void AWSSensorManager::read_MLX( void )
 		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 )
 			sensor_data.weather.cloud_coverage = (( sensor_data.weather.sky_temperature - sensor_data.weather.ambient_temperature ) <= -15 ) ? 0 : 2;
 		else {
-			Serial.printf("AAG FORMULA\n");
+
 			float t = ( k[0] / 100 ) * ( sensor_data.weather.ambient_temperature - k[1] / 10 ) * ( k[2] / 100 ) * pow( exp( k[3] / 1000 * sensor_data.weather.ambient_temperature ), k[4]/100 );
 			float t67;
 			if ( abs( k[1] / 10 - sensor_data.weather.ambient_temperature ) < 1 )
@@ -310,8 +310,8 @@ void AWSSensorManager::read_MLX( void )
 				t67 = k[5] / 10 * sign( sensor_data.weather.ambient_temperature - k[1]/10 ) * ( log( abs( k[1]/10 - sensor_data.weather.ambient_temperature ))/log(10) + k[6] / 100 );
 			t += t67;
 			sensor_data.weather.sky_temperature -= t;
-		}
 
+		}
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );
@@ -403,10 +403,9 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 		if ( config->get_has_device( TSL_SENSOR ) ) {
 
-			// FIXME: what if mlx is down, since we get the temperature from it?
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
-				sqm.read_SQM( sensor_data.weather.ambient_temperature );		// FIXME: TSL and MLX are in the same enclosure but it's not relevant
+				sqm.read_SQM( sensor_data.weather.temperature );
 		}
 
 		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
