@@ -104,23 +104,12 @@ void loop()
 
 void IRAM_ATTR _handle_dome_shutter_is_moving( void )
 {
- 	Serial.printf("EVENT DOME MOVING\n");
-	esp_task_wdt_reset();
 	station.handle_dome_shutter_is_moving();
 }
 
-void IRAM_ATTR _handle_dome_shutter_is_closed( void )
+void IRAM_ATTR _handle_dome_shutter_closed_change( void )
 {
- 	Serial.printf("EVENT DOME CLOSED\n");
-	esp_task_wdt_reset();
-	station.handle_dome_shutter_is_closed();
-}
-
-void IRAM_ATTR _handle_dome_shutter_is_opening( void )
-{
- 	Serial.printf("EVENT DOME OPENING\n");
-	esp_task_wdt_reset();
-	station.handle_dome_shutter_is_opening();
+	station.handle_dome_shutter_closed_change();
 }
 
 void IRAM_ATTR _handle_rain_event( void )

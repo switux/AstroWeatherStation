@@ -35,8 +35,9 @@ class AWSWebServer {
 	public:
 
 				AWSWebServer( void ) = default;
+		void attempt_ota_update( AsyncWebServerRequest * );
 		void get_configuration( AsyncWebServerRequest * );
-		void get_sensor_data( AsyncWebServerRequest * );
+		void get_station_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );
 		bool initialise( bool );
 

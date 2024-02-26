@@ -24,6 +24,11 @@
 
 #include <AsyncUDP_ESP32_W5500.hpp>
 
+#include "alpaca_dome.h"
+#include "alpaca_safetymonitor.h"
+#include "alpaca_observingconditions.h"
+#include "alpaca_telescope.h"
+
 const	uint16_t	ALPACA_SERVER_PORT	= 8080;
 
 #define	CONFIGURED_DEVICES	4
@@ -31,11 +36,6 @@ const	uint16_t	ALPACA_SERVER_PORT	= 8080;
 #define	SAFETYMONITOR_UUID	"be358e98-7cff-11ee-8804-93595b17357e"
 #define	DOME_UUID			"e3a90ace-7cff-11ee-b0f6-73db65e0b158"
 #define	TELESCOPE_UUID		"17e70650-8733-11ee-aa35-8f2796da5b48"
-
-#include "alpaca_dome.h"
-#include "alpaca_safetymonitor.h"
-#include "alpaca_observingconditions.h"
-#include "alpaca_telescope.h"
 
 typedef struct configured_device_t {
 

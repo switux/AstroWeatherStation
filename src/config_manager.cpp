@@ -345,8 +345,16 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	SPIFFS.rename( "/aws.conf", "/aws.conf.bak.try" );
 
 	SPIFFS.remove( "/aws.conf.try" );
+	if ( debug_mode )
+		list_files();
+
 	// flawfinder: ignore
 	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
+	if ( !file ) {
+		Serial.printf( "[ERROR] Cannot write configuration file, rolling back.\n" );
+		return false;
+	}
+	
 	s = serializeJson( _json_config, file );
 	file.close();
 	if ( !s ) {

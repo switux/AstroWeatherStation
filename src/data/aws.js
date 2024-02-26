@@ -1,3 +1,19 @@
+let dashboardRefresh;
+const wind_direction = [ 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW' ];
+const MLX_SENSOR = 0x01;
+const TSL_SENSOR = 0x02;
+const BME_SENSOR = 0x04;
+const WV_SENSOR = 0x08;
+const WS_SENSOR = 0x10;
+const RAIN_SENSOR = 0x20;
+
+const	GPS_DEVICE	= 0x40;
+const	DOME_DEVICE = 0x80;
+
+// 12=After OTA Update
+const	RESET_REASON = [ 'Unknown', 'Power on', '', 'SW reset', 'OWDT reset', 'Deep sleep reset', 'SDIO reset', 'Timer group 0 WD reset', 'Timer group 1 WD reset', 'RTC WD reset core', 'Intrusion reset', 'Time group reset CPU', 'SW reset CPU', 'RTC WD reset CPU', 'Reset by PRO CPU', 'Brown out', 'RTC WD Reset' ];
+const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
+
 function checkbox_change( param )
 {
 	switch( param.id ) {
@@ -26,7 +42,7 @@ function config_section_active( section_name, yes_no )
 			document.getElementById( section_name ).style.borderRadius = '5px 5px 5px 5px';
 		else
 			document.getElementById( section_name ).style.borderRadius = '0px 5px 5px 5px';
-			
+
 	} else {
 
 		document.getElementById( section_name ).style.display = 'none';
@@ -51,8 +67,6 @@ function fill_lookout_value( parameter, from_list, sensor_available, values )
 
 function fill_lookout_values( values )
 {
-	console.log( values['lookout_enabled'] );
-	
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
 
 	fill_lookout_value( "unsafe_wind_speed_1", false, true, values );
@@ -102,7 +116,7 @@ function fill_network_values( values )
 		document.getElementById("iface_option").style.display = "none";
 
 	if ( values['pref_iface'] == "2" ) {
-	
+
 		hide_wifi();
 		document.getElementById("show_alpaca_interface").style.display = "none";
 		document.getElementById("ethernet").checked = true;
@@ -158,6 +172,22 @@ function fill_cloud_coverage_parameter_values( values )
 	document.getElementById("k5").value = values['k5'];
 	document.getElementById("k6").value = values['k6'];
 	document.getElementById("k7").value = values['k7'];
+}
+
+function force_ota()
+{
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+
+		if ( this.readyState == 4 && this.status == 200 ) {
+
+			console.log( req.responseText );
+			let values = JSON.parse( req.responseText );
+		}
+	};
+	req.open( "GET", "/ota_update", true );
+	req.send();
+
 }
 
 function hide_wifi()
@@ -222,8 +252,13 @@ function toggle_panel( panel_id )
 	config_section_active( "alpaca", false );
 	config_section_active( "dashboard", false );
 	config_section_active( panel_id, true );
-	if ( panel_id == 'dashboard' )
+	if ( panel_id == 'dashboard' ) {
+
 		fetch_station_data();
+		dashboardRefresh = setInterval( fetch_station_data, 10000 );
+
+	} else
+		clearInterval( dashboardRefresh );
 }
 
 function toggle_wifi_mode( wifi_mode )
@@ -308,7 +343,7 @@ function reboot()
 {
 	let req = new XMLHttpRequest();
 	req.open( "GET", "/reboot", true );
-	req.send();	
+	req.send();
 }
 
 function send_config()
@@ -342,49 +377,128 @@ function show_wifi()
 
 function fetch_station_data()
 {
-	let req = new XMLHttpRequest();
+4	let req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
 			let values = JSON.parse( req.responseText );
-console.log(values);
 			update_dashboard( values );
 		}
 	};
-	req.open( "GET", "/get_sensor_data", true );
+	req.open( "GET", "/get_station_data", true );
 	req.send();
 }
 
-function update_dashboard( values2 )
+function update_dashboard( values )
 {
-
-	document.getElementById("battery_level").textContent = values2['battery_level']+'%';
-	let uptime = values2['uptime'];
+	document.getElementById("battery_level").textContent = values['battery_level']+'%';
+	let uptime = values['uptime'];
 	let days = Math.floor( uptime / ( 3600 * 24 ));
 	let hours = Math.floor( ( uptime % ( 3600 * 24 )) / 3600 );
 	let mins = Math.floor( ( uptime % 3600 ) / 60 );
 	let secs = uptime % 60;
+
 	document.getElementById("uptime").textContent = days+' days '+hours+' hours '+mins+' minutes '+secs+' seconds';
-	document.getElementById("initial_heap").textContent = values2['init_heap_size']+' bytes';
-	document.getElementById("current_heap").textContent = values2['current_heap_size']+' bytes';
-	document.getElementById("largest_heap_block").textContent = values2['largest_free_heap_block']+' bytes';
+	document.getElementById("reset_reason").textContent = RESET_REASON[ values['reset_reason0'] ];
+	document.getElementById("initial_heap").textContent = values['init_heap_size']+' bytes';
+	document.getElementById("current_heap").textContent = values['current_heap_size']+' bytes';
+	document.getElementById("largest_heap_block").textContent = values['largest_free_heap_block']+' bytes';
 
-	document.getElementById("ota_board").textContent = values2['ota_board'];
-	document.getElementById("ota_device").textContent = values2['ota_device'];
-	document.getElementById("ota_config").textContent = values2['ota_config'];
-	
-	document.getElementById("gps_fix").textContent = ( values2['gps_fix'] ) ? 'Yes':'No';
-	document.getElementById("gps_fix").style = ( values2['gps_fix'] ) ? 'color:green':'color:red';
-	document.getElementById("gps_longitude").textContent = values2['gps_longitude'];
-	document.getElementById("gps_latitude").textContent = values2['gps_latitude'];
-	document.getElementById("gps_altitude").textContent = values2['gps_altitude'];
-	console.log('dash');
-	console.log(values2);
+	document.getElementById("ota_board").textContent = values['ota_board'];
+	document.getElementById("ota_device").textContent = values['ota_device'];
+	document.getElementById("ota_config").textContent = values['ota_config'];
+	let str;
+	switch( values['ota_code'] ) {
+		case -3:
+			str = 'Update available';
+			break;
+		case -2:
+			str = 'No update profile';
+			break;
+		case -1:
+			str = 'No update available';
+			break;
+		case 0:
+			str = 'Ok';
+			break;
+		case 1:
+			str = 'Network error (HTTP)';
+			break;
+		case 2:
+			str = 'Write error';
+			break;
+		case 3:
+			str = 'Profile error';
+			break;
+		case 4:
+			str = 'Profile Failed';
+			break;
+		default:
+			str = 'Unknown';
+			break;
+	}
+	document.getElementById("ota_status").textContent = str;
 
+	document.getElementById("gps_fix").textContent = ( values['gps_fix'] ) ? 'Yes':'No';
+	document.getElementById("gps_fix").style = ( values['gps_fix'] ) ? 'color:green':'color:red';
+	document.getElementById("gps_longitude").textContent = values['gps_longitude'];
+	document.getElementById("gps_latitude").textContent = values['gps_latitude'];
+	document.getElementById("gps_altitude").textContent = values['gps_altitude'];
 
-	let date = new Date( values2['gps_time_sec']*1000 + values2['gps_time_usec'] );
-	console.log(date);
-	
-	var iso = date.toISOString().match(/(\d{4}\-\d{2}\-\d{2})T(\d{2}:\d{2}:\d{2}.\d{3})/)
+	let date = new Date( values['gps_time_sec']*1000 + values['gps_time_usec'] );
+	let iso = /(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}.\d{3})/.exec(date.toISOString());
 	document.getElementById("gps_time").textContent = iso[1]+' '+iso[2];
 
+	document.getElementById("dome_shutter_status").textContent = DOME_SHUTTER_STATUS[ values['shutter_status'] ];
+	document.getElementById("dome_shutter_moving").textContent = values['shutter_moving'];
+	document.getElementById("dome_shutter_closed").textContent = values['shutter_closed'];
+	document.getElementById("dome_shutter_close").textContent = values['shutter_close'];
+
+	document.getElementById("temperature").textContent = values['temperature'].toFixed(2);
+	document.getElementById("dewpoint").textContent = values['dew_point'].toFixed(2);
+	document.getElementById("pressure").textContent = values['pressure'].toFixed(2);
+	document.getElementById("rh").textContent = values['rh'].toFixed(2);
+	document.getElementById("windspeed").textContent = values['wind_speed'].toFixed(2);
+	document.getElementById("windgust").textContent = values['wind_gust'].toFixed(2);
+	document.getElementById("winddirection").textContent = ( values['wind_direction'] >= 0 ) ? wind_direction[ values['wind_direction'] ]: 'Unavailable' ;
+
+	document.getElementById("msas").textContent = values['msas'].toFixed(2);
+	document.getElementById("nelm").textContent = values['nelm'].toFixed(2);
+
+	document.getElementById("illuminance").textContent = values['lux'].toFixed(2);
+	document.getElementById("irradiance").textContent = values['irradiance'].toFixed(2);
+
+	document.getElementById("rainintensity").textContent = values['rain_intensity'];
+
+	if ( values['available_sensors'] & BME_SENSOR ) {
+		document.getElementById('temp_led').querySelector('.led_color').style.backgroundColor = 'green';
+		document.getElementById('pres_led').querySelector('.led_color').style.backgroundColor = 'green';
+		document.getElementById('rh_led').querySelector('.led_color').style.backgroundColor = 'green';
+	} else {
+		document.getElementById('temp_led').querySelector('.led_color').style.backgroundColor = 'red';
+		document.getElementById('pres_led').querySelector('.led_color').style.backgroundColor = 'red';
+		document.getElementById('rh_led').querySelector('.led_color').style.backgroundColor = 'red';
+	}
+
+	if ( values['available_sensors'] & WS_SENSOR )
+		document.getElementById('ws_led').querySelector('.led_color').style.backgroundColor = 'green';
+	else
+		document.getElementById('ws_led').querySelector('.led_color').style.backgroundColor = 'red';
+
+	if ( values['available_sensors'] & WV_SENSOR )
+		document.getElementById('wv_led').querySelector('.led_color').style.backgroundColor = 'green';
+	else
+		document.getElementById('wv_led').querySelector('.led_color').style.backgroundColor = 'red';
+
+	if ( values['available_sensors'] & RAIN_SENSOR )
+		document.getElementById('rain_led').querySelector('.led_color').style.backgroundColor = 'green';
+	else
+		document.getElementById('rain_led').querySelector('.led_color').style.backgroundColor = 'red';
+
+	if ( values['available_sensors'] & TSL_SENSOR ) {
+		document.getElementById('tsl_led').querySelector('.led_color').style.backgroundColor = 'green';
+		document.getElementById('sqm_led').querySelector('.led_color').style.backgroundColor = 'green';
+	} else {
+		document.getElementById('tsl_led').querySelector('.led_color').style.backgroundColor = 'red';
+		document.getElementById('sqm_led').querySelector('.led_color').style.backgroundColor = 'red';
+	}
 }

@@ -101,8 +101,8 @@ bool sync_time( void );
 };
 
 template <typename T>
-int AWSSensorManager::sign(T val)
+int AWSSensorManager::sign( T val )
 {
-    return (T(0) < val) - (val < T(0));
+	return static_cast<int>(T(0) < val) - static_cast<int>(val < T(0));
 }
 #endif

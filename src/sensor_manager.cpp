@@ -37,8 +37,8 @@
 #include "sensor_manager.h"
 #include "AstroWeatherStation.h"
 
-//RTC_DATA_ATTR byte	prev_available_sensors = 0;
-//RTC_DATA_ATTR byte	available_sensors = 0;
+RTC_DATA_ATTR byte	prev_available_sensors = 0;
+RTC_DATA_ATTR byte	available_sensors = 0;
 
 SemaphoreHandle_t sensors_read_mutex = NULL;
 
@@ -236,7 +236,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 				sensor_data.weather.wind_gust = anemometer.get_wind_gust();
 			else
 				sensor_data.weather.wind_gust = 0.F;
-
+			sensor_data.available_sensors = available_sensors;
 		}
 		delay( polling_ms_interval );
 	}
@@ -311,7 +311,6 @@ void AWSSensorManager::read_MLX( void )
 			t += t67;
 			sensor_data.weather.sky_temperature -= t;
 		}
-
 		if ( debug_mode ) {
 
 			Serial.print( "[DEBUG] Ambient temperature = " );
@@ -338,12 +337,11 @@ void AWSSensorManager::read_sensors( void )
 	digitalWrite( GPIO_ENABLE_3_3V, LOW );
 	digitalWrite( GPIO_ENABLE_12V, LOW );
 	
-/*	if ( prev_available_sensors != available_sensors ) {
+	if ( prev_available_sensors != available_sensors ) {
 
 		prev_available_sensors = available_sensors;
-		station.report_unavailable_sensors( available_sensors );
+		station.report_unavailable_sensors();
 	}
-*/
 }
 
 void AWSSensorManager::read_TSL( void )

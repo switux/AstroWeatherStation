@@ -1,3 +1,22 @@
+/*
+  	AWSLookout.cpp
+
+	(c) 2024 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
@@ -24,7 +43,8 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 
 	if ( !rule.ts )
 		rule.ts = value_ts;
-	
+
+	Serial.printf("NOW=%d RULE.TS=%d\n", now, rule.ts );
 	if (( now - rule.ts ) >= rule.delay ) {
 
 		if ( std::is_same<T, float>::value )
@@ -143,14 +163,22 @@ void AWSLookout::check_rules( void )
 			unsafe_cloud_coverage_1.ts = 0;
 			unsafe_cloud_coverage_2.ts = 0;
 		}
-
-    tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
+		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b )
 			unsafe_rain_intensity.ts = 0;
 	}
 
+	if ( is_safe && !tmp_is_unsafe ) {
+
+		Serial.printf( "[INFO] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
+		dome->open_shutter();
+		return;
+
+	}
+
 	if ( !tmp_is_safe || tmp_is_unsafe ) {
-		
+
+		is_safe = false;
 		Serial.printf( "[INFO] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
 		dome->close_shutter();
 		return;
@@ -158,6 +186,7 @@ void AWSLookout::check_rules( void )
 
 	if ( !tmp_is_unsafe && tmp_is_safe ) {
 
+		is_safe = true;
 		Serial.printf( "[INFO] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
 		return;
@@ -166,6 +195,34 @@ void AWSLookout::check_rules( void )
 	snprintf( str.data(), str.capacity(), "[INFO] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
+}
+
+etl::string_view AWSLookout::get_rules_state( void )
+{
+	DynamicJsonDocument	rules_state_json(128);
+
+	rules_state_json["unsafe_cloud_coverage_1"] = unsafe_cloud_coverage_1.satisfied;
+	rules_state_json["unsafe_cloud_coverage_2"] = unsafe_cloud_coverage_2.satisfied;
+	rules_state_json["unsafe_wind_speed_1"] = unsafe_wind_speed_1.satisfied;
+	rules_state_json["unsafe_wind_speed_2"] = unsafe_wind_speed_2.satisfied;
+	rules_state_json["unsafe_rain_intensity"] = unsafe_rain_intensity.satisfied;
+
+	rules_state_json["safe_wind_speed"] = safe_wind_speed.satisfied;
+	rules_state_json["safe_cloud_coverage_1"] = safe_cloud_coverage_1.satisfied;
+	rules_state_json["safe_cloud_coverage_2"] = safe_cloud_coverage_2.satisfied;
+	rules_state_json["safe_rain_intensity"] = safe_rain_intensity.satisfied;
+
+	if ( measureJson( rules_state_json ) > rules_state_data.capacity() ) {
+
+		Serial.printf( "[BUG] rules_state_data json is too small. Please report to support!\n" );
+		return etl::string_view( "" );
+
+	}
+	int l = serializeJson( rules_state_json, rules_state_data.data(), rules_state_data.capacity() );
+	if ( debug_mode )
+		Serial.printf( "[DEBUG] lookout_data is %d bytes long, max size is %d bytes.\n", l, rules_state_data.capacity() );
+
+	return etl::string_view( rules_state_data );
 }
 
 void AWSLookout::loop( void * )	// NOSONAR

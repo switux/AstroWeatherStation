@@ -190,7 +190,6 @@ int I2C_SC16IS750:: peek()
 	if ( has_peek )
 		return peek_byte;
 
-	// FIXME: set a mutex?
 	peek_byte = read_byte();
 	has_peek = ( peek_byte >= 0 );
 	return peek_byte;

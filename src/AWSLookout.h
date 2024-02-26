@@ -39,7 +39,8 @@ class AWSLookout
 		bool 					debug_mode				= false;
 		Dome					*dome					= nullptr;
 		bool					enabled 				= false;
-		bool					is_safe					= false;
+		bool					is_safe					= true;
+		etl::string<128>		rules_state_data;
 		bool					rain_event				= false;
 		AWSSensorManager		*sensor_manager			= nullptr;
 		AWSConfig				*config					= nullptr;
@@ -62,10 +63,11 @@ class AWSLookout
 		
 	public:
 
-		AWSLookout( void ) = default;
-		void initialise( AWSConfig *, AWSSensorManager *, Dome *, bool _debug_mode );
-		void loop( void * );
-		void set_rain_event( void );
+							AWSLookout( void ) = default;
+		etl::string_view	get_rules_state( void );
+		void				initialise( AWSConfig *, AWSSensorManager *, Dome *, bool _debug_mode );
+		void				loop( void * );
+		void				set_rain_event( void );
 };
 
 #endif

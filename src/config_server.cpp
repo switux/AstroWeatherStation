@@ -18,6 +18,7 @@
 */
 
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
@@ -38,6 +39,12 @@ extern HardwareSerial Serial1;
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
 
+void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
+{
+	request->send( 200, "text/plain", "Processing request" );
+	station.check_ota_updates();
+}
+
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 {
 	if ( station.get_json_string_config().size() ) {
@@ -49,9 +56,15 @@ void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
 		request->send( 500, "text/plain", "[ERROR] get_configuration() had a problem, please contact support." );
 }
 
-void AWSWebServer::get_sensor_data( AsyncWebServerRequest *request )
+void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 {
-	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE )
+	if ( !station.is_ready() ) {
+
+		request->send( 503, "text/plain", "Station is not ready yet" );
+		return;
+	}
+	
+	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE ) { esp_task_wdt_reset(); }
 		if ( debug_mode )
 			Serial.printf( "[DEBUG] Waiting for sensor data update to complete.\n" );
 
@@ -102,9 +115,10 @@ bool AWSWebServer::initialise( bool _debug_mode )
 	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/configuration.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
 	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
-	server->on( "/get_sensor_data", HTTP_GET, std::bind( &AWSWebServer::get_sensor_data, this, std::placeholders::_1 ));
+	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
 	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
+	server->on( "/ota_update", HTTP_GET, std::bind( &AWSWebServer::attempt_ota_update, this, std::placeholders::_1 ));
 	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/reboot", HTTP_GET, std::bind( &AWSWebServer::reboot, this, std::placeholders::_1 ));
