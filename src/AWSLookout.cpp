@@ -44,7 +44,6 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 	if ( !rule.ts )
 		rule.ts = value_ts;
 
-	Serial.printf("NOW=%d RULE.TS=%d\n", now, rule.ts );
 	if (( now - rule.ts ) >= rule.delay ) {
 
 		if ( std::is_same<T, float>::value )
@@ -125,12 +124,10 @@ void AWSLookout::check_rules( void )
 	} else {
 	
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1", unsafe_wind_speed_1, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b )
-			safe_wind_speed.ts = 0;
+		safe_wind_speed.ts =  b ? 0 : safe_wind_speed.ts;
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #2", unsafe_wind_speed_2, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b )
-			safe_wind_speed.ts = 0;
+		safe_wind_speed.ts = b ? 0 : safe_wind_speed.ts;
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #1", unsafe_cloud_coverage_1, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b ) {
@@ -145,8 +142,8 @@ void AWSLookout::check_rules( void )
 		}
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Rain intensity", unsafe_rain_intensity, sensor_manager->get_available_sensors() & RAIN_SENSOR, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b )
-			safe_rain_intensity.ts = 0;
+		safe_rain_intensity.ts = b ? 0 : safe_rain_intensity.ts;
+
 
 		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<float>( "Wind speed", safe_wind_speed, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
 		if ( b ) {
@@ -164,8 +161,7 @@ void AWSLookout::check_rules( void )
 			unsafe_cloud_coverage_2.ts = 0;
 		}
 		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b )
-			unsafe_rain_intensity.ts = 0;
+		safe_rain_intensity.ts = b ? 0 : safe_rain_intensity.ts;
 	}
 
 	if ( is_safe && !tmp_is_unsafe ) {
@@ -196,6 +192,7 @@ void AWSLookout::check_rules( void )
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
 }
+
 
 etl::string_view AWSLookout::get_rules_state( void )
 {

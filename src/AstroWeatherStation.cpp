@@ -328,7 +328,6 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	int l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
-serializeJson( json_data, Serial );
 
 	return etl::string_view( json_sensor_data );
 }
@@ -575,8 +574,6 @@ void AstroWeatherStation::initialise_GPS( void )
 	}
 	station_devices.gps.start();
 	station_devices.gps.pilot_rtc( true );
-	delay( 1000 );						// Wait a little to get a fix
-
 }
 
 void AstroWeatherStation::initialise_sensors( void )
@@ -1069,7 +1066,6 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 		return false;
 	}
 
-	// flawfinder: ignore
 	if (( ok = ( backlog.printf( "%s\n", data.data() ) == ( data.size() + 1 )) )) {
 
 		if ( debug_mode )

@@ -47,11 +47,6 @@ extern const std::array<std::string, 3> ANEMOMETER_MODEL;
 
 RTC_DATA_ATTR char _can_rollback = 0;	// NOSONAR
 
-//
-// Credits to: https://stackoverflow.com/a/16388610
-//
-
-
 bool AWSConfig::can_rollback( void )
 {
 	return _can_rollback;
