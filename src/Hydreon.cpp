@@ -17,12 +17,16 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <Arduino.h>
+// Keep these two to get rid of compile time errors because of incompatibilities between libraries
+#include <AsyncUDP_ESP32_W5500.hpp>
+#include <ESPAsyncWebSrv.h>
 #include <HardwareSerial.h>
 #include <esp_task_wdt.h>
 
 #include "device.h"
 #include "Hydreon.h"
+#include "common.h"
+#include "AstroWeatherStation.h"
 
 RTC_DATA_ATTR uint16_t rain_sensor_baud = 0;	// NOSONAR
 
@@ -37,6 +41,8 @@ const std::array<float,8>	Hydreon::RAIN_RATES	= {
 															50.1F			// Violent
 														};
 const std::array<uint16_t,7>	Hydreon::BPS 		= { 1200, 2400, 4800, 9600, 19200, 38400, 57600 };
+
+extern AstroWeatherStation	station;
 
 Hydreon::Hydreon( void ) : rg9_read_mutex( xSemaphoreCreateMutex() )
 {
@@ -104,7 +110,6 @@ bool Hydreon::initialise( void )
 		digitalWrite( reset_pin, HIGH );
 	}
 
-	// FIXME: restore alarms
 	switch( status ) {
 
 		case RAIN_SENSOR_OK:
@@ -115,15 +120,15 @@ bool Hydreon::initialise( void )
 			break;
 		case 'B':
 			set_initialised( true );
-//			send_alarm( runtime_config, "Rain sensor low voltage", "", get_debug_mode() );
+			station.send_alarm( "Rain sensor low voltage", "" );
 			break;
 		case 'O':
 			set_initialised( true );
-	//		send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack overflow, report problem to support.", get_debug_mode() );
+			station.send_alarm( "Rain sensor problem", "Reset because of stack overflow, report problem to support." );
 			break;
 		case 'U':
 			set_initialised( true );
-		//	send_alarm( runtime_config, "Rain sensor problem", "Reset because of stack underflow, report problem to support.", get_debug_mode() );
+			station.send_alarm( "Rain sensor problem", "Reset because of stack underflow, report problem to support." );
 			break;
 		default:
 			Serial.printf( "[INFO] Unhandled rain sensor reset code: %d. Report to support.\n", status );
@@ -186,7 +191,6 @@ float Hydreon::get_rain_rate( void )
 byte Hydreon::read_string( void )
 {
 	str.clear();
-	//FIXME: check if really needed
 	delay( 500 );
 
 	if ( sensor.available() > 0 ) {

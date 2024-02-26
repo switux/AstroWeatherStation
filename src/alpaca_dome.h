@@ -37,7 +37,7 @@ class alpaca_dome : public alpaca_device
 {
 	private:
 
-		dome_shutter_status_t	dome_shutter_status	= dome_shutter_status_t::Error;
+		dome_shutter_status_t	dome_shutter_status	= dome_shutter_status_t::Open;
 		etl::string<256>		message_str;
 
 	public:

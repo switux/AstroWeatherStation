@@ -22,9 +22,9 @@
 #ifndef _ALPACA_SAFETYMONITOR_H
 #define _ALPACA_SAFETYMONITOR_H
 
-const alpaca_interface_version_t	SAFETYMONITOR_INTERFACE_VERSION		= 1;
-
 #include "alpaca_device.h"
+
+const alpaca_interface_version_t	SAFETYMONITOR_INTERFACE_VERSION		= 1;
 
 class alpaca_safetymonitor : public alpaca_device
 {

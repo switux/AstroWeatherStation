@@ -36,6 +36,15 @@ extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;
 
+enum struct dome_shutter_status_type : byte
+{
+	Open,
+	Closed,
+	Opening,
+	Closing
+};
+using dome_shutter_status_t = dome_shutter_status_type;
+
 struct health_data_t {
 
 	float			battery_level;
@@ -92,15 +101,27 @@ struct sensor_data_t {
 	sun_data_t		sun;
 	weather_data_t	weather;
 	sqm_data_t		sqm;
+	uint8_t			available_sensors;
 
+};
+
+struct dome_data_t {
+	
+	dome_shutter_status_t	shutter_status;
+	bool					closed_sensor;
+	bool					moving_sensor;
+	bool					close_command;
 };
 
 struct station_data_t {
 
 	gps_data_t		gps;
 	health_data_t	health;
+	dome_data_t		dome_data;
+//	lookout_data_t	lookout_data;
 	struct timeval	ntp_time;
-
+	int				reset_reason0;
+	int				reset_reason1;
 };
 
 void loop( void );

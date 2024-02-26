@@ -5,10 +5,22 @@
 		AstroWeatherStation -- Configuration
 	</title>
 	<style>
-		body { background: black; font-family: helvetica;}
+		body { background: black; font-family: helvetica, sans-serif;}
 		td { border-bottom: 1px dotted #606060; }
+		.led {
+			display: inline-flex;
+			align-items: center;
+		}
+		.led_color {
+			width: 5px;
+			height: 5px;
+			border-radius: 50%;
+			background-color: red;
+			margin-right: 5px;
+		}
+		@keyframes blink { 50% { opacity: 0; } }
 	</style>
-	<script src="configuration.js"></script>
+	<script src="aws.js"></script>
 </head>
 	
 <body onload="retrieve_display_data();">
@@ -411,44 +423,103 @@
 
 		</div> <!-- loookout -->
 
-		<div id="dashboard">
+		<div id="dashboard" style="display: flex; flex-direction: column">
 
-			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+			<div style="display: flex; flex-direction: row">
 
-				<table aria-describedby="Station health" style="margin: 0 auto">
-					<tr><th colspan="2" style="border-bottom: 1px solid">Health report</th></tr>
-					<tr><td>Battery level</td><td><span id="battery_level"></span></td></tr>
-					<tr><td>Uptime</td><td><span id="uptime"></span></td></tr>
-					<tr><td>Initial heap size</td><td id="initial_heap"></td></tr>
-					<tr><td>Current heap size</td><td id="current_heap"></td></tr>
-					<tr><td>Largest free heap block</td><td id="largest_heap_block"></td></tr>
-				</table>
-			</div> <!-- health -->
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Station health" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">Health report</th></tr>
+						<tr><td>Battery level</td><td><span id="battery_level"></span></td></tr>
+						<tr><td>Uptime</td><td><span id="uptime"></span></td></tr>
+						<tr><td>Last reset reason</td><td><span id="reset_reason"></span></td></tr>
+						<tr><td>Initial heap size</td><td><span id="initial_heap"></span></td></tr>
+						<tr><td>Current heap size</td><td><span id="current_heap"></span></td></tr>
+						<tr><td>Largest free heap block</td><td><span id="largest_heap_block"></span></td></tr>
+					</table>
+
+				</div> <!-- health -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="OTA" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid; position: relative">OTA<span style="position: absolute;right: 0;right-margin:10px"><button onlick="force_ota();">Force OTA update</button></span></th></tr>
+						<tr><td>OTA board model</td><td><span id="ota_board"></span></td></tr>
+						<tr><td>OTA device ID</td><td><span id="ota_device"></span></td></tr>
+						<tr><td>OTA config</td><td><span id="ota_config"></span></td></tr>
+						<tr><td>OTA status</td><td><span id="ota_status"></span></td></tr>
+					</table>
+
+				</div> <!-- OTA -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="OTA" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">GPS</tr>
+						<tr><td>GPS Fix</td><td><span id="gps_fix"></span></td></tr>
+						<tr><td>Longitude</td><td><span id="gps_longitude"></span></td></tr>
+						<tr><td>Latitude</td><td><span id="gps_latitude"></span></td></tr>
+						<tr><td>Altitude</td><td><span id="gps_altitude"></span> m</td></tr>
+						<tr><td>GPS time</td><td><span id="gps_time"></span></td></tr>
+					</table>
+
+				</div> <!-- GPS -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Dome" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">Dome</tr>
+						<tr><td>Dome shutter</td><td><span id="dome_shutter_status"></span></td></tr>
+						<tr><td>Dome closed sensor</td><td><span id="dome_shutter_closed"></span></td></tr>
+						<tr><td>Dome moving sensor</td><td><span id="dome_shutter_moving"></span></td></tr>
+						<tr><td>Dome close command</td><td><span id="dome_shutter_close"></span></td></tr>
+					</table>
+
+				</div> <!-- Dome -->
+
+			</div>
 			
-			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+			<div style="display: flex; flex-direction: row">
 
-				<table aria-describedby="OTA" style="margin: 0 auto">
-					<tr><th colspan="2" style="border-bottom: 1px solid">OTA</tr>
-					<tr><td>OTA board model</td><td><span id="ota_board"></span></td></tr>
-					<tr><td>OTA device ID</td><td><span id="ota_device"></span></td></tr>
-					<tr><td>OTA config</td><td id="ota_config"></td></tr>
-					<tr><td>OTA status</td><td id="ota_status"></td></tr>
-				</table>
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
-			</div> <!-- OTA -->
+					<table aria-describedby="Weather data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">Weather data</tr>
+						<tr><td><span id="temp_led" class="led"><span class="led_color"></span></span></td><td>Temperature</td><td><span id="temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Dew point</td><td><span id="dewpoint"></span> &deg;C</td></tr>
+						<tr><td><span id="pres_led" class="led"><span class="led_color"></span></span></td><td>Pressure</td><td><span id="pressure"></span> hPA</td></tr>
+						<tr><td><span id="rh_led" class="led"><span class="led_color"></span></span></td><td>Relative humidity</td><td><span id="rh"></span>%</td></tr>
+						<tr><td><span id="ws_led" class="led"><span class="led_color"></span></span></td><td>Wind speed</td><td><span id="windspeed"></span> m/s</td></tr>
+						<tr><td></td><td>Wind gust</td><td><span id="windgust"><7span> m/s</td></tr>
+						<tr><td><span id="wv_led" class="led"><span class="led_color"></span></span></td><td>Wind direction</td><td><span id="winddirection"></span></td></tr>
+						<tr><td><span id="rain_led" class="led"><span class="led_color"></span></span></td><td>Rain intensity</td><td><span id="rainintensity"></span></td></tr>
+					</table>
 
-			<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+				</div> <!-- weather data -->
 
-				<table aria-describedby="OTA" style="margin: 0 auto">
-					<tr><th colspan="2" style="border-bottom: 1px solid">GPS</tr>
-					<tr><td>GPS Fix</td><td><span id="gps_fix"></span></td></tr>
-					<tr><td>Longitude</td><td><span id="gps_longitude"></span></td></tr>
-					<tr><td>Latitude</td><td id="gps_latitude"></td></tr>
-					<tr><td>Altitude</td><td id="gps_altitude"></td></tr>
-					<tr><td>GPS time</td><td id="gps_time"></td></tr>
-				</table>
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
-			</div> <!-- GPS -->
+					<table aria-describedby="SQM data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">SQM data</tr>
+						<tr><td><span id="sqm_led" class="led"><span class="led_color"></span></span></td><td>MSAS</td><td><span id="msas"></span> mag/arcsec&sup2;</td></tr>
+						<tr><td></td><td>NELM</td><td><span id="nelm"></span> mag</td></tr>
+					</table>
+
+				</div> <!-- sqm data -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="SUN data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">SUN data</tr>
+						<tr><td><span id="tsl_led" class="led"><span class="led_color"></span></span></td><td>Illuminance</td><td><span id="illuminance"></span> lx</td></tr>
+						<tr><td></td><td>Irradiance</td><td><span id="irradiance"></span> W/&#13217;</td></tr>
+					</table>
+
+				</div> <!-- sun data -->
+
+
+			</div>
 
 		</div> <!-- dashboard -->
 

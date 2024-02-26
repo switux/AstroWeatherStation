@@ -18,6 +18,7 @@
 */
 
 #include <Arduino.h>
+#include <rom/rtc.h>
 #include <esp_task_wdt.h>
 #include <Preferences.h>
 #include <time.h>
@@ -58,7 +59,7 @@
 extern void IRAM_ATTR		_handle_rain_event( void );
 extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
 
-std::array<std::string, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
+const std::array<etl::string<11>, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
 
 const bool				FORMAT_SPIFFS_IF_FAILED = true;
 const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
@@ -92,6 +93,7 @@ void AstroWeatherStation::check_ota_updates( void )
 	ota.SetConfig( unique_build_id.data() );
 	ota.SetCallback( OTA_callback );
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
+	ota_setup.last_update_ts = get_timestamp();
 	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", REV.data() );
 	Serial.printf( "[INFO] Firmware OTA update result: %s.\n", OTA_message( ret_code ));
 }
@@ -265,9 +267,10 @@ IPAddress *AstroWeatherStation::get_eth_ip( void )
 
 etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
-	DynamicJsonDocument	json_data(768);
+	DynamicJsonDocument	json_data(832);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 
+	json_data["available_sensors"] = sensor_data->available_sensors;
 	json_data["battery_level"] = station_data.health.battery_level;
 	json_data["timestamp"] = sensor_data->timestamp;
 	json_data["rain_event"] = sensor_data->weather.rain_event;
@@ -306,6 +309,15 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	json_data["init_heap_size"] = station_data.health.init_heap_size;
 	json_data["current_heap_size"] = station_data.health.current_heap_size;
 	json_data["largest_free_heap_block" ] = station_data.health.largest_free_heap_block;
+	json_data["ota_code" ] = ota_setup.status_code;
+	json_data["ota_status_ts" ] = ota_setup.status_ts;
+	json_data["ota_last_update_ts" ] = ota_setup.last_update_ts;
+	json_data["reset_reason0"] = station_data.reset_reason0;
+	json_data["reset_reason1"] = station_data.reset_reason1;
+	json_data["shutter_status"] = static_cast<int>( station_data.dome_data.shutter_status );
+	json_data["shutter_closed"] = station_data.dome_data.closed_sensor;
+	json_data["shutter_moving"] = station_data.dome_data.moving_sensor;
+	json_data["shutter_close"] = station_data.dome_data.close_command;
 
 	if ( measureJson( json_data ) > json_sensor_data.capacity() ) {
 
@@ -316,7 +328,9 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	int l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
-	return json_sensor_data;
+serializeJson( json_data, Serial );
+
+	return etl::string_view( json_sensor_data );
 }
 
 etl::string_view AstroWeatherStation::get_json_string_config( void )
@@ -394,19 +408,14 @@ etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 	return etl::string_view( "N/A" );
 }
 
-void AstroWeatherStation::handle_dome_shutter_is_closed( void )
+void AstroWeatherStation::handle_dome_shutter_closed_change( void )
 {
-	station_devices.dome.shutter_is_closed();
+	station_devices.dome.shutter_closed_change();
 }
 
 void AstroWeatherStation::handle_dome_shutter_is_moving( void )
 {
-	station_devices.dome.shutter_is_moving();
-}
-
-void AstroWeatherStation::handle_dome_shutter_is_opening( void )
-{
-	station_devices.dome.shutter_is_opening();
+	station_devices.dome.set_shutter_is_moving();
 }
 
 void AstroWeatherStation::handle_rain_event( void )
@@ -417,12 +426,9 @@ void AstroWeatherStation::handle_rain_event( void )
 		send_rain_event_alarm( sensor_manager.rain_intensity_str() );
 
 	} else
+		lookout.set_rain_event();
 
-		detachInterrupt( GPIO_RAIN_SENSOR_RAIN );
-
-	time( &rain_event_timestamp );
 	sensor_manager.set_rain_event();
-	lookout.set_rain_event();
 }
 
 bool AstroWeatherStation::has_gps( void )
@@ -443,6 +449,9 @@ bool AstroWeatherStation::initialise( void )
 	bool					config_mode = determine_boot_mode();
 
 	Serial.printf( "\n\n[INFO] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_DATE );
+
+	station_data.reset_reason0 = rtc_get_reset_reason(0);
+	station_data.reset_reason1 = rtc_get_reset_reason(1);
 
 	if ( !config.load( debug_mode ) )
 		return false;
@@ -498,11 +507,11 @@ bool AstroWeatherStation::initialise( void )
 	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
 
 			//FIXME: make guard time a config parameter
-			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), 30, debug_mode );
+			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
 
 	    } else {
 
-			station_devices.dome.initialise( 30, debug_mode );
+			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
 	    }
 	}
 
@@ -550,6 +559,7 @@ bool AstroWeatherStation::initialise( void )
 			(*periodic_tasks_proxy)( NULL );
 		}, "GPSFeed", 2000, &_feed, 5, &aws_periodic_task_handle, 1 );
 
+	ready = true;
 	return true;
 }
 
@@ -584,6 +594,11 @@ bool AstroWeatherStation::is_rain_event( void )
 	return rain_event;
 }
 
+bool AstroWeatherStation::is_ready( void )
+{
+	return ready;
+}
+
 bool AstroWeatherStation::is_sensor_initialised( uint8_t sensor_id )
 {
 	return ( sensor_manager.get_available_sensors() & sensor_id );
@@ -608,6 +623,7 @@ void OTA_callback( int offset, int total_length )
 
 const char *AstroWeatherStation::OTA_message( int code )
 {
+	ota_setup.status_code = code;
 	switch ( code ) {
 
 		case ESP32OTAPull::UPDATE_AVAILABLE:

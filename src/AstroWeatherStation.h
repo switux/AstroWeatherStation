@@ -47,10 +47,12 @@ extern const unsigned long ETHERNET_DEVICE;
 extern const unsigned long SC16IS750_DEVICE;
 
 struct ota_setup_t {
-	char	*board	= nullptr;
-	char	*config	= nullptr;
-	char	*device	= nullptr;
-	
+	char	*board			= nullptr;
+	char	*config			= nullptr;
+	char	*device			= nullptr;
+	int		status_code		= -100;
+	int32_t	status_ts		= 0;
+	int32_t	last_update_ts	= 0;	
 };
 
 struct station_devices_t {
@@ -125,6 +127,7 @@ class AstroWeatherStation {
 		bool				ntp_synced	= false;
 		ota_setup_t			ota_setup;
 		bool				rain_event	= false;
+		bool				ready		= false;
 		bool				request_dome_shutter_open = false;
 		AWSSensorManager 	sensor_manager;
 		AWSWebServer 		server;
@@ -186,6 +189,7 @@ class AstroWeatherStation {
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( float *, float * );
+		etl::string_view	get_lookout_rules_state_json( void );
         etl::string_view	get_root_ca( void );
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
@@ -195,9 +199,8 @@ class AstroWeatherStation {
 		IPAddress			*get_wifi_sta_gw( void );
 		IPAddress			*get_wifi_sta_ip( void );
 		etl::string_view	get_wind_vane_sensorname( void );
-		void				handle_dome_shutter_is_closed( void );
+		void				handle_dome_shutter_closed_change( void );
 		void				handle_dome_shutter_is_moving( void );
-		void				handle_dome_shutter_is_opening( void );
 		void				handle_rain_event( void );
 		bool				has_gps( void );
 		bool				has_rain_sensor( void );
@@ -205,6 +208,7 @@ class AstroWeatherStation {
 		void				initialise_sensors( void );
 		bool				is_sensor_initialised( uint8_t );
 		bool				is_rain_event( void );
+		bool				is_ready( void );
 		bool				issafe( void );
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();

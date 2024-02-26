@@ -22,10 +22,10 @@
 #ifndef _ALPACA_TELESCOPE_H
 #define _ALPACA_TELESCOPE_H
 
-const alpaca_interface_version_t	TELESCOPE_INTERFACE_VERSION	= 3;
-
 #include <SiderealPlanets.h>
 #include "alpaca_device.h"
+
+const alpaca_interface_version_t	TELESCOPE_INTERFACE_VERSION	= 3;
 
 class alpaca_telescope : public alpaca_device
 {

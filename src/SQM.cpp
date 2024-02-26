@@ -99,12 +99,10 @@ void SQM::read_SQM( float ambient_temp )
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 
-	// FIXME: no need to pass sqm_data!
-	while ( !SQM_get_msas_nelm( ambient_temp, &sqm_data->msas, &sqm_data->nelm, &sqm_data->full_luminosity, &sqm_data->ir_luminosity, &sqm_data->gain, &sqm_data->integration_time ));
-
+	while ( !SQM_get_msas_nelm( ambient_temp ));
 }
 
-bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint16_t *ch0, uint16_t *ch1, uint16_t *gain, uint16_t *int_time )
+bool SQM::SQM_get_msas_nelm( float ambient_temp )
 {
 	uint32_t	both_channels;
 	uint16_t	ir_luminosity;
@@ -202,17 +200,17 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp, float *msas, float *nelm, uint1
 	// Date range: Fri, 1 Jul 2005 17:36:41 +0900 to Fri, 15 Jul 2005 08:17:52 -0400
 
 	// I added a calibration offset to match readings from my SQM-LE
-	*msas = ( log10( lux / 108000.F ) / -0.4F ) + msas_calibration_offset;
-	if ( *msas < 0 )
-		*msas = 0;
-	*nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( *msas / 5.F ))) + 1.F );
+	sqm_data->msas = ( log10( lux / 108000.F ) / -0.4F ) + msas_calibration_offset;
+	if ( sqm_data->msas < 0 )
+		sqm_data->msas = 0;
+	sqm_data->nelm = 7.93F - 5.F * log10( pow( 10, ( 4.316F - ( sqm_data->msas / 5.F ))) + 1.F );
 
-	*int_time = integration_time[ int_time_idx ];
-	*gain = gain_factor[ gain_idx >> 4 ];
-	*ch0 = full_luminosity;
-	*ch1 = ir_luminosity;
+	sqm_data->integration_time = integration_time[ int_time_idx ];
+	sqm_data->gain = gain_factor[ gain_idx >> 4 ];
+	sqm_data->full_luminosity = full_luminosity;
+	sqm_data->ir_luminosity = ir_luminosity;
 	if ( debug_mode )
-		Serial.printf("[DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, *msas, *nelm );
+		Serial.printf("[DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, sqm_data->msas, sqm_data->nelm );
 
 	return true;
 }

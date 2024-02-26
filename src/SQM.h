@@ -39,14 +39,14 @@ class SQM {
 
 		bool				debug_mode				= false;
 		float				msas_calibration_offset	= 0.F;
-		sqm_data_t			*sqm_data			= nullptr;
+		sqm_data_t			*sqm_data				= nullptr;
 		Adafruit_TSL2591	*tsl;
 		
 		float ch0_temperature_factor( float );
 		float ch1_temperature_factor( float );
 		void change_gain( uint8_t, tsl2591Gain_t * );
 		void change_integration_time( uint8_t, tsl2591IntegrationTime_t * );
-		bool SQM_get_msas_nelm(  float, float *, float *, uint16_t *, uint16_t *, uint16_t *, uint16_t * );
+		bool SQM_get_msas_nelm(  float );
 		uint8_t SQM_read_with_extended_integration_time( float, uint16_t *, uint16_t *, uint16_t * );
 		
 };
