@@ -170,6 +170,15 @@ void AWSLookout::check_rules( void )
 		dome->open_shutter();
 		return;
 
+
+	}
+
+	if ( is_safe && !tmp_is_unsafe ) {
+
+		Serial.printf( "[INFO] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
+		dome->open_shutter();
+		return;
+
 	}
 
 	if ( !tmp_is_safe || tmp_is_unsafe ) {
@@ -192,7 +201,6 @@ void AWSLookout::check_rules( void )
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
 }
-
 
 etl::string_view AWSLookout::get_rules_state( void )
 {
