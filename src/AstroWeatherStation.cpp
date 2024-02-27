@@ -57,7 +57,7 @@
 
 
 extern void IRAM_ATTR		_handle_rain_event( void );
-extern SemaphoreHandle_t	sensors_read_mutex;		// FIXME: hide this within the sensor manager
+extern SemaphoreHandle_t	sensors_read_mutex;
 
 const std::array<etl::string<11>, 3> PWR_MODE_STR = { "Solar panel", "12V DC", "PoE" };
 
@@ -460,7 +460,7 @@ bool AstroWeatherStation::initialise( void )
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
-	// FIXME: all this OTA setup is messy, use etl::string and drop strdup()
+	// Issue #142
 	snprintf( string.data(), string.capacity(), "%s_%d", ESP.getChipModel(), ESP.getChipRevision() );
 	ota_setup.board = strdup( string.data() );
 
@@ -484,7 +484,7 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel ) {
 
-		//FIXME: we already get this to cater for station uptime
+		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
@@ -538,7 +538,7 @@ bool AstroWeatherStation::initialise( void )
 	if ( config.get_parameter<bool>( "lookout_enabled" ))
 		lookout.initialise( &config, &sensor_manager, &station_devices.dome, debug_mode );
 	else
-		station_devices.dome.close_shutter();	// FIXME: add parameter to set default behaviour
+		station_devices.dome.close_shutter();	// Issue #144
 
 	std::function<void(void *)> _periodic_tasks = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
@@ -555,15 +555,10 @@ void AstroWeatherStation::initialise_dome( void )
 {
 	if ( config.get_has_device( DOME_DEVICE ) ) {
 
-	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
-
-			//FIXME: make guard time a config parameter
+		if ( config.get_has_device( SC16IS750_DEVICE ) )
 			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
-
-	    } else {
-
+		else
 			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
-	    }
 	}
 }
 
@@ -867,8 +862,6 @@ bool AstroWeatherStation::rain_sensor_available( void )
 void AstroWeatherStation::read_sensors( void )
 {
 	sensor_manager.read_sensors();
-
-	//FIXME: done during sensor_manager.retrieve_sensor_data()
 
 	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
 
@@ -1434,7 +1427,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	final_endpoint.assign( url );
 	final_endpoint.append( endpoint );
 
-	// FIXME: factorise code
+	// Issue #145
 	if ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) == aws_iface::eth ) {
 
 	return false;

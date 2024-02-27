@@ -37,7 +37,7 @@
 
 extern HardwareSerial Serial1;
 extern AstroWeatherStation station;
-extern SemaphoreHandle_t sensors_read_mutex;	// FIXME: hide this within the sensor manager
+extern SemaphoreHandle_t sensors_read_mutex;	// Issue #7
 
 void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 {
@@ -93,7 +93,6 @@ void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 void AWSWebServer::index( AsyncWebServerRequest *request )
 {
 	request->send( SPIFFS, "/index.html" );
-	delay( 500 );		// FIXME: why ...?
 }
 
 bool AWSWebServer::initialise( bool _debug_mode )

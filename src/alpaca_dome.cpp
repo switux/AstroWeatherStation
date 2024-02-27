@@ -140,7 +140,7 @@ void alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *tra
 {
 	if ( get_is_connected() ) {
 
-		// FIXME Issue #26 : Of that we can be sure, but the rest?
+		// Issue #26 : Of that we can be sure, but the rest?
 		if ( station.get_dome()->get_shutter_closed_status() )
 			dome_shutter_status = dome_shutter_status_t::Closed;
 

@@ -40,7 +40,7 @@
 RTC_DATA_ATTR byte	prev_available_sensors = 0;
 RTC_DATA_ATTR byte	available_sensors = 0;
 
-SemaphoreHandle_t sensors_read_mutex = NULL;
+SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
 
 extern AstroWeatherStation station;
 
@@ -76,10 +76,6 @@ sensor_data_t *AWSSensorManager::get_sensor_data( void )
 bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config, bool _rain_event )
 {
 	config = _config;
-
-	// FIXME: needed?
-	ESP32Time rtc( 0 );
-
 	rain_event = _rain_event;
 	initialise_sensors( sc16is750 );
 
@@ -405,7 +401,6 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
 				sqm.read( sensor_data.weather.ambient_temperature );
-
 		}
 
 		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
