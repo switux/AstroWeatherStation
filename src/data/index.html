@@ -26,13 +26,13 @@
 <body onload="retrieve_display_data();">
 
 	<div id="banners" style="display:flex;flex-direction: row">
-		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('general');" role="button">General</div>
-		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('network');" role="button">Network</div>
-		<div id="banner_sensors" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('sensors');" role="button">Sensors</div>
-		<div id="banner_others" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('others');" role="button">Devices</div>
-		<div id="banner_lookout" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('lookout');" role="button">Lookout</div>
-		<div id="banner_alpaca" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('alpaca');" role="button">ALPACA</div>
-		<div id="banner_dashboard" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('dashboard');" role="button">Dashboard</div>
+		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
+		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('network');" role="button" tabIndex="1">Network</div>
+		<div id="banner_sensors" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('sensors');" role="button" tabIndex="2">Sensors</div>
+		<div id="banner_others" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('others');" role="button" tabIndex="3">Devices</div>
+		<div id="banner_lookout" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('lookout');" role="button" tabIndex="4">Lookout</div>
+		<div id="banner_alpaca" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('alpaca');" role="button" tabIndex="5">ALPACA</div>
+		<div id="banner_dashboard" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('dashboard');" role="button" tabIndex="6">Dashboard</div>
 	</div> <!-- banners -->
 
 	<form method="post" action="" id="config"/>
