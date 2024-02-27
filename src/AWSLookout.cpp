@@ -130,7 +130,6 @@ void AWSLookout::check_rules( void )
 
 	} else {
 	
- 3.0
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1", unsafe_wind_speed_1, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now, safe_wind_speed ));
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #2", unsafe_wind_speed_2, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now, safe_wind_speed ));
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #1", unsafe_cloud_coverage_1, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now, safe_cloud_coverage_1 ));
