@@ -401,6 +401,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
 				sqm.read( sensor_data.weather.ambient_temperature );
+
 		}
 
 		if ( config->get_has_device( ANEMOMETER_SENSOR ) )

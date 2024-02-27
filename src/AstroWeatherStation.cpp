@@ -559,7 +559,8 @@ void AstroWeatherStation::initialise_dome( void )
 			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
 		else
 			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
-	}
+
+  }
 }
 
 void AstroWeatherStation::initialise_GPS( void )
