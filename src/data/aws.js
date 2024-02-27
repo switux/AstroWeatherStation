@@ -377,7 +377,7 @@ function show_wifi()
 
 function fetch_station_data()
 {
-4	let req = new XMLHttpRequest();
+	let req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 && this.status == 200 ) {
 			let values = JSON.parse( req.responseText );
