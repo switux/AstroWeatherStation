@@ -94,15 +94,64 @@ void SQM::change_integration_time( uint8_t upDown, tsl2591IntegrationTime_t *int
 	}
 }
 
-void SQM::read_SQM( float ambient_temp )
+void SQM::read( float ambient_temp )
 {
 	tsl->setGain( TSL2591_GAIN_LOW );
 	tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
 
-	while ( !SQM_get_msas_nelm( ambient_temp ));
+	while ( !get_msas_nelm( ambient_temp ));
 }
 
-bool SQM::SQM_get_msas_nelm( float ambient_temp )
+bool SQM::decrease_gain( tsl2591Gain_t *gain_idx )
+{
+	if ( *gain_idx != TSL2591_GAIN_LOW ) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Decreasing gain.\n" );
+		change_gain( DOWN, gain_idx );
+		return false;
+
+	}
+	return true;
+}
+
+bool SQM::decrease_integration_time( tsl2591IntegrationTime_t *int_time_idx )
+{
+	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_100MS ) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Decreasing integration time.\n" );
+		change_integration_time( DOWN, int_time_idx );
+		return true;
+	}
+	return false;	
+}
+
+bool SQM::increase_gain( tsl2591Gain_t *gain_idx )
+{
+	if ( *gain_idx != TSL2591_GAIN_MAX ) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Increasing gain.\n" );
+		change_gain( UP, gain_idx );
+		return true;
+	}
+	return false;
+}
+
+bool SQM::increase_integration_time( tsl2591IntegrationTime_t *int_time_idx )
+{
+	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
+
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
+		change_integration_time( UP, int_time_idx );
+		return true;
+	}
+	return false;
+}
+
+bool SQM::get_msas_nelm( float ambient_temp )
 {
 	uint32_t	both_channels;
 	uint16_t	ir_luminosity;
@@ -133,61 +182,29 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp )
 		Serial.printf( "[DEBUG] SQM: gain=0x%02x (%dx) time=0x%02x (%dms)/ temp=%2.2f° / Infrared=%05d Full=%05d Visible=%05d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir_luminosity, full_luminosity, visible_luminosity );
 
 	// Auto gain and integration time, increase time before gain to avoid increasing noise if we can help it, decrease gain first for the same reason
+	// Then retry by returning false
 	if ( visible_luminosity < 128 ) {
 
-		if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
-
-				if ( debug_mode )
-					Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
-
-				change_integration_time( UP, &int_time_idx );
-				return false;
-		}
-
-		if ( gain_idx == TSL2591_GAIN_MAX ) {
-
-			if ( int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
-
-				if ( debug_mode )
-					Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
-
-				change_integration_time( UP, &int_time_idx );
-				return false;
-
-			} else {
-
-				iterations = SQM_read_with_extended_integration_time( ambient_temp, &ir_luminosity, &full_luminosity, &visible_luminosity );
-				if ( full_luminosity < ir_luminosity )
-					return false;
-			}
-
-		} else {
-
-				if ( debug_mode )
-					Serial.printf( "[DEBUG] Increasing gain.\n" );
-
-				change_gain( UP, &gain_idx );
-				return false;
-		}
-
-	} else if (( full_luminosity == 0xFFFF ) || ( ir_luminosity == 0xFFFF )) {
-
-		if ( gain_idx != TSL2591_GAIN_LOW ) {
-
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Decreasing gain.\n" );
-
-			change_gain( DOWN, &gain_idx );
+		if ( increase_integration_time( &int_time_idx ))
 			return false;
 
-		} else {
-
-			if ( debug_mode )
-				Serial.printf( "[DEBUG] Decreasing integration time.\n" );
-
-			change_integration_time( DOWN, &int_time_idx );
+		if ( increase_gain( &gain_idx ))
 			return false;
-		}
+
+		iterations = read_with_extended_integration_time( ambient_temp, &ir_luminosity, &full_luminosity, &visible_luminosity );
+		if ( full_luminosity < ir_luminosity )
+			return false;
+
+	}
+
+	if (( full_luminosity == 0xFFFF ) || ( ir_luminosity == 0xFFFF )) {
+
+		if ( decrease_gain( &gain_idx ))
+			return false;
+
+		if ( decrease_integration_time( &int_time_idx ))
+			return false;
+
 	}
 
 	// Comes from Adafruit TSL2591 driver
@@ -215,7 +232,7 @@ bool SQM::SQM_get_msas_nelm( float ambient_temp )
 	return true;
 }
 
-uint8_t SQM::SQM_read_with_extended_integration_time( float ambient_temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
+uint8_t SQM::read_with_extended_integration_time( float ambient_temp, uint16_t *cumulated_ir, uint16_t *cumulated_full, uint16_t *cumulated_visible )
 {
 	uint8_t		iterations = 1;
 

@@ -388,8 +388,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 	if ( xSemaphoreTake( i2c_mutex, 500 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
 		sensor_data.weather.rain_event = rain_event;
-		if ( station.is_ntp_synced() )
-			time( &sensor_data.timestamp );
+		sensor_data.timestamp = station.get_timestamp();
 
 		if ( config->get_has_device( BME_SENSOR ) )
 			read_BME();
@@ -405,7 +404,7 @@ void AWSSensorManager::retrieve_sensor_data( void )
 
 			read_TSL();
 			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
-				sqm.read_SQM( sensor_data.weather.temperature );
+				sqm.read( sensor_data.weather.ambient_temperature );
 		}
 
 		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
