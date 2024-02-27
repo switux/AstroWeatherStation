@@ -121,7 +121,7 @@ class AstroWeatherStation {
 		TaskHandle_t		aws_periodic_task_handle;
 		AWSConfig			config;
 		bool				debug_mode	= false;
-		etl::string<1024>	json_sensor_data;
+		etl::string<1048>	json_sensor_data;
 		etl::string<128>	location;
 		AWSNetwork			network;
 		bool				ntp_synced	= false;
@@ -146,6 +146,7 @@ class AstroWeatherStation {
 		void			enter_config_mode( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
+		void 			initialise_dome( void );
 		bool			initialise_ethernet( void );
 		void			initialise_GPS( void );
 		bool			initialise_network( void );

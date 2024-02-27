@@ -32,7 +32,7 @@ class SQM {
 
 		SQM( void ) = default;
 		void initialise( Adafruit_TSL2591 *, sqm_data_t *, float, bool );
-		void read_SQM( float );
+		void read( float );
 		void set_msas_calibration_offset( float );
 		
 	private:
@@ -46,8 +46,12 @@ class SQM {
 		float ch1_temperature_factor( float );
 		void change_gain( uint8_t, tsl2591Gain_t * );
 		void change_integration_time( uint8_t, tsl2591IntegrationTime_t * );
-		bool SQM_get_msas_nelm(  float );
-		uint8_t SQM_read_with_extended_integration_time( float, uint16_t *, uint16_t *, uint16_t * );
+		bool decrease_gain( tsl2591Gain_t * );
+		bool decrease_integration_time( tsl2591IntegrationTime_t * );
+		bool increase_gain( tsl2591Gain_t * );
+		bool increase_integration_time( tsl2591IntegrationTime_t * );
+		bool get_msas_nelm(  float );
+		uint8_t read_with_extended_integration_time( float, uint16_t *, uint16_t *, uint16_t * );
 		
 };
 

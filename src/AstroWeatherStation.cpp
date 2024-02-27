@@ -1,4 +1,4 @@
-/*  	
+/*
 	AstroWeatherStation.cpp
 
 	(c) 2023-2024 F.Lesage
@@ -104,7 +104,7 @@ void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
 
 	if ( catch_rain_event )
 		return;
-		
+
 	if ( ( now - rain_event_timestamp ) <= guard_time )
 		return;
 
@@ -164,7 +164,7 @@ void AstroWeatherStation::display_banner()
 
 	uint8_t	*wifi_mac = network.get_wifi_mac();
 	int		i;
-	
+
 	Serial.printf( "\n#############################################################################################\n" );
 	Serial.printf( "# AstroWeatherStation                                                                       #\n" );
 	Serial.printf( "#  (c) Lesage Franck - lesage@datamancers.net                                               #\n" );
@@ -269,7 +269,8 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
 	DynamicJsonDocument	json_data(832);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
-
+	int					l;
+	
 	json_data["available_sensors"] = sensor_data->available_sensors;
 	json_data["battery_level"] = station_data.health.battery_level;
 	json_data["timestamp"] = sensor_data->timestamp;
@@ -319,13 +320,13 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	json_data["shutter_moving"] = station_data.dome_data.moving_sensor;
 	json_data["shutter_close"] = station_data.dome_data.close_command;
 
-	if ( measureJson( json_data ) > json_sensor_data.capacity() ) {
+	if ( ( l = measureJson( json_data )) > json_sensor_data.capacity() ) {
 
-		Serial.printf( "[BUG] sensor_data json is too small. Please report to support!\n" );
+		Serial.printf( "[BUG] sensor_data json is too small ( %d > %d ). Please report to support!\n", l, json_sensor_data.capacity() );
 		return etl::string_view( "" );
 
 	}
-	int l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
 		Serial.printf( "[DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
 
@@ -475,8 +476,7 @@ bool AstroWeatherStation::initialise( void )
 	snprintf( string.data(), string.capacity(), "%d-%s-%s-%s", config.get_pwr_mode(), config.get_pcb_version().data(), REV, BUILD_DATE );
 	ota_setup.config = strdup( unique_build_id.data() );
 
-	if ( solar_panel )
-		read_battery_level();
+	read_battery_level();
 
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
 	if ( !network.initialise( &config, debug_mode ) && config.can_rollback() )
@@ -501,18 +501,7 @@ bool AstroWeatherStation::initialise( void )
 	display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
-	if ( config.get_has_device( DOME_DEVICE ) ) {
-
-	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
-
-			//FIXME: make guard time a config parameter
-			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
-
-	    } else {
-
-			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
-	    }
-	}
+	initialise_dome();
 
 	if ( solar_panel ) {
 
@@ -536,9 +525,9 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel )
 		return true;
-		
+
 	start_alpaca_server();
-	
+
 	if ( config.get_has_device( RAIN_SENSOR ) ) {
 
 		Serial.printf( "[INFO] Monitoring rain sensor for rain event.\n" );
@@ -551,15 +540,31 @@ bool AstroWeatherStation::initialise( void )
 	else
 		station_devices.dome.close_shutter();	// FIXME: add parameter to set default behaviour
 
-	std::function<void(void *)> _feed = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
+	std::function<void(void *)> _periodic_tasks = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
-		}, "GPSFeed", 2000, &_feed, 5, &aws_periodic_task_handle, 1 );
+		}, "AWSCoreTask", 2000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 );
 
 	ready = true;
 	return true;
+}
+
+void AstroWeatherStation::initialise_dome( void )
+{
+	if ( config.get_has_device( DOME_DEVICE ) ) {
+
+	    if ( config.get_has_device( SC16IS750_DEVICE ) ) {
+
+			//FIXME: make guard time a config parameter
+			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
+
+	    } else {
+
+			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
+	    }
+	}
 }
 
 void AstroWeatherStation::initialise_GPS( void )
@@ -659,7 +664,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 {
 	uint8_t		sync_time_mod = 1;
 	uint16_t	rain_event_guard_time = config.get_parameter<int>( "rain_event_guard_time" );
-	
+
 	while ( true ) {
 
 		if ( sync_time_mod % 5 )
@@ -707,13 +712,13 @@ template void AstroWeatherStation::print_config_string<>( const char *fmt );
 template<typename... Args>
 void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
 {
-	etl::string<96>	string; 
+	etl::string<96>	string;
  	byte 			i;
  	int				l;
 
 	string = format_helper( fmt, args... );
 	l = string.size();
-	
+
 	if ( l >= 0 ) {
 
 		string.append( string.capacity() - l - 4, ' ' );
@@ -724,6 +729,9 @@ void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
 
 void AstroWeatherStation::read_battery_level( void )
 {
+	if ( !solar_panel )
+		return;
+
 	int		adc_value = 0;
 
 	WiFi.mode ( WIFI_OFF );
@@ -775,7 +783,7 @@ void AstroWeatherStation::read_GPS( void )
 int AstroWeatherStation::reformat_ca_root_line( std::array<char,97> &string, int str_len, int ca_pos, int ca_len, const char *root_ca )
 {
 	int string_pos;
-	
+
 	strlcat( string.data(), root_ca + ca_pos, 92 );
 	for( string_pos = str_len; string_pos < 92; string_pos++ ) {
 
@@ -861,7 +869,7 @@ void AstroWeatherStation::read_sensors( void )
 	sensor_manager.read_sensors();
 
 	//FIXME: done during sensor_manager.retrieve_sensor_data()
-	
+
 	if ( station_data.health.battery_level <= BAT_LEVEL_MIN ) {
 
 		etl::string<64> string;
@@ -1085,8 +1093,11 @@ bool AstroWeatherStation::sync_time( bool verbose )
 	uint8_t		ntp_retries = 5;
    	struct 		tm timeinfo;
 
-	if ( config.get_has_device( GPS_SENSOR ) && station_data.gps.fix )
-		return true;
+	if ( config.get_has_device( GPS_SENSOR ) && station_data.gps.fix ) {
+
+		time( &sensor_manager.get_sensor_data()->timestamp );
+ 		return true;
+	}
 
 	if ( debug_mode && verbose )
 		Serial.printf( "[DEBUG] Connecting to NTP server " );
@@ -1331,7 +1342,7 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
 	config = _config;
-	
+
 	esp_read_mac( wifi_mac, ESP_MAC_WIFI_STA );
 
 	switch ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) ) {
@@ -1410,7 +1421,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 
 	if ( url_len > 128 )
 		url.resize( url_len );
-		
+
 	 l = snprintf( url.data(), url_len, "https://%s/%s/", remote_server, url_path );
 
 	if ( debug_mode )
@@ -1419,7 +1430,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 	fe_len = l + endpoint_len + 2;
 	if ( fe_len > 128 )
 		final_endpoint.resize( fe_len );
-		
+
 	final_endpoint.assign( url );
 	final_endpoint.append( endpoint );
 
@@ -1438,7 +1449,7 @@ bool AWSNetwork::post_content( const char *endpoint, size_t endpoint_len, const 
 			if ( debug_mode )
         		Serial.print( "OK.\n" );
 		}
-				
+
 //http.begin( wifi_client, final_endpoint.data() );
 
     if ( debug_mode )

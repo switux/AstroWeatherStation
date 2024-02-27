@@ -33,11 +33,14 @@
 extern AstroWeatherStation	station;
 
 template <typename T>
-bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T value, time_t value_ts, time_t now )
+bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T value, time_t value_ts, time_t now, lookout_rule_t<T> &unsafe_rule )
 {
-	if ( !rule.active )
-		return ( rule.satisfied = true );
+	if ( !rule.active ) {
 
+		unsafe_rule.ts = 0;
+		return ( rule.satisfied = true );
+	}
+	
 	if ( value > rule.max )
 		return ( rule.satisfied = false );
 
@@ -50,6 +53,8 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 			Serial.printf( "[INFO] Safe rule '%s' satisfied: %f <= %f\n", name, value, rule.max );
 		else if ( std::is_same<T, uint8_t>::value )
 			Serial.printf( "[INFO] Safe rule '%s' satisfied: %d <= %d\n", name, value, rule.max );
+
+		unsafe_rule.ts = 0;
 		return ( rule.satisfied = true );
 
 	}
@@ -63,7 +68,7 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 }
 
 template <typename T>
-bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, bool sensor_available, T value, time_t value_ts, time_t now )
+bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, bool sensor_available, T value, time_t value_ts, time_t now, lookout_rule_t<T> &safe_rule )
 {
 	if ( !rule.active )
 		return ( rule.satisfied = false );
@@ -71,6 +76,7 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 	if ( !sensor_available && rule.check_available ) {
 
 		Serial.printf( "[INFO] Unsafe rule '%s' satisfied: sensor not available\n", name );
+		safe_rule.ts = 0;
 		return ( rule.satisfied = true );
 	}
 	
@@ -87,6 +93,7 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 		else if ( std::is_same<T, uint8_t>::value )
 			Serial.printf( "[INFO] Unsafe rule '%s' satisfied: %d >= %d\n", name, value, rule.max );
 
+		safe_rule.ts = 0;
 		return ( rule.satisfied = true );
 
 	}
@@ -123,83 +130,67 @@ void AWSLookout::check_rules( void )
 
 	} else {
 	
-		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1", unsafe_wind_speed_1, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
-		safe_wind_speed.ts =  b ? 0 : safe_wind_speed.ts;
-
-		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #2", unsafe_wind_speed_2, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
-		safe_wind_speed.ts = b ? 0 : safe_wind_speed.ts;
-
-		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #1", unsafe_cloud_coverage_1, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b ) {
-			safe_cloud_coverage_1.ts = 0;
+ 3.0
+		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1", unsafe_wind_speed_1, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now, safe_wind_speed ));
+		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #2", unsafe_wind_speed_2, sensor_manager->get_available_sensors() & ANEMOMETER_SENSOR, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now, safe_wind_speed ));
+		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #1", unsafe_cloud_coverage_1, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now, safe_cloud_coverage_1 ));
+		if ( b )
 			safe_cloud_coverage_2.ts = 0;
-		}
 
-		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #2", unsafe_cloud_coverage_2, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b ) {
-			safe_cloud_coverage_1.ts = 0;
+		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Cloud coverage #2", unsafe_cloud_coverage_2, sensor_manager->get_available_sensors() & MLX_SENSOR, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now, safe_cloud_coverage_1 ));
+		if ( b )
 			safe_cloud_coverage_2.ts = 0;
-		}
 
-		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Rain intensity", unsafe_rain_intensity, sensor_manager->get_available_sensors() & RAIN_SENSOR, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
-		safe_rain_intensity.ts = b ? 0 : safe_rain_intensity.ts;
+		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<uint8_t>( "Rain intensity", unsafe_rain_intensity, sensor_manager->get_available_sensors() & RAIN_SENSOR, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now, safe_rain_intensity ));
 
-
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<float>( "Wind speed", safe_wind_speed, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b ) {
-			unsafe_wind_speed_1.ts = 0;
+		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<float>( "Wind speed", safe_wind_speed, sensor_manager->get_sensor_data()->weather.wind_speed, sensor_manager->get_sensor_data()->timestamp, now, unsafe_wind_speed_1 ));
+		if ( b )
 			unsafe_wind_speed_2.ts = 0;
-		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #1", safe_cloud_coverage_1, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b ) {
-			unsafe_cloud_coverage_1.ts = 0;
+
+		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #1", safe_cloud_coverage_1, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now, unsafe_cloud_coverage_1 ));
+		if ( b )
 			unsafe_cloud_coverage_2.ts = 0;
-		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #2", safe_cloud_coverage_2, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now ));
-		if ( b ) {
-			unsafe_cloud_coverage_1.ts = 0;
+
+		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Cloud coverage #2", safe_cloud_coverage_2, sensor_manager->get_sensor_data()->weather.cloud_coverage, sensor_manager->get_sensor_data()->timestamp, now, unsafe_cloud_coverage_1 ));
+		if ( b )
 			unsafe_cloud_coverage_2.ts = 0;
-		}
-		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now ));
-		safe_rain_intensity.ts = b ? 0 : safe_rain_intensity.ts;
+
+		tmp_is_safe &= ( b = AWSLookout::check_safe_rule<uint8_t>( "Rain intensity", safe_rain_intensity, sensor_manager->get_sensor_data()->weather.rain_intensity, sensor_manager->get_sensor_data()->timestamp, now, unsafe_rain_intensity ));
 	}
 
-	if ( is_safe && !tmp_is_unsafe ) {
+	if ( decide_is_safe( tmp_is_unsafe, tmp_is_safe ))
+		return;
+	
+	snprintf( str.data(), str.capacity(), "[INFO] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
+	Serial.printf( "%s", str.data() );
+	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
+}
+
+bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
+{
+	if ( is_safe && !unsafe ) {
 
 		Serial.printf( "[INFO] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
-		return;
-
-
-	}
-
-	if ( is_safe && !tmp_is_unsafe ) {
-
-		Serial.printf( "[INFO] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
-		dome->open_shutter();
-		return;
+		return true;
 
 	}
 
-	if ( !tmp_is_safe || tmp_is_unsafe ) {
+	if ( !safe || unsafe ) {
 
 		is_safe = false;
 		Serial.printf( "[INFO] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
 		dome->close_shutter();
-		return;
+		return true;
 	}
 
-	if ( !tmp_is_unsafe && tmp_is_safe ) {
+	if ( !unsafe && safe ) {
 
 		is_safe = true;
 		Serial.printf( "[INFO] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
-		return;
+		return true;
 	}
-
-	snprintf( str.data(), str.capacity(), "[INFO] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
-	Serial.printf( "%s", str.data() );
-	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
 }
 
 etl::string_view AWSLookout::get_rules_state( void )

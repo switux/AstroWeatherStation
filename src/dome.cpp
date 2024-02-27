@@ -137,7 +137,6 @@ void Dome::control_task( void *dummy )	// NOSONAR
 				shutter_is_moving = false;
 			}
 			delay( 500 );
-			Serial.printf("CLOSE CMD=%d\n",dome_data->close_command);
 			dome_data->moving_sensor = false;
 			get_shutter_closed_status();
 			get_shutter_moving_status();
