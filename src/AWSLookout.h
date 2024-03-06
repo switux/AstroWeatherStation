@@ -27,7 +27,7 @@ struct lookout_rule_t {
 	bool	check_available;
 	T 		max;
 	int 	delay;
-	int		ts;
+	time_t	ts;
 	bool	satisfied;
 };
 
@@ -67,8 +67,11 @@ class AWSLookout
 							AWSLookout( void ) = default;
 		etl::string_view	get_rules_state( void );
 		void				initialise( AWSConfig *, AWSSensorManager *, Dome *, bool _debug_mode );
+		bool				issafe( void );
 		void				loop( void * );
 		void				set_rain_event( void );
+		void				suspend( void );
+		void				resume( void );
 };
 
 #endif

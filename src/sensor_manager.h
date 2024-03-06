@@ -52,7 +52,7 @@ class AWSSensorManager {
 	AWSConfig 			*config				= nullptr;
 	SoftwareSerial		rs485_bus;
 	
-    uint8_t 			available_sensors	= 0;
+    aws_device_t		available_sensors	= aws_device_t::NO_SENSOR;
     sensor_data_t		sensor_data;
     bool				debug_mode			= false;
 	bool				rain_event			= false;
@@ -64,7 +64,7 @@ class AWSSensorManager {
   public:
     					AWSSensorManager( void );
     bool				begin( void );
-    uint8_t				get_available_sensors( void );
+    aws_device_t		get_available_sensors( void );
     bool				get_debug_mode( void );
     SemaphoreHandle_t	get_i2c_mutex( void );
     sensor_data_t		*get_sensor_data( void );
@@ -77,9 +77,12 @@ class AWSSensorManager {
     void				read_rain_sensor( void );
     void				read_sensors( void );
     void				reset_rain_event( void );
+	void				resume( void );
+	bool				sensor_is_available( aws_device_t );
     void				set_debug_mode( bool );
     void				set_rain_event( void );
 	void				set_solar_panel( bool );
+	void				suspend( void );
 
   private:
 
@@ -95,14 +98,6 @@ bool sync_time( void );
     void read_TSL( void );
     void read_wind_vane( void );
     void retrieve_sensor_data( void );
-	template <typename T>
-	int	sign( T );
-
 };
 
-template <typename T>
-int AWSSensorManager::sign( T val )
-{
-	return static_cast<int>(T(0) < val) - static_cast<int>(val < T(0));
-}
 #endif

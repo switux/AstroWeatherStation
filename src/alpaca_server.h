@@ -74,7 +74,8 @@ class alpaca_server {
 		AsyncUDP		*get_discovery( void );
 		void			loop( void );
 		bool			start( IPAddress, bool );
-
+		void			stop( void );
+		
 	private:
 
 		bool			bad_request		= false;
@@ -93,6 +94,7 @@ class alpaca_server {
 
 		// flawfinder: ignore
 		char			buf[ 255 ] = {0};
+		// Issue #149
 		char			transaction_details[ 128 ];
 
 		int				client_id = 0;

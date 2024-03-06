@@ -57,11 +57,11 @@ bool Wind_vane::initialise( SoftwareSerial *bus, byte model, bool _debug_mode )
 
 		} else
 
-			return set_initialised( get_wind_direction( false ) >= 0 );
+			return set_initialised( get_wind_direction( true ) >= 0 );
 	}
 
 	sensor_bus->begin( bps, EspSoftwareSerial::SWSERIAL_8N1, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX );
-	return set_initialised( get_wind_direction( false ) >= 0 );
+	return set_initialised( get_wind_direction( true ) >= 0 );
 }
 
 int16_t Wind_vane::get_wind_direction( bool verbose  )

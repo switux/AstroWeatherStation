@@ -43,13 +43,13 @@ class alpaca_dome : public alpaca_device
 	public:
 
 		explicit	alpaca_dome( void );
-		void		abortslew( AsyncWebServerRequest *, const char * );
-		void		cansetshutter( AsyncWebServerRequest *, const char * );
-		void		closeshutter( AsyncWebServerRequest *, const char * );
-		void		openshutter( AsyncWebServerRequest *, const char * );
+		bool		abortslew( AsyncWebServerRequest *, const char * );
+		bool		cansetshutter( AsyncWebServerRequest *, const char * );
+		bool		closeshutter( AsyncWebServerRequest *, const char * );
+		bool		openshutter( AsyncWebServerRequest *, const char * );
 		void		set_connected( AsyncWebServerRequest *, const char * );
 		void		slaved( AsyncWebServerRequest *, const char * );
-		void		shutterstatus( AsyncWebServerRequest *, const char * );
+		bool		shutterstatus( AsyncWebServerRequest *, const char * );
 };
 
 #endif

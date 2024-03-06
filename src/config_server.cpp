@@ -25,7 +25,7 @@
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 #include <FS.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
@@ -42,7 +42,8 @@ extern SemaphoreHandle_t sensors_read_mutex;	// Issue #7
 void AWSWebServer::attempt_ota_update( AsyncWebServerRequest *request )
 {
 	request->send( 200, "text/plain", "Processing request" );
-	station.check_ota_updates();
+	delay( 500 );
+	station.check_ota_updates( true );
 }
 
 void AWSWebServer::get_configuration( AsyncWebServerRequest *request )
@@ -92,7 +93,7 @@ void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 
 void AWSWebServer::index( AsyncWebServerRequest *request )
 {
-	request->send( SPIFFS, "/index.html" );
+	request->send( LittleFS, "/index.html" );
 }
 
 bool AWSWebServer::initialise( bool _debug_mode )
@@ -110,25 +111,14 @@ bool AWSWebServer::initialise( bool _debug_mode )
 		return false;
 	}
 
-	server->addHandler( new AsyncCallbackJsonWebHandler( "/set_config", std::bind( &AWSWebServer::set_configuration, this, std::placeholders::_1, std::placeholders::_2 )));
-	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
-	server->on( "/configuration.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
-	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
-	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
-	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
-	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
-	server->on( "/ota_update", HTTP_GET, std::bind( &AWSWebServer::attempt_ota_update, this, std::placeholders::_1 ));
-	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
-	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
-	server->on( "/reboot", HTTP_GET, std::bind( &AWSWebServer::reboot, this, std::placeholders::_1 ));
-	server->onNotFound( std::bind( &AWSWebServer::handle404, this, std::placeholders::_1 ));
-	server->begin();
+	initialised = true;
+	start();
 	return true;
 }
 
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
-	if ( !SPIFFS.exists( request->url().c_str() )) {
+	if ( !LittleFS.exists( request->url().c_str() )) {
 
 		etl::string<64> msg;
 		Serial.printf( "[ERROR] File [%s] not found.", request->url().c_str() );
@@ -137,7 +127,7 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 		return;
 	}
 
-	request->send( SPIFFS, request->url().c_str() );
+	request->send( LittleFS, request->url().c_str() );
 	delay(500);
 }
 
@@ -161,6 +151,28 @@ void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVarian
 		request->send( 500, "text/plain", "ERROR\n" );
 }
 
+void AWSWebServer::start( void )
+{
+	server->addHandler( new AsyncCallbackJsonWebHandler( "/set_config", std::bind( &AWSWebServer::set_configuration, this, std::placeholders::_1, std::placeholders::_2 )));
+	server->on( "/favicon.ico", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
+	server->on( "/aws.js", HTTP_GET, std::bind( &AWSWebServer::send_file, this, std::placeholders::_1 ));
+	server->on( "/get_config", HTTP_GET, std::bind( &AWSWebServer::get_configuration, this, std::placeholders::_1 ));
+	server->on( "/get_station_data", HTTP_GET, std::bind( &AWSWebServer::get_station_data, this, std::placeholders::_1 ));
+	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
+	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
+	server->on( "/ota_update", HTTP_GET, std::bind( &AWSWebServer::attempt_ota_update, this, std::placeholders::_1 ));
+	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
+	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
+	server->on( "/reboot", HTTP_GET, std::bind( &AWSWebServer::reboot, this, std::placeholders::_1 ));
+	server->onNotFound( std::bind( &AWSWebServer::handle404, this, std::placeholders::_1 ));
+	server->begin();
+}
+
+void AWSWebServer::stop( void )
+{
+	server->reset();
+	server->end();
+}
 
 void AWSWebServer::handle404( AsyncWebServerRequest *request )
 {

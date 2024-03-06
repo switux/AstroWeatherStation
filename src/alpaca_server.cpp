@@ -31,7 +31,7 @@
 #include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 
 #include "common.h"
 #include "defaults.h"
@@ -134,18 +134,17 @@ Serial.printf("DESC=[%s]\n",str.data());
 
 void alpaca_server::alpaca_getsetup( AsyncWebServerRequest *request )
 {
-	request->send( SPIFFS, "/ascom_home.html" );
+	request->send( LittleFS, "/ascom_home.html" );
 }
 
 void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 {
+	bool exists = true;
+
 	switch( str2int( request->pathArg(1).c_str() )) {
 
 		case str2int( "abortslew" ):
-			if ( request->method() != HTTP_GET )
-				dome.abortslew( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.abortslew( request, transaction_details );
 			break;
 
 		case str2int( "canfindhome" ):
@@ -156,7 +155,6 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 		case str2int( "canslave" ):
 		case str2int( "cansyncazimuth" ):
 		case str2int( "slewing" ):
-
 			if ( request->method() == HTTP_GET )
 				dome.send_value( request, transaction_details, false );
 			else
@@ -164,17 +162,10 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "cansetshutter" ):
-			if ( request->method() == HTTP_GET )
-				dome.cansetshutter( request, transaction_details );
-			else
-				does_not_exist( request );
-			break;
+			exists = dome.cansetshutter( request, transaction_details );
 
 		case str2int( "closeshutter" ):
-			if ( request->method() == HTTP_GET )
-				not_implemented( request, "No closing control over the roll-off top" );
-			else
-				dome.closeshutter( request, transaction_details );
+			exists = dome.closeshutter( request, transaction_details );
 			break;
 
 		case str2int( "connected" ):
@@ -185,52 +176,31 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "description" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_description( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.send_description( request, transaction_details );
 			break;
 
 		case str2int( "driverinfo" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_driverinfo( request, transaction_details );
-			else
-				does_not_exist( request );
+			dome.send_driverinfo( request, transaction_details );
 			break;
 
 		case str2int( "driverversion" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_driverversion( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.send_driverversion( request, transaction_details );
 			break;
 
 		case str2int( "interfaceversion" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_interfaceversion( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.send_interfaceversion( request, transaction_details );
 			break;
 
 		case str2int( "name" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_name( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.send_name( request, transaction_details );
 			break;
 
 		case str2int( "openshutter" ):
-			if ( request->method() == HTTP_GET )
-				not_implemented( request, NULL );
-			else
-				dome.openshutter( request, transaction_details );
+			exists = dome.openshutter( request, transaction_details );
 			break;
 
 		case str2int( "shutterstatus" ):
-			if ( request->method() == HTTP_GET )
-				dome.shutterstatus( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.shutterstatus( request, transaction_details );
 			break;
 
 		case str2int( "slaved" ):
@@ -241,10 +211,7 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "supportedactions" ):
-			if ( request->method() == HTTP_GET )
-				dome.send_supportedactions( request, transaction_details );
-			else
-				does_not_exist( request );
+			exists = dome.send_supportedactions( request, transaction_details );
 			break;
 
 		case str2int( "altitude" ):
@@ -263,6 +230,8 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 		default:
 			does_not_exist( request );
 	}
+	if ( !exists )
+		does_not_exist( request );
 }
 
 void alpaca_server::dispatch_request( AsyncWebServerRequest *request )
@@ -1015,7 +984,7 @@ Serial.printf("READ %d bytes in packet [%s]\n",len,buf);
 
 void alpaca_server::send_file( AsyncWebServerRequest *request )
 {
-	if ( !SPIFFS.exists( request->url().c_str() )) {
+	if ( !LittleFS.exists( request->url().c_str() )) {
 
 		etl::string<64> msg;
 		Serial.printf( "[ERROR] File [%s] not found.", request->url().c_str() );
@@ -1024,7 +993,7 @@ void alpaca_server::send_file( AsyncWebServerRequest *request )
 		return;
 	}
 
-	request->send( SPIFFS, request->url().c_str() );
+	request->send( LittleFS, request->url().c_str() );
 	delay( 500 );
 }
 	
@@ -1075,4 +1044,9 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 	server->begin();
 
 	return true;
+}
+
+void alpaca_server::stop( void )
+{
+	delete( server );
 }

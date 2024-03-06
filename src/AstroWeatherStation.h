@@ -21,6 +21,9 @@
 #ifndef _AstroWeatherStation_H
 #define _AstroWeatherStation_H
 
+#include <ESP32OTAPull.h>
+
+#include "AWSUpdater.h"
 #include "config_server.h"
 #include "sensor_manager.h"
 #include "dome.h"
@@ -42,17 +45,35 @@ const float				V_MIN_IN		= ( BAT_V_MIN*V_DIV_R2 )/( V_DIV_R1+V_DIV_R2 );	// in m
 const unsigned short	ADC_V_MAX		= ( V_MAX_IN*ADC_MAX / VCC );
 const unsigned short	ADC_V_MIN		= ( V_MIN_IN*ADC_MAX / VCC );
 
-extern const unsigned long DOME_DEVICE;
-extern const unsigned long ETHERNET_DEVICE;
-extern const unsigned long SC16IS750_DEVICE;
+enum struct aws_ip_info : uint8_t
+{
+	ETH_DNS,
+	ETH_GW,
+	ETH_IP,
+	WIFI_STA_DNS,
+	WIFI_STA_GW,
+	WIFI_STA_IP
+};
+using aws_ip_info_t = aws_ip_info;
+
+enum struct aws_events : uint8_t
+{
+	RAIN,
+	DOME_SHUTTER_CLOSED_CHANGE,
+	DOME_SHUTTER_MOVING
+
+};
+using aws_event_t = aws_events;
 
 struct ota_setup_t {
-	char	*board			= nullptr;
-	char	*config			= nullptr;
-	char	*device			= nullptr;
-	int		status_code		= -100;
-	int32_t	status_ts		= 0;
-	int32_t	last_update_ts	= 0;	
+	
+	etl::string<24>	board;
+	etl::string<32>	config;
+	etl::string<18>	device;
+	etl::string<26>	version;
+	int				status_code		= -100;
+	int32_t			status_ts		= 0;
+	int32_t			last_update_ts	= 0;
 };
 
 struct station_devices_t {
@@ -89,19 +110,22 @@ class AWSNetwork {
 		IPAddress			wifi_sta_ip;
 		IPAddress			wifi_sta_subnet;
 
+		bool eth_post_content( const char *, etl::string<128> &, const char * );
+		bool wifi_post_content( const char *, etl::string<128> &, const char * );
+
 	public:
 
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
-		byte		get_eth_cidr_prefix( void );
-		IPAddress 	*get_eth_dns( void );
-		IPAddress	*get_eth_gw( void );
-		IPAddress	*get_eth_ip( void );
-		byte		get_wifi_sta_cidr_prefix( void );
-		IPAddress	*get_wifi_sta_dns( void );
-		IPAddress	*get_wifi_sta_gw( void );
-		IPAddress	*get_wifi_sta_ip( void );
+//		byte		get_eth_cidr_prefix( void );
+//		IPAddress 	*get_eth_dns( void );
+//		IPAddress	*get_eth_gw( void );
+//		IPAddress	*get_eth_ip( void );
+//		byte		get_wifi_sta_cidr_prefix( void );
+//		IPAddress	*get_wifi_sta_dns( void );
+//		IPAddress	*get_wifi_sta_gw( void );
+//		IPAddress	*get_wifi_sta_ip( void );
 		uint8_t		*get_wifi_mac( void );	
 		bool		initialise( AWSConfig *, bool );
 		bool		initialise_ethernet( void );
@@ -110,6 +134,8 @@ class AWSNetwork {
 		bool		post_content( const char *, size_t, const char * );
 		bool		start_hotspot( void );
 		bool		stop_hotspot( void );
+		void 		webhook( const char * );
+
 
 };
 
@@ -117,26 +143,26 @@ class AstroWeatherStation {
 
 	private:
 
-		alpaca_server		alpaca;
-		TaskHandle_t		aws_periodic_task_handle;
-		AWSConfig			config;
-		bool				debug_mode	= false;
-		etl::string<1048>	json_sensor_data;
-		etl::string<128>	location;
-		AWSNetwork			network;
-		bool				ntp_synced	= false;
-		ota_setup_t			ota_setup;
-		bool				rain_event	= false;
-		bool				ready		= false;
-		bool				request_dome_shutter_open = false;
-		AWSSensorManager 	sensor_manager;
-		AWSWebServer 		server;
-		bool				solar_panel;
-		station_data_t		station_data;
-		station_devices_t	station_devices;
-		etl::string<32>		unique_build_id;
-		AWSLookout			lookout;
-
+		alpaca_server				alpaca;
+		TaskHandle_t				aws_periodic_task_handle;
+		AWSConfig					config;
+		bool						debug_mode					= false;
+		etl::string<1096>			json_sensor_data;
+		etl::string<128>			location;
+		AWSLookout					lookout;
+		AWSNetwork					network;
+		bool						ntp_synced					= false;
+		ota_setup_t					ota_setup;
+		bool						rain_event					= false;
+		bool						ready						= false;
+		bool						request_dome_shutter_open	= false;
+		AWSSensorManager 			sensor_manager;
+		AWSWebServer 				server;
+		bool						solar_panel;
+		station_data_t				station_data;
+		station_devices_t			station_devices;
+		AWSUpdater					updater;
+		
 		void			check_rain_event_guard_time( uint16_t );
 		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
@@ -159,8 +185,7 @@ class AstroWeatherStation {
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
 		void			read_battery_level( void );
-		    void read_GPS( void );
-
+		void			read_GPS( void );
 		int				reformat_ca_root_line( std::array<char,97> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		void			send_rain_event_alarm( const char * );
@@ -175,17 +200,16 @@ class AstroWeatherStation {
 	public:
 
 							AstroWeatherStation( void );
-		void				check_ota_updates( void );
+		void				check_ota_updates( bool );
 		etl::string_view	get_anemometer_sensorname( void );
 		bool				get_debug_mode( void );
 		Dome				*get_dome( void );
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
-		byte				get_eth_cidr_prefix( void );
-		IPAddress			*get_eth_dns( void );
-		IPAddress			*get_eth_gw( void );
-		IPAddress			*get_eth_ip( void );
+//		byte				get_eth_cidr_prefix( void );
+//		IPAddress			*get_ip_address( aws_ip_info_t );
+
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
@@ -195,19 +219,14 @@ class AstroWeatherStation {
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );
-		byte				get_wifi_sta_cidr_prefix( void );
-		IPAddress			*get_wifi_sta_dns( void );
-		IPAddress			*get_wifi_sta_gw( void );
-		IPAddress			*get_wifi_sta_ip( void );
+//		byte				get_wifi_sta_cidr_prefix( void );
 		etl::string_view	get_wind_vane_sensorname( void );
-		void				handle_dome_shutter_closed_change( void );
-		void				handle_dome_shutter_is_moving( void );
-		void				handle_rain_event( void );
-		bool				has_gps( void );
-		bool				has_rain_sensor( void );
+		void				handle_event( aws_event_t );
+
+		bool				has_device( aws_device_t );
 		bool				initialise( void );
 		void				initialise_sensors( void );
-		bool				is_sensor_initialised( uint8_t );
+		bool				is_sensor_initialised( aws_device_t );
 		bool				is_rain_event( void );
 		bool				is_ready( void );
 		bool				issafe( void );

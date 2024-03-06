@@ -40,28 +40,39 @@ void alpaca_dome::attach_device( Dome &dome )
 	
 }
 */
-void alpaca_dome::abortslew( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_dome::abortslew( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() == HTTP_GET )
+		return false;
+
 	if ( get_is_connected() )
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":true,%s})json", transaction_details );
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 	
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_dome::cansetshutter( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_dome::cansetshutter( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	if ( get_is_connected() )
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":true,%s})json", transaction_details );
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() == HTTP_GET )
+		return false;
+	
 	if ( get_is_connected() ) {
 
 		station.get_dome()->close_shutter();
@@ -78,11 +89,14 @@ void alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 			Serial.printf( "[DEBUG] Alpaca dome.closeshutter NOK (not connected) : %s\n", message_str );
 	}
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-	
+	return true;
 }
 
-void alpaca_dome::openshutter( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_dome::openshutter( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() == HTTP_GET )
+		return false;
+
 	if ( get_is_connected() ) {
 
 		station.get_dome()->open_shutter();
@@ -92,6 +106,7 @@ void alpaca_dome::openshutter( AsyncWebServerRequest *request, const char *trans
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
 void alpaca_dome::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
@@ -136,8 +151,11 @@ void alpaca_dome::slaved( AsyncWebServerRequest *request, const char *transactio
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-void alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	if ( get_is_connected() ) {
 
 		// Issue #26 : Of that we can be sure, but the rest?
@@ -151,4 +169,5 @@ void alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *tra
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }

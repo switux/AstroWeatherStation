@@ -26,7 +26,7 @@
 #include "etl/string.h"
 #include "etl/string_utilities.h"
 
-#include "build_seq.h"
+#include "build_id.h"
 #include "AWSGPS.h"
 
 // Force DEBUG output even if not activated by external button
@@ -35,6 +35,32 @@ const byte DEBUG_MODE = 1;
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
 extern HardwareSerial			Serial1;
+
+
+enum class aws_device_t : unsigned long {
+	NO_SENSOR			= 0x00000000,
+	MLX_SENSOR			= 0x00000001,
+	TSL_SENSOR			= 0x00000002,
+	BME_SENSOR			= 0x00000004,
+	WIND_VANE_SENSOR	= 0x00000008,
+	ANEMOMETER_SENSOR	= 0x00000010,
+	RAIN_SENSOR			= 0x00000020,
+	GPS_SENSOR			= 0x00000040,
+	DOME_DEVICE			= 0x00000080,
+	ETHERNET_DEVICE		= 0x00000100,
+	SC16IS750_DEVICE	= 0x00000200
+};
+
+extern aws_device_t	operator&( aws_device_t, aws_device_t );
+extern bool			operator!=( unsigned long, aws_device_t );
+extern aws_device_t operator&( unsigned long, aws_device_t );
+extern aws_device_t operator~( aws_device_t );
+extern aws_device_t operator|( aws_device_t, aws_device_t );
+extern aws_device_t operator*( aws_device_t, int );
+extern aws_device_t &operator|=( aws_device_t &, aws_device_t );
+extern aws_device_t &operator&=( aws_device_t &, aws_device_t );
+
+extern const aws_device_t ALL_SENSORS;
 
 enum struct dome_shutter_status_type : byte
 {
@@ -82,6 +108,7 @@ struct weather_data_t {
 	byte	rain_intensity;
 
 	float	ambient_temperature;
+	float	raw_sky_temperature;
 	float	sky_temperature;
 	float	cloud_cover;
 	byte	cloud_coverage;
@@ -101,7 +128,7 @@ struct sensor_data_t {
 	sun_data_t		sun;
 	weather_data_t	weather;
 	sqm_data_t		sqm;
-	uint8_t			available_sensors;
+	aws_device_t	available_sensors;
 
 };
 
@@ -126,5 +153,11 @@ struct station_data_t {
 
 void loop( void );
 void setup( void );
+
+template <typename T>
+int sign( T val )
+{
+	return static_cast<int>(T(0) < val) - static_cast<int>(val < T(0));
+}
 
 #endif // _common_H

@@ -63,12 +63,12 @@ class alpaca_device {
 		bool		get_is_connected( void );
 		void		not_implemented( AsyncWebServerRequest *, const char *, const char * );
 		void		send_connected( AsyncWebServerRequest *, const char * );
-		void		send_description( AsyncWebServerRequest *, const char * );
-		void		send_driverinfo( AsyncWebServerRequest *, const char * );
-		void		send_driverversion( AsyncWebServerRequest *, const char * );
-		void		send_interfaceversion( AsyncWebServerRequest *, const char * );
-		void		send_name( AsyncWebServerRequest *, const char * );
-		void		send_supportedactions( AsyncWebServerRequest *, const char * );
+		bool		send_description( AsyncWebServerRequest *, const char * );
+		bool		send_driverinfo( AsyncWebServerRequest *, const char * );
+		bool		send_driverversion( AsyncWebServerRequest *, const char * );
+		bool		send_interfaceversion( AsyncWebServerRequest *, const char * );
+		bool		send_name( AsyncWebServerRequest *, const char * );
+		bool		send_supportedactions( AsyncWebServerRequest *, const char * );
 		void		send_value( AsyncWebServerRequest *, const char *, bool );
 		void		send_value( AsyncWebServerRequest *, const char *, byte );
 		void		send_value( AsyncWebServerRequest *, const char *, float );
