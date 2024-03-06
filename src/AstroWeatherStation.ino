@@ -23,10 +23,12 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
+
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
+#include "soc/rtc_wdt.h"
 
 #include "gpio_config.h"
 #include "common.h"
@@ -34,7 +36,7 @@
 
 extern char			catch_rain_event;
 
-const etl::string<12>		REV 				= "3.0.0.0";
+const etl::string<12>		REV 				= "3.0.0";
 const unsigned long 		US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
@@ -58,15 +60,16 @@ void setup()
 
 			station.read_sensors();
 			station.send_data();
-			station.check_ota_updates();
+			if ( station.get_station_data()->health.battery_level > 50 )
+				station.check_ota_updates( true );
 
 		} else
 		
-			station.handle_rain_event();
+			station.handle_event( aws_event_t::RAIN );
 
 		esp_sleep_enable_timer_wakeup( US_SLEEP );
 
-		if ( station.has_rain_sensor() ) {
+		if ( station.has_device( aws_device_t::RAIN_SENSOR ) ) {
 
 			if ( catch_rain_event ) {
 
@@ -94,25 +97,21 @@ void loop()
 		while (true) { delay( 10000 ); }
 	}
 
-	while( true ) {
-
-		station.send_data();
-		station.check_ota_updates();
-		delay( 1000 * 60 * 5 );
-	}
+	while( true )
+		delay( 1000 * 60 * 1 );
 }
 
 void IRAM_ATTR _handle_dome_shutter_is_moving( void )
 {
-	station.handle_dome_shutter_is_moving();
+	station.handle_event( aws_event_t::DOME_SHUTTER_MOVING );
 }
 
 void IRAM_ATTR _handle_dome_shutter_closed_change( void )
 {
-	station.handle_dome_shutter_closed_change();
+	station.handle_event( aws_event_t::DOME_SHUTTER_CLOSED_CHANGE );
 }
 
 void IRAM_ATTR _handle_rain_event( void )
 {
-	station.handle_rain_event();
+	station.handle_event( aws_event_t::RAIN );
 }

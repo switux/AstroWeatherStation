@@ -20,7 +20,7 @@
 #include <AsyncUDP_ESP32_W5500.hpp>
 #include <ESPAsyncWebSrv.h>
 #include <FS.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 
 #include "defaults.h"
 #include "common.h"
@@ -29,18 +29,6 @@
 
 extern HardwareSerial Serial1;
 
-const unsigned long	MLX_SENSOR			= 0x00000001;
-const unsigned long TSL_SENSOR			= 0x00000002;
-const unsigned long BME_SENSOR			= 0x00000004;
-const unsigned long WIND_VANE_SENSOR	= 0x00000008;
-const unsigned long ANEMOMETER_SENSOR	= 0x00000010;
-const unsigned long RAIN_SENSOR			= 0x00000020;
-const unsigned long	GPS_SENSOR			= 0x00000040;
-const unsigned long ALL_SENSORS			= ( MLX_SENSOR | TSL_SENSOR | BME_SENSOR | WIND_VANE_SENSOR | ANEMOMETER_SENSOR | RAIN_SENSOR | GPS_SENSOR );
-
-const unsigned long	DOME_DEVICE			= 0x00000080;
-const unsigned long	ETHERNET_DEVICE		= 0x00000100;
-const unsigned long	SC16IS750_DEVICE	= 0x00000200;
 
 extern AstroWeatherStation station;
 extern const std::array<std::string, 3> ANEMOMETER_MODEL;
@@ -72,9 +60,9 @@ etl::string_view AWSConfig::get_root_ca( void )
 	return etl::string_view( root_ca );
 }
 
-bool AWSConfig::get_has_device( unsigned long dev )
+bool AWSConfig::get_has_device( aws_device_t dev )
 {
-	return( devices & dev );
+	return (( devices & dev ) == dev );
 }
 
 etl::string_view AWSConfig::get_json_string_config( void )
@@ -97,7 +85,7 @@ etl::string_view AWSConfig::get_wind_vane_model_str( void )
 
 void AWSConfig::list_files( void )
 {
-	File root = SPIFFS.open( "/" );
+	File root = LittleFS.open( "/" );
 	File file = root.openNextFile();
  
 	while( file ) {
@@ -112,7 +100,7 @@ bool AWSConfig::load( bool _debug_mode  )
 {
 	debug_mode = _debug_mode;
 	
-	if ( !SPIFFS.begin( true )) {
+	if ( !LittleFS.begin( true )) {
 
 		Serial.printf( "[ERROR] Could not access flash filesystem, bailing out!\n" );
 		return false;
@@ -139,14 +127,14 @@ bool AWSConfig::read_config( void )
 		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
 	}
 
-	devices |= DOME_DEVICE * ( json_config.containsKey( "has_dome" ) ? json_config["has_dome"].as<int>() : DEFAULT_HAS_DOME );
-	devices |= BME_SENSOR * ( json_config.containsKey( "has_bme" ) ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
-	devices |= GPS_SENSOR * ( json_config.containsKey( "has_gps" ) ? json_config["has_gps"].as<int>() : DEFAULT_HAS_GPS );
-	devices |= MLX_SENSOR * ( json_config.containsKey( "has_mlx" ) ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
-	devices |= RAIN_SENSOR * ( json_config.containsKey( "has_rain_sensor" ) ? json_config["has_rain_sensor"].as<int>() : DEFAULT_HAS_RAIN_SENSOR );
-	devices |= TSL_SENSOR * ( json_config.containsKey( "has_tsl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
-	devices |= ANEMOMETER_SENSOR * ( json_config.containsKey( "has_ws" ) ? json_config["has_ws"].as<int>() : DEFAULT_HAS_WS );
-	devices |= WIND_VANE_SENSOR * ( json_config.containsKey( "has_wv" ) ? json_config["has_wv"].as<int>() : DEFAULT_HAS_WV );
+	devices |= aws_device_t::DOME_DEVICE * ( json_config.containsKey( "has_dome" ) ? json_config["has_dome"].as<int>() : DEFAULT_HAS_DOME );
+	devices |= aws_device_t::BME_SENSOR * ( json_config.containsKey( "has_bme" ) ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
+	devices |= aws_device_t::GPS_SENSOR * ( json_config.containsKey( "has_gps" ) ? json_config["has_gps"].as<int>() : DEFAULT_HAS_GPS );
+	devices |= aws_device_t::MLX_SENSOR * ( json_config.containsKey( "has_mlx" ) ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
+	devices |= aws_device_t::RAIN_SENSOR * ( json_config.containsKey( "has_rain_sensor" ) ? json_config["has_rain_sensor"].as<int>() : DEFAULT_HAS_RAIN_SENSOR );
+	devices |= aws_device_t::TSL_SENSOR * ( json_config.containsKey( "has_tsl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
+	devices |= aws_device_t::ANEMOMETER_SENSOR * ( json_config.containsKey( "has_ws" ) ? json_config["has_ws"].as<int>() : DEFAULT_HAS_WS );
+	devices |= aws_device_t::WIND_VANE_SENSOR * ( json_config.containsKey( "has_wv" ) ? json_config["has_wv"].as<int>() : DEFAULT_HAS_WV );
 	
 	set_missing_parameters_to_default_values();
 
@@ -155,7 +143,7 @@ bool AWSConfig::read_config( void )
 
 void AWSConfig::read_root_ca( void )
 {
-	File 	file = SPIFFS.open( "/root_ca.txt", FILE_READ );
+	File 	file = LittleFS.open( "/root_ca.txt", FILE_READ );
 	int		s;
 
 	if ( !file ) {
@@ -204,7 +192,7 @@ bool AWSConfig::read_file( const char *filename )
 
 	json_string.assign( 5120, '\0' );
 	// flawfinder: ignore
-	File file = SPIFFS.open( filename, FILE_READ );
+	File file = LittleFS.open( filename, FILE_READ );
 
 	if ( !file ) {
 
@@ -256,7 +244,7 @@ bool AWSConfig::read_file( const char *filename )
 bool AWSConfig::read_hw_info_from_nvs( void )
 {
 	Preferences nvs;
-	char	x;
+	char		x;
 	
 	Serial.printf( "[INFO] Reading NVS values.\n" );
 	nvs.begin( "aws", false );
@@ -278,7 +266,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	devices |= ( x == 0 ) ? 0 : SC16IS750_DEVICE;
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SC16IS750_DEVICE;
 
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
@@ -286,7 +274,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
-	devices |= ( x == 0 ) ? false : ETHERNET_DEVICE;
+	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::ETHERNET_DEVICE;
 	nvs.end();
 	return true;
 }
@@ -303,14 +291,14 @@ bool AWSConfig::rollback()
 
 	Serial.printf( "[INFO] Rolling back last submitted configuration.\n" );
 
-	if ( !SPIFFS.begin( true )) {
+	if ( !LittleFS.begin( true )) {
 
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
 
-	SPIFFS.remove( "/aws.conf" );
-	SPIFFS.rename( "/aws.conf.bak", "/aws.conf" );
+	LittleFS.remove( "/aws.conf" );
+	LittleFS.rename( "/aws.conf.bak", "/aws.conf" );
 	Serial.printf( "[INFO] Rollback successful.\n" );
 	_can_rollback = 0;
 	return true;
@@ -330,21 +318,21 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	
 	Serial.printf( "[INFO] Saving submitted configuration.\n" );
 
-	if ( !SPIFFS.begin( true )) {
+	if ( !LittleFS.begin( true )) {
 
 		Serial.printf( "[ERROR] Could not open filesystem.\n" );
 		return false;
 	}
 	
-	SPIFFS.remove( "/aws.conf.bak.try" );
-	SPIFFS.rename( "/aws.conf", "/aws.conf.bak.try" );
+	LittleFS.remove( "/aws.conf.bak.try" );
+	LittleFS.rename( "/aws.conf", "/aws.conf.bak.try" );
 
-	SPIFFS.remove( "/aws.conf.try" );
+	LittleFS.remove( "/aws.conf.try" );
 	if ( debug_mode )
 		list_files();
 
 	// flawfinder: ignore
-	File file = SPIFFS.open( "/aws.conf.try", FILE_WRITE );
+	File file = LittleFS.open( "/aws.conf.try", FILE_WRITE );
 	if ( !file ) {
 		Serial.printf( "[ERROR] Cannot write configuration file, rolling back.\n" );
 		return false;
@@ -354,17 +342,17 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	file.close();
 	if ( !s ) {
 
-		SPIFFS.remove( "/aws.conf" );
-		SPIFFS.remove( "/aws.conf.try" );
-		SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		LittleFS.remove( "/aws.conf" );
+		LittleFS.remove( "/aws.conf.try" );
+		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
 		Serial.printf( "[ERROR] Empty configuration file, rolling back.\n" );
 		return false;
 		
 	}
 	if ( s > MAX_CONFIG_FILE_SIZE ) {
 
-		SPIFFS.remove( "/aws.conf.try" );
-		SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf" );
+		LittleFS.remove( "/aws.conf.try" );
+		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
 		Serial.printf( "[ERROR] Configuration file is too big [%d bytes].\n" );
 		station.send_alarm( "Configuration error", "Configuration file is too big. Not applying changes!" );
 		return false;
@@ -372,22 +360,22 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	}
 	if ( debug_mode )
 		list_files();
-	SPIFFS.remove( "/aws.conf" );
+	LittleFS.remove( "/aws.conf" );
 Serial.printf(" REMOVED AWS.CONF\n");
 	if ( debug_mode )
 		list_files();
-	SPIFFS.rename( "/aws.conf.try", "/aws.conf" );
-	SPIFFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
+	LittleFS.rename( "/aws.conf.try", "/aws.conf" );
+	LittleFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
 	Serial.printf( "[INFO] Wrote %d bytes, configuration save successful.\n", s );
 
-	SPIFFS.remove( "/root_ca.txt.try" );
-	SPIFFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
+	LittleFS.remove( "/root_ca.txt.try" );
+	LittleFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
 
-	file = SPIFFS.open( "/root_ca.txt.try", FILE_WRITE );
+	file = LittleFS.open( "/root_ca.txt.try", FILE_WRITE );
 	s = file.print( root_ca.data() );
 	file.close();
 	Serial.printf( "[INFO] Wrote %d bytes of ROOT CA.\n", s );
-	SPIFFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
+	LittleFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
 	
 	_can_rollback = 1;
 	if ( debug_mode )
@@ -604,6 +592,16 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 	if ( !json_config.containsKey( "tzname" ))
 		json_config["tzname"] = DEFAULT_TZNAME;
+
+	if ( !json_config.containsKey( "automatic_updates" ))
+		json_config["automatic_updates"] = DEFAULT_AUTOMATIC_UPDATES;
+
+	if ( !json_config.containsKey( "data_push" ))
+		json_config["data_push"] = DEFAULT_DATA_PUSH;
+
+	if ( !json_config.containsKey( "push_freq" ))
+		json_config["push_freq"] = DEFAULT_PUSH_FREQ;
+
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
@@ -645,6 +643,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "k6" ):
 			case str2int( "k7" ):
 			case str2int( "pref_iface" ):
+			case str2int( "push_freq" ):
 			case str2int( "rain_event_guard_time" ):
 			case str2int( "remote_server" ):
 			case str2int( "root_ca" ):
@@ -700,6 +699,8 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "eth_ip_mode" ):
 				x = ( item.value() == "0" ) ? aws_ip_mode::dhcp : aws_ip_mode::fixed;
 				break;
+			case str2int( "automatic_updates" ):
+			case str2int( "data_push" ):
 			case str2int( "has_bme" ):
 			case str2int( "has_dome" ):
 			case str2int( "has_gps" ):

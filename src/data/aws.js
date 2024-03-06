@@ -1,3 +1,22 @@
+/*
+   aws.js
+
+	(c) 2023-2024 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 let dashboardRefresh;
 const wind_direction = [ 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW' ];
 const MLX_SENSOR = 0x01;
@@ -13,6 +32,13 @@ const	DOME_DEVICE = 0x80;
 // 12=After OTA Update
 const	RESET_REASON = [ 'Unknown', 'Power on', '', 'SW reset', 'OWDT reset', 'Deep sleep reset', 'SDIO reset', 'Timer group 0 WD reset', 'Timer group 1 WD reset', 'RTC WD reset core', 'Intrusion reset', 'Time group reset CPU', 'SW reset CPU', 'RTC WD reset CPU', 'Reset by PRO CPU', 'Brown out', 'RTC WD Reset' ];
 const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
+
+var sleepSetTimeout_ctrl;
+
+function sleep(ms) {
+    clearInterval(sleepSetTimeout_ctrl);
+    return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
+}
 
 function checkbox_change( param )
 {
@@ -150,6 +176,8 @@ function fill_network_values( values )
 
 }
 
+
+
 function fill_sensor_values( values )
 {
 	document.getElementById("has_bme").checked = values['has_bme'];
@@ -174,20 +202,35 @@ function fill_cloud_coverage_parameter_values( values )
 	document.getElementById("k7").value = values['k7'];
 }
 
+function makeRequest() {
+	return new Promise((resolve,reject) => {
+		clearInterval( dashboardRefresh );
+		sleep( 3000 );
+		let req = new XMLHttpRequest();
+		req.open( "GET", "/ota_update", true );
+		req.onload = function () {
+			if ( req.status == 200 ) {
+				resolve( req.responseText );
+			} else {
+				reject( new Error( req.status ));
+			}
+		};
+		req.onerror = function () {
+			reject( new Error( "Network error" ));
+		};
+		req.send();
+	});
+}
+
 function force_ota()
 {
-	let req = new XMLHttpRequest();
-	req.onreadystatechange = function() {
-
-		if ( this.readyState == 4 && this.status == 200 ) {
-
-			console.log( req.responseText );
-			let values = JSON.parse( req.responseText );
-		}
-	};
-	req.open( "GET", "/ota_update", true );
-	req.send();
-
+	makeRequest()
+		.then( response => {
+			document.getElementById("ota_msg").textContent = response;
+		})
+		.catch( error => {
+			document.getElementById("ota_msg").textContent = 'Error: '+error;
+		});
 }
 
 function hide_wifi()
@@ -222,6 +265,9 @@ function retrieve_display_data()
 
 			let values = JSON.parse( req.responseText );
 			document.getElementById("tzname").value = values['tzname'];
+			document.getElementById("automatic_updates").checked = values['automatic_updates'];
+			document.getElementById("push_freq").value = values['push_freq'];
+			document.getElementById("data_push").checked = values['data_push'];
 			fill_network_values( values );
 			fill_sensor_values( values );
 			fill_cloud_coverage_parameter_values( values );
@@ -379,9 +425,14 @@ function fetch_station_data()
 {
 	let req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
-		if ( this.readyState == 4 && this.status == 200 ) {
-			let values = JSON.parse( req.responseText );
-			update_dashboard( values );
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				let values = JSON.parse( req.responseText );
+				document.getElementById("status").textContent = "";
+				update_dashboard( values );
+			} else if ( this.status == 503 ) {
+				document.getElementById("status").textContent = "Station not ready";
+			}
 		}
 	};
 	req.open( "GET", "/get_station_data", true );
@@ -396,6 +447,8 @@ function update_dashboard( values )
 	let hours = Math.floor( ( uptime % ( 3600 * 24 )) / 3600 );
 	let mins = Math.floor( ( uptime % 3600 ) / 60 );
 	let secs = uptime % 60;
+
+	document.getElementById("build_id").textContent = 'V'+values['build_id'];
 
 	document.getElementById("uptime").textContent = days+' days '+hours+' hours '+mins+' minutes '+secs+' seconds';
 	document.getElementById("reset_reason").textContent = RESET_REASON[ values['reset_reason0'] ];
@@ -467,6 +520,10 @@ function update_dashboard( values )
 	document.getElementById("illuminance").textContent = values['lux'].toFixed(2);
 	document.getElementById("irradiance").textContent = values['irradiance'].toFixed(2);
 
+	document.getElementById("ambient_temperature").textContent = values['ambient_temperature'].toFixed(2);
+	document.getElementById("sky_temperature").textContent = values['sky_temperature'].toFixed(2);
+	document.getElementById("raw_sky_temperature").textContent = values['raw_sky_temperature'].toFixed(2);
+
 	document.getElementById("rainintensity").textContent = values['rain_intensity'];
 
 	if ( values['available_sensors'] & BME_SENSOR ) {
@@ -501,4 +558,8 @@ function update_dashboard( values )
 		document.getElementById('tsl_led').querySelector('.led_color').style.backgroundColor = 'red';
 		document.getElementById('sqm_led').querySelector('.led_color').style.backgroundColor = 'red';
 	}
+	if ( values['available_sensors'] & MLX_SENSOR )
+		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'green';
+	else
+		document.getElementById('cloud_led').querySelector('.led_color').style.backgroundColor = 'red';
 }

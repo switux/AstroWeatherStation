@@ -32,6 +32,7 @@ void alpaca_device::attach_device( std::shared_device<Device> _device )
 	device = _device;
 }
 */
+
 bool alpaca_device::get_debug_mode( void )
 {
 	return debug_mode;
@@ -103,43 +104,66 @@ void alpaca_device::send_value( AsyncWebServerRequest *request, const char *tran
 
 }
 
-void alpaca_device::send_description( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_description( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", description, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_device::send_driverinfo( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_driverinfo( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverinfo, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_device::send_driverversion( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_driverversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverversion, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_device::send_interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", interfaceversion, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_device::send_name( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_name( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", name, transaction_details );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+	return true;
 }
 
-void alpaca_device::send_supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
 {
+	if ( request->method() != HTTP_GET )
+		return false;
+
 	etl::string<256>	message_str;
 	if ( is_connected )
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", supportedactions, transaction_details );
@@ -147,6 +171,7 @@ void alpaca_device::send_supportedactions( AsyncWebServerRequest *request, const
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
 
 	request->send( 200, "application/json", static_cast<const char*>( message_str.data() ));
+	return true;
 }
 
 void alpaca_device::set_debug_mode( bool b )

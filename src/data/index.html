@@ -1,4 +1,23 @@
 <!doctype html>
+<!--
+   index.html
+
+	(c) 2023-2024 F.Lesage
+
+	This program is free software: you can redistribute it and/or modify it
+	under the terms of the GNU General Public License as published by the
+	Free Software Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+	This program is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+	or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+	more details.
+
+	You should have received a copy of the GNU General Public License along
+	with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
 <html lang="en">
 <head>
 	<title>
@@ -46,6 +65,8 @@
 				<table aria-describedby="General config" style="margin: 0 auto">
 					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
 					<tr><td>Timezone Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
+					<tr><td>Automatic updates</td><td><input form="config" name="automatic_updates" id="automatic_updates" type="checkbox"/></td></tr>
+					<tr><td>Data push</td><td>Frequency:<input form="config" name="push_freq" id="push_freq" type="text" value="" size="4"/>s <input form="config" name="data_push" id="data_push" type="checkbox"/> Enabled</td></tr>
 				</table>
 
 			</div> <!-- _general -->
@@ -444,7 +465,7 @@
 				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
 					<table aria-describedby="OTA" style="margin: 0 auto">
-						<tr><th colspan="2" style="border-bottom: 1px solid; position: relative">OTA<span style="position: absolute;right: 0;margin-right:10px"><button onlick="force_ota();">Force OTA update</button></span></th></tr>
+						<tr><th colspan="2" style="border-bottom: 1px solid; position: relative">OTA</th></tr>
 						<tr><td>OTA board model</td><td><span id="ota_board"></span></td></tr>
 						<tr><td>OTA device ID</td><td><span id="ota_device"></span></td></tr>
 						<tr><td>OTA config</td><td><span id="ota_config"></span></td></tr>
@@ -518,13 +539,29 @@
 
 				</div> <!-- sun data -->
 
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Cloud data" style="margin: 0 auto">
+						<tr><th colspan="3" style="border-bottom: 1px solid">Cloud coverage data</tr>
+						<tr><td><span id="cloud_led" class="led"><span class="led_color"></span></span></td><td>Raw sky temperature</td><td><span id="raw_sky_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Ambient temperature</td><td><span id="ambient_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Corrected sky temperature</td><td><span id="sky_temperature"></span> &deg;C</td></tr>
+						<tr><td></td><td>Cloud coverage</td><td><span id="cloud_coverage"></span></td></tr>
+					</table>
+
+				</div> <!-- sun data -->
+
 
 			</div>
 		</div> <!-- dashboard -->
 
 		<div id="apply" style="margin: 10px">
 			<input style="text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
-			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="send_config();" id="toto" onclick="reboot();" value="REBOOT">
+			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="reboot();" value="REBOOT">
+			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="force_ota();" value="Check for new version">
+			<span id="ota_msg"></span>
+			<span style="margin-left:30px; text-align:center; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; padding-left: 10px; padding-right: 10px; color: #80a080;" id="build_id"></span>
+			<span style="margin-left:30px; text-align:center; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; padding-left: 10px; padding-right: 10px; color: #a08080;" id="status"></span>
 			<p style="font-weight: bold" id="feedback"></p>
 		</div>
 	

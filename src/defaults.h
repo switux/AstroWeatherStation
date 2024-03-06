@@ -28,6 +28,7 @@ const etl::string<128>	DEFAULT_LOCATION					= "Somewhere on Earth";
 
 const uint32_t			DEFAULT_SENSOR_POLLING_MS_INTERVAL	= 15000;
 
+static const uint8_t DEFAULT_AUTOMATIC_UPDATES		= 1;
 static const char DEFAULT_SERVER[]				= "www.datamancers.net";
 static const char DEFAULT_WIFI_STA_SSID[]		= "AstroWeatherStation";
 static const char DEFAULT_WIFI_STA_PASSWORD[]	= "AWS2023!";

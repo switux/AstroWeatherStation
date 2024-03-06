@@ -213,7 +213,7 @@ void alpaca_telescope::set_connected( AsyncWebServerRequest *request, const char
 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" )) {
 
-			if ( station.is_ntp_synced() || station.has_gps() ) {
+			if ( station.is_ntp_synced() || station.has_device( aws_device_t::GPS_SENSOR ) ) {
 
 				set_is_connected( true );
 				snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
