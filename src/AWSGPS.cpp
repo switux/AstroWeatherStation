@@ -150,7 +150,7 @@ bool AWSGPS::start( void )
 		[](void *param) {	// NOSONAR
             std::function<void(void*)>* feed_proxy = static_cast<std::function<void(void*)>*>( param );
             (*feed_proxy)( NULL );
-		}, "GPSFeed", 2000, &_feed, 4, &gps_task_handle, 1 );
+		}, "GPS Feed Task", 2000, &_feed, 4, &gps_task_handle, 1 );
 
 	return true;
 }

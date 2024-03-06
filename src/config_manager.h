@@ -23,15 +23,6 @@
 
 #include <ArduinoJson.h>
 
-extern const unsigned long MLX_SENSOR;
-extern const unsigned long TSL_SENSOR;
-extern const unsigned long BME_SENSOR;
-extern const unsigned long WIND_VANE_SENSOR;
-extern const unsigned long ANEMOMETER_SENSOR;
-extern const unsigned long RAIN_SENSOR;
-extern const unsigned long GPS_SENSOR;
-extern const unsigned long ALL_SENSORS;
-
 enum struct aws_iface : int {
 
 	wifi_ap,
@@ -126,9 +117,12 @@ const uint16_t			DEFAULT_UNSAFE_WIND_SPEED_2_MAX			= 0;
 const bool				DEFAULT_UNSAFE_WIND_SPEED_1_MISSING		= false;
 const bool				DEFAULT_UNSAFE_WIND_SPEED_2_MISSING		= false;
 
-const aws_wifi_mode		DEFAULT_WIFI_MODE					= aws_wifi_mode::both;
-const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE			= aws_ip_mode::dhcp;
-  
+const aws_wifi_mode		DEFAULT_WIFI_MODE						= aws_wifi_mode::both;
+const aws_ip_mode		DEFAULT_WIFI_STA_IP_MODE				= aws_ip_mode::dhcp;
+
+const bool				DEFAULT_DATA_PUSH						= true;
+const uint16_t			DEFAULT_PUSH_FREQ						= 300;
+
 class AWSConfig {
 
 	public:
@@ -142,7 +136,7 @@ class AWSConfig {
 		T 						get_lookout_unsafe_parameter( const char * );
 		template <typename T>
 		T 						get_parameter( const char * );
-		bool					get_has_device( unsigned long );
+		bool					get_has_device( aws_device_t );
 		etl::string_view		get_json_string_config( void );
 		etl::string_view		get_pcb_version( void );
 		aws_pwr_src				get_pwr_mode( void );
@@ -158,7 +152,7 @@ class AWSConfig {
 
 		const size_t		MAX_CONFIG_FILE_SIZE	= 5120;
 		bool				debug_mode				= false;
-		uint32_t			devices					= 0;
+		aws_device_t		devices					= aws_device_t::NO_SENSOR;
 		bool				initialised				= false;
 		DynamicJsonDocument	json_config;
 		etl::string<8>		pcb_version;

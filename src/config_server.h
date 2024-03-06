@@ -40,12 +40,15 @@ class AWSWebServer {
 		void get_station_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );
 		bool initialise( bool );
+		void stop( void );
+		void start( void );
 
 	private:
 
 		AsyncWebServer 	*server		= nullptr;
 		bool			debug_mode	= false;
-
+		bool			initialised	= false;
+		
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );

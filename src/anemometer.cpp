@@ -63,11 +63,11 @@ bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model
 
 		} else
 
-			return set_initialised ( get_wind_speed( false ) >= 0 );
+			return set_initialised ( get_wind_speed( true ) >= 0 );
 	}
 
 	sensor_bus->begin( bps, EspSoftwareSerial::SWSERIAL_8N1, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX );
-	return set_initialised ( get_wind_speed( false ) >= 0 );
+	return set_initialised ( get_wind_speed( true ) >= 0 );
 }
 
 float Anemometer::get_wind_speed( bool verbose )

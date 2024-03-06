@@ -37,12 +37,53 @@
 #include "sensor_manager.h"
 #include "AstroWeatherStation.h"
 
-RTC_DATA_ATTR byte	prev_available_sensors = 0;
-RTC_DATA_ATTR byte	available_sensors = 0;
+RTC_DATA_ATTR long	prev_available_sensors = 0;
+RTC_DATA_ATTR long	available_sensors = 0;
 
 SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
+const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR | aws_device_t::TSL_SENSOR | aws_device_t::BME_SENSOR | aws_device_t::WIND_VANE_SENSOR | aws_device_t::ANEMOMETER_SENSOR | aws_device_t::RAIN_SENSOR | aws_device_t::GPS_SENSOR );
 
 extern AstroWeatherStation station;
+
+aws_device_t operator&( aws_device_t a, aws_device_t b )
+{
+	return static_cast<aws_device_t>( static_cast<unsigned long>(a) & static_cast<unsigned long>(b) );
+}
+
+bool operator!=( unsigned long a, aws_device_t b )
+{
+	return a != static_cast<unsigned long>(b);
+}
+
+aws_device_t operator&( unsigned long a, aws_device_t b )
+{
+	return static_cast<aws_device_t>( a & static_cast<unsigned long>(b) );
+}
+
+aws_device_t operator~( aws_device_t b )
+{
+	return static_cast<aws_device_t>( ~static_cast<unsigned long>(b) );
+}
+
+aws_device_t operator|( aws_device_t a, aws_device_t b )
+{
+	return static_cast<aws_device_t>( static_cast<unsigned long>(a) | static_cast<unsigned long>(b) );
+}
+
+aws_device_t operator*( aws_device_t a, int b )
+{
+	return static_cast<aws_device_t>( static_cast<unsigned long>(a) * b );
+}
+
+aws_device_t& operator|=( aws_device_t& a, aws_device_t b )
+{
+	return a = static_cast<aws_device_t>( static_cast<unsigned long>(a) | static_cast<unsigned long>(b) );
+}
+
+aws_device_t& operator&=( aws_device_t& a, aws_device_t b )
+{
+	return a = static_cast<aws_device_t>( static_cast<unsigned long>(a) & static_cast<unsigned long>(b) );
+}
 
 AWSSensorManager::AWSSensorManager( void ) :
 	bme( new Adafruit_BME280() ),
@@ -53,7 +94,7 @@ AWSSensorManager::AWSSensorManager( void ) :
 	memset( &sensor_data, 0, sizeof( sensor_data_t ));
 }
 
-uint8_t AWSSensorManager::get_available_sensors( void )
+aws_device_t AWSSensorManager::get_available_sensors( void )
 {
 	return available_sensors;
 }
@@ -87,7 +128,7 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 			[](void *param) {	// NOSONAR
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
-			}, "SensorsTask", 3000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
+			}, "SensorManagerTask", 10000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
 	}
 	k[0] = config->get_parameter<int>( "k1" );
 	k[1] = config->get_parameter<int>( "k2" );
@@ -111,7 +152,7 @@ void AWSSensorManager::initialise_BME( void )
 		if ( debug_mode )
 			Serial.printf( "[INFO] Found BME280.\n" );
 
-		available_sensors |= BME_SENSOR;
+		available_sensors |= aws_device_t::BME_SENSOR;
 	}
 }
 
@@ -126,7 +167,7 @@ void AWSSensorManager::initialise_MLX( void )
 		if ( debug_mode )
 			Serial.printf( "[INFO] Found MLX90614.\n" );
 
-		available_sensors |= MLX_SENSOR;
+		available_sensors |= aws_device_t::MLX_SENSOR;
 	}
 }
 
@@ -142,46 +183,46 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 		delay( 500 );		// MLX96014 seems to take some time to properly initialise
 	}
 
-	if ( !rain_event && config->get_has_device( BME_SENSOR ) )
+	if ( !rain_event && config->get_has_device( aws_device_t::BME_SENSOR ) )
 		initialise_BME();
 
-	if ( !rain_event && config->get_has_device( MLX_SENSOR ) )
+	if ( !rain_event && config->get_has_device( aws_device_t::MLX_SENSOR ) )
 		initialise_MLX();
 
-	if ( !rain_event && config->get_has_device( TSL_SENSOR ) ) {
+	if ( !rain_event && config->get_has_device( aws_device_t::TSL_SENSOR ) ) {
 
 		initialise_TSL();
 		sqm.initialise( tsl, &sensor_data.sqm, config->get_parameter<float>( "msas_calibration_offset" ), debug_mode );
 	}
 
-	if ( !rain_event &&  config->get_has_device( ANEMOMETER_SENSOR ) ) {
+	if ( !rain_event &&  config->get_has_device( aws_device_t::ANEMOMETER_SENSOR ) ) {
 
 		if ( !anemometer.initialise( &rs485_bus, polling_ms_interval, config->get_parameter<int>( "anemometer_model" ), debug_mode ))
 
-			available_sensors &= ~ANEMOMETER_SENSOR;
+			available_sensors &= ~aws_device_t::ANEMOMETER_SENSOR;
 
 		else {
 
 			Serial.printf( "[INFO] Found anemometer.\n" );
-			available_sensors |= ANEMOMETER_SENSOR;
+			available_sensors |= aws_device_t::ANEMOMETER_SENSOR;
 		}
 	}
 
-	if ( !rain_event && config->get_has_device( WIND_VANE_SENSOR ) ) {
+	if ( !rain_event && config->get_has_device( aws_device_t::WIND_VANE_SENSOR ) ) {
 
 		if ( !wind_vane.initialise( &rs485_bus, config->get_parameter<int>( "wind_vane_model" ), debug_mode ))
 
-			available_sensors &= ~WIND_VANE_SENSOR;
+			available_sensors &= ~aws_device_t::WIND_VANE_SENSOR;
 
 		else {
 
 			Serial.printf( "[INFO] Found wind vane.\n" );
-			available_sensors |= WIND_VANE_SENSOR;
+			available_sensors |= aws_device_t::WIND_VANE_SENSOR;
 		}
 	}
 
-	if ( config->get_has_device( RAIN_SENSOR ) && initialise_rain_sensor())
-		available_sensors |= RAIN_SENSOR;
+	if ( config->get_has_device( aws_device_t::RAIN_SENSOR ) && initialise_rain_sensor())
+		available_sensors |= aws_device_t::RAIN_SENSOR;
 
 }
 
@@ -204,7 +245,7 @@ void AWSSensorManager::initialise_TSL( void )
 
 		tsl->setGain( TSL2591_GAIN_LOW );
 		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
-		available_sensors |= TSL_SENSOR;
+		available_sensors |= aws_device_t::TSL_SENSOR;
 	}
 }
 
@@ -224,11 +265,14 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 {
 	while( true ) {
 
+		if ( sensor_data.weather.rain_event )
+			station.send_alarm( "[Station] RAIN EVENT", "Rain event!" );
+			
 		if ( xSemaphoreTake( sensors_read_mutex, 5000 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
 			retrieve_sensor_data();
 			xSemaphoreGive( sensors_read_mutex );
-			if ( config->get_has_device( ANEMOMETER_SENSOR ) )
+			if ( config->get_has_device( aws_device_t::ANEMOMETER_SENSOR ) )
 				sensor_data.weather.wind_gust = anemometer.get_wind_gust();
 			else
 				sensor_data.weather.wind_gust = 0.F;
@@ -258,7 +302,7 @@ void AWSSensorManager::read_anemometer( void )
 
 void AWSSensorManager::read_BME( void  )
 {
-	if ( ( available_sensors & BME_SENSOR ) == BME_SENSOR ) {
+	if ( ( available_sensors & aws_device_t::BME_SENSOR ) == aws_device_t::BME_SENSOR ) {
 
 		sensor_data.weather.temperature = bme->readTemperature();
 		sensor_data.weather.pressure = bme->readPressure() / 100.F;
@@ -289,13 +333,16 @@ void AWSSensorManager::read_BME( void  )
 
 void AWSSensorManager::read_MLX( void )
 {
-	if ( ( available_sensors & MLX_SENSOR ) == MLX_SENSOR ) {
+	if ( ( available_sensors & aws_device_t::MLX_SENSOR ) == aws_device_t::MLX_SENSOR ) {
 
 		sensor_data.weather.ambient_temperature = mlx->readAmbientTempC();
 		sensor_data.weather.sky_temperature = mlx->readObjectTempC();
+		sensor_data.weather.raw_sky_temperature = mlx->readObjectTempC();
 
-		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 )
-			sensor_data.weather.cloud_coverage = (( sensor_data.weather.sky_temperature - sensor_data.weather.ambient_temperature ) <= -15 ) ? 0 : 2;
+		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 ) {
+			sensor_data.weather.sky_temperature -= sensor_data.weather.ambient_temperature;
+			sensor_data.weather.cloud_coverage = ( sensor_data.weather.sky_temperature <= -15 ) ? 0 : 2;
+		}
 		else {
 
 			float t = ( k[0] / 100 ) * ( sensor_data.weather.ambient_temperature - k[1] / 10 ) * ( k[2] / 100 ) * pow( exp( k[3] / 1000 * sensor_data.weather.ambient_temperature ), k[4]/100 );
@@ -308,17 +355,12 @@ void AWSSensorManager::read_MLX( void )
 			sensor_data.weather.sky_temperature -= t;
 
 		}
-		if ( debug_mode ) {
-
-			Serial.print( "[DEBUG] Ambient temperature = " );
-			Serial.print( sensor_data.weather.ambient_temperature );
-			Serial.print( "°C / Raw sky temperature = " );
-			Serial.print( sensor_data.weather.sky_temperature );
-			Serial.printf( "°C\n" );
-		}
+		if ( debug_mode )
+			Serial.printf( "[DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature );
 		return;
 	}
 	sensor_data.weather.ambient_temperature = -99.F;
+	sensor_data.weather.raw_sky_temperature = -99.F;
 	sensor_data.weather.sky_temperature = -99.F;
 }
 
@@ -336,7 +378,7 @@ void AWSSensorManager::read_sensors( void )
 	
 	if ( prev_available_sensors != available_sensors ) {
 
-		prev_available_sensors = available_sensors;
+		prev_available_sensors = static_cast<unsigned long>( available_sensors );
 		station.report_unavailable_sensors();
 	}
 }
@@ -345,7 +387,7 @@ void AWSSensorManager::read_TSL( void )
 {
 	int			lux = -1;
 
-	if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR ) {
+	if ( ( available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR ) {
 
 		uint32_t lum = tsl->getFullLuminosity();
 		uint16_t ir = lum >> 16;
@@ -386,39 +428,40 @@ void AWSSensorManager::retrieve_sensor_data( void )
 		sensor_data.weather.rain_event = rain_event;
 		sensor_data.timestamp = station.get_timestamp();
 
-		if ( config->get_has_device( BME_SENSOR ) )
+		if ( config->get_has_device( aws_device_t:: BME_SENSOR ) )
 			read_BME();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_device( MLX_SENSOR ) )
+		if ( config->get_has_device( aws_device_t::MLX_SENSOR ) )
 			read_MLX();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_device( TSL_SENSOR ) ) {
+		if ( config->get_has_device( aws_device_t::TSL_SENSOR ) ) {
 
 			read_TSL();
-			if ( ( available_sensors & TSL_SENSOR ) == TSL_SENSOR )
+			if ( ( available_sensors & aws_device_t::TSL_SENSOR ) == aws_device_t::TSL_SENSOR )
 				sqm.read( sensor_data.weather.ambient_temperature );
-
 		}
 
-		if ( config->get_has_device( ANEMOMETER_SENSOR ) )
+		if ( config->get_has_device( aws_device_t::ANEMOMETER_SENSOR ) )
 			read_anemometer();
 
 		esp_task_wdt_reset();
 
-		if ( config->get_has_device( WIND_VANE_SENSOR ) )
+		if ( config->get_has_device( aws_device_t::WIND_VANE_SENSOR ) )
 			read_wind_vane();
 
 		esp_task_wdt_reset();
 
 		xSemaphoreGive( i2c_mutex );
 
-		if ( config->get_has_device( RAIN_SENSOR ) )
+		if ( config->get_has_device( aws_device_t::RAIN_SENSOR ) ) {
 			sensor_data.weather.rain_intensity = rain_sensor.get_rain_intensity();
-
+			if ( !sensor_data.weather.rain_intensity )
+				sensor_data.weather.rain_event = false;
+		}
 	}
 }
 
@@ -442,4 +485,19 @@ void AWSSensorManager::set_solar_panel( bool b )
 		pinMode( GPIO_BAT_ADC, INPUT );
 
 	}
+}
+
+void AWSSensorManager::resume( void )
+{
+	vTaskResume( sensors_task_handle );
+}
+
+bool AWSSensorManager::sensor_is_available( aws_device_t sensor )
+{
+	return (( available_sensors & sensor ) == sensor );
+}
+
+void AWSSensorManager::suspend( void )
+{
+	vTaskSuspend( sensors_task_handle );
 }

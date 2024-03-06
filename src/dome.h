@@ -46,13 +46,13 @@ class Dome : public Device {
 	public:
 
 		explicit Dome( void );
-		void					close_shutter( void );
+		bool					close_shutter( void );
 		void					control_task( void * );
 		bool					get_connected( void );
 		bool					get_shutter_closed_status( void );
 		void					initialise( dome_data_t *, bool );
 		void					initialise( I2C_SC16IS750 *, SemaphoreHandle_t, dome_data_t *, bool );
-		void					open_shutter( void );
+		bool					open_shutter( void );
 		void 					shutter_closed_change( void );
 		void 					set_shutter_is_moving( void );
 		void					trigger_close_shutter( void );
