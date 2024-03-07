@@ -1526,3 +1526,7 @@ void AWSNetwork::webhook( const char *json_msg )
 {
 	// Placeholder for #155
 }
+
+void AWSNetwork::webhook( const char *json_msg )
+{
+}

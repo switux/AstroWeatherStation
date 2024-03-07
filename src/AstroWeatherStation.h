@@ -127,7 +127,6 @@ class AWSNetwork {
 		bool		start_hotspot( void );
 		void 		webhook( const char * );
 
-
 };
 
 class AstroWeatherStation {
