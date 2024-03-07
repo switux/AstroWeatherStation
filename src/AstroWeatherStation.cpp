@@ -251,12 +251,7 @@ Dome *AstroWeatherStation::get_dome( void )
 {
 	return &station_devices.dome;
 }
-/*
-byte AstroWeatherStation::get_eth_cidr_prefix( void )
-{
-	return network.get_eth_cidr_prefix();
-}
-*/
+
 etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
 	DynamicJsonDocument	json_data(860);
@@ -383,36 +378,7 @@ uint32_t AstroWeatherStation::get_uptime( void )
 	compute_uptime();
 	return station_data.health.uptime;
 }
-/*
-byte AstroWeatherStation::get_wifi_sta_cidr_prefix( void )
-{
-	return network.get_wifi_sta_cidr_prefix();
-}
 
-IPAddress *AstroWeatherStation::get_ip_address( aws_ip_info_t some_ip_addr )
-{
-	switch( some_ip_addr ) {
-
-		case aws_ip_info_t::WIFI_STA_DNS:
-			return network.get_wifi_sta_dns();
-
-		case aws_ip_info_t::WIFI_STA_GW:
-			return network.get_wifi_sta_gw();
-		
-		case aws_ip_info_t::WIFI_STA_IP:
-			return network.get_wifi_sta_ip();
-
-		case aws_ip_info_t::ETH_DNS:
-			return network.get_eth_dns();
-
-		case aws_ip_info_t::ETH_GW:
-			return network.get_eth_gw();
-
-		case aws_ip_info_t::ETH_IP:
-			return network.get_eth_ip();
-	}
-}
-*/
 etl::string_view AstroWeatherStation::get_wind_vane_sensorname( void )
 {
 	if ( config.get_has_device( aws_device_t::WIND_VANE_SENSOR ))
@@ -1292,47 +1258,7 @@ bool AWSNetwork::connect_to_wifi()
 
 	return false;
 }
-/*
-byte AWSNetwork::get_eth_cidr_prefix( void )
-{
-	return mask_to_cidr( (uint32_t)eth_subnet );
-}
 
-IPAddress *AWSNetwork::get_eth_dns( void )
-{
-	return &eth_dns;
-}
-
-IPAddress *AWSNetwork::get_eth_gw( void )
-{
-	return &eth_gw;
-}
-
-IPAddress *AWSNetwork::get_eth_ip( void )
-{
-	return &eth_ip;
-}
-
-byte AWSNetwork::get_wifi_sta_cidr_prefix( void )
-{
-	return mask_to_cidr( (uint32_t)wifi_sta_subnet );
-}
-
-IPAddress *AWSNetwork::get_wifi_sta_dns( void )
-{
-	return &wifi_sta_dns;
-}
-
-IPAddress *AWSNetwork::get_wifi_sta_gw( void )
-{
-	return &wifi_sta_gw;
-}
-
-IPAddress *AWSNetwork::get_wifi_sta_ip( void )
-{
-	return &wifi_sta_ip;
-}
-*/
 uint8_t *AWSNetwork::get_wifi_mac( void )
 {
 	return wifi_mac;
@@ -1596,9 +1522,9 @@ bool AWSNetwork::start_hotspot( void )
 	return false;
 }
 
-bool AWSNetwork::stop_hotspot( void )
+void AWSNetwork::webhook( const char *json_msg )
 {
-	return WiFi.softAPdisconnect();
+	// Placeholder for #155
 }
 
 void AWSNetwork::webhook( const char *json_msg )

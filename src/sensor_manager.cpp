@@ -37,8 +37,8 @@
 #include "sensor_manager.h"
 #include "AstroWeatherStation.h"
 
-RTC_DATA_ATTR long	prev_available_sensors = 0;
-RTC_DATA_ATTR long	available_sensors = 0;
+RTC_DATA_ATTR long	prev_available_sensors = 0;	// NOSONAR
+RTC_DATA_ATTR long	available_sensors = 0;		// NOSONAR
 
 SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
 const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR | aws_device_t::TSL_SENSOR | aws_device_t::BME_SENSOR | aws_device_t::WIND_VANE_SENSOR | aws_device_t::ANEMOMETER_SENSOR | aws_device_t::RAIN_SENSOR | aws_device_t::GPS_SENSOR );

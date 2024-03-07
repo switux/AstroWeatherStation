@@ -118,14 +118,6 @@ class AWSNetwork {
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
-//		byte		get_eth_cidr_prefix( void );
-//		IPAddress 	*get_eth_dns( void );
-//		IPAddress	*get_eth_gw( void );
-//		IPAddress	*get_eth_ip( void );
-//		byte		get_wifi_sta_cidr_prefix( void );
-//		IPAddress	*get_wifi_sta_dns( void );
-//		IPAddress	*get_wifi_sta_gw( void );
-//		IPAddress	*get_wifi_sta_ip( void );
 		uint8_t		*get_wifi_mac( void );	
 		bool		initialise( AWSConfig *, bool );
 		bool		initialise_ethernet( void );
@@ -133,9 +125,7 @@ class AWSNetwork {
 		byte		mask_to_cidr( uint32_t );
 		bool		post_content( const char *, size_t, const char * );
 		bool		start_hotspot( void );
-		bool		stop_hotspot( void );
 		void 		webhook( const char * );
-
 
 };
 
@@ -193,7 +183,6 @@ class AstroWeatherStation {
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
 		bool			startup_sanity_check( void );
-		bool			stop_hotspot( void );
 		bool			store_unsent_data( etl::string_view );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
@@ -207,9 +196,6 @@ class AstroWeatherStation {
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
-//		byte				get_eth_cidr_prefix( void );
-//		IPAddress			*get_ip_address( aws_ip_info_t );
-
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
@@ -219,10 +205,8 @@ class AstroWeatherStation {
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
 		uint32_t			get_uptime( void );
-//		byte				get_wifi_sta_cidr_prefix( void );
 		etl::string_view	get_wind_vane_sensorname( void );
 		void				handle_event( aws_event_t );
-
 		bool				has_device( aws_device_t );
 		bool				initialise( void );
 		void				initialise_sensors( void );
