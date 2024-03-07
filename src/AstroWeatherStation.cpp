@@ -29,6 +29,7 @@
 #include <ESPAsyncWebSrv.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
+#include <HTTPClient.h>
 #include <ESPping.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -40,7 +41,7 @@
 
 #include "Embedded_Template_Library.h"
 #include "etl/string.h"
-#include <ESP32OTAPull.h>
+#include "AWSOTA.h"
 
 #include "defaults.h"
 #include "gpio_config.h"
@@ -84,29 +85,28 @@ AstroWeatherStation::AstroWeatherStation( void )
 
 void AstroWeatherStation::check_ota_updates( bool force_update = false )
 {
-	ESP32OTAPull	ota;
-	int				ret_code;
+	int		ret_code;
 
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
 
-	sensor_manager.suspend();
-	lookout.suspend();
+//	sensor_manager.suspend();
+//	lookout.suspend();
 
 	ota_update_ongoing = true;
-	ota.OverrideBoard( ota_setup.board.data() );
-	ota.OverrideDevice( ota_setup.device.data() );
-	ota.SetConfig( ota_setup.config.data() );
-	ota.SetCallback( OTA_callback );
+	ota.set_board_name( ota_setup.board );
+	ota.set_device_name( ota_setup.device );
+	ota.set_config_name( ota_setup.config );
+	ota.set_callback( OTA_callback );
 	ota_setup.last_update_ts = get_timestamp();
 
-	ret_code = ota.CheckForOTAUpdate( "https://www.datamancers.net/images/AWS.json", ota_setup.version.data(), force_update ? ESP32OTAPull::UPDATE_AND_BOOT : ESP32OTAPull::DONT_DO_UPDATE );
+	ret_code = ota.check_for_update( "https://www.datamancers.net/images/AWS.json", ota_setup.version, force_update ? AWSOTA::UPDATE_AND_BOOT : AWSOTA::DONT_DO_UPDATE );
 	Serial.printf( "[INFO] Firmware OTA update result: (%d) %s.\n", ret_code, OTA_message( ret_code ));
 	ota_update_ongoing = false;
-	
+
 	updater.check_for_new_files( ota_setup.version.data(), config.get_root_ca().data(), "www.datamancers.net", "images" );
 
-	sensor_manager.resume();
-	lookout.resume();
+//	sensor_manager.resume();
+//	lookout.resume();
 }
 
 void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
@@ -453,7 +453,7 @@ bool AstroWeatherStation::initialise( void )
 
 	esp_read_mac( mac.data(), ESP_MAC_WIFI_STA );
 	snprintf( ota_setup.device.data(), ota_setup.device.capacity(), "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
-	
+
 	ota_setup.config = PWR_MODE_STR[ static_cast<int>( config.get_pwr_mode()) ];
 	ota_setup.config += "_";
 	ota_setup.config += config.get_pcb_version().data();
@@ -461,7 +461,7 @@ bool AstroWeatherStation::initialise( void )
 	ota_setup.version = REV;
 	ota_setup.version += ".";
 	ota_setup.version += BUILD_ID;
-	
+
 	read_battery_level();
 
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
@@ -543,9 +543,9 @@ bool AstroWeatherStation::initialise( void )
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
-		}, "AWSCoreTask", 2000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 );
+		}, "AWSCoreTask", 6000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 );
 
-		
+
 	ready = true;
 	return true;
 }
@@ -634,28 +634,28 @@ const char *AstroWeatherStation::OTA_message( int code )
 	ota_setup.status_code = code;
 	switch ( code ) {
 
-		case ESP32OTAPull::UPDATE_AVAILABLE:
+		case AWSOTA::UPDATE_AVAILABLE:
 			return "An update is available but wasn't installed";
 
-		case ESP32OTAPull::NO_UPDATE_PROFILE_FOUND:
+		case AWSOTA::NO_UPDATE_PROFILE_FOUND:
 			return "No profile matches";
 
-		case ESP32OTAPull::NO_UPDATE_AVAILABLE:
+		case AWSOTA::NO_UPDATE_AVAILABLE:
 			return "Profile matched, but update not applicable";
 
-		case ESP32OTAPull::UPDATE_OK:
+		case AWSOTA::UPDATE_OK:
 			return "An update was done, but no reboot";
 
-		case ESP32OTAPull::HTTP_FAILED:
+		case AWSOTA::HTTP_FAILED:
 			return "HTTP GET failure";
 
-		case ESP32OTAPull::WRITE_ERROR:
+		case AWSOTA::WRITE_ERROR:
 			return "Write error";
 
-		case ESP32OTAPull::JSON_PROBLEM:
+		case AWSOTA::JSON_PROBLEM:
 			return "Invalid JSON";
 
-		case ESP32OTAPull::OTA_UPDATE_FAIL:
+		case AWSOTA::OTA_UPDATE_FAIL:
 			return "Update failure (no OTA partition?)";
 
 		default:
@@ -690,12 +690,8 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 			sync_time( false );
 			sync_time_mod = 1;
 		}
-		time_t now;
 
-		if ( ntp_synced )
-			time( &now );
-		else
-			now = last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
+		time_t now = get_timestamp();
 
 		if ( config.get_has_device( aws_device_t::RAIN_SENSOR ))
 			check_rain_event_guard_time( rain_event_guard_time );
@@ -1525,8 +1521,4 @@ bool AWSNetwork::start_hotspot( void )
 void AWSNetwork::webhook( const char *json_msg )
 {
 	// Placeholder for #155
-}
-
-void AWSNetwork::webhook( const char *json_msg )
-{
 }

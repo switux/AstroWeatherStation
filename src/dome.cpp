@@ -84,9 +84,9 @@ bool Dome::get_shutter_closed_status( void )
 
 		dome_data->shutter_status = dome_shutter_status_t::Open;
 		dome_data->closed_sensor = false;
-		
+
 	}
-	
+
 	if ( get_debug_mode() )
 		Serial.printf( "[DEBUG] Dome shutter closed : %s\n", x ? "yes" : "no" );
 
@@ -108,8 +108,7 @@ bool Dome::close_shutter( void )
 
 	dome_data->close_command = true;
 	Serial.printf( "[INFO] Closing dome shutter\n" );
-	station.send_alarm( "[Station] Closing dome shutter", "" );
-	
+
 	if ( sc16is750 ) {
 
 		while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
@@ -120,7 +119,7 @@ bool Dome::close_shutter( void )
 		xSemaphoreGive( i2c_mutex );
 
 	} else {
-	
+
 		digitalWrite( GPIO_DOME_1_DIRECT, LOW );
 		digitalWrite( GPIO_DOME_2_DIRECT, LOW );
 
@@ -143,7 +142,7 @@ void Dome::control_task( void *dummy )	// NOSONAR
 			if ( shutter_is_moving  ) {
 
 					switch( shutter_status ) {
-		
+
 						case dome_shutter_status_t::Closed:
 						case dome_shutter_status_t::Opening:
 							dome_data->shutter_status = shutter_status = dome_shutter_status_t::Opening;
@@ -152,7 +151,7 @@ void Dome::control_task( void *dummy )	// NOSONAR
 						case dome_shutter_status_t::Closing:
 							dome_data->shutter_status = shutter_status = dome_shutter_status_t::Closing;
 							break;
-						
+
 				}
 				shutter_is_moving = false;
 			}
@@ -167,9 +166,9 @@ void Dome::initialise( dome_data_t *_dome_data, bool _debug_mode )
 {
 	set_debug_mode( _debug_mode );
 	dome_data = _dome_data;
-	
+
 	if ( sc16is750 ) {
-		
+
 		pinMode( GPIO_DOME_1, OUTPUT );
 		digitalWrite( GPIO_DOME_1, HIGH );
 		pinMode( GPIO_DOME_2, OUTPUT );
@@ -185,7 +184,7 @@ void Dome::initialise( dome_data_t *_dome_data, bool _debug_mode )
 
 	pinMode( GPIO_DOME_MOVING, INPUT );
 	pinMode( GPIO_DOME_STATUS, INPUT );
-	
+
 	if ( !get_shutter_closed_status() )
 		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Open;
 
@@ -195,7 +194,7 @@ void Dome::initialise( dome_data_t *_dome_data, bool _debug_mode )
 
 	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_closed_change, CHANGE );
 	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
-	
+
 	std::function<void(void *)> _control = std::bind( &Dome::control_task, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR

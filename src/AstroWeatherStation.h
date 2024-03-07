@@ -21,7 +21,7 @@
 #ifndef _AstroWeatherStation_H
 #define _AstroWeatherStation_H
 
-#include <ESP32OTAPull.h>
+#include "AWSOTA.h"
 
 #include "AWSUpdater.h"
 #include "config_server.h"
@@ -127,6 +127,7 @@ class AWSNetwork {
 		bool		start_hotspot( void );
 		void 		webhook( const char * );
 
+
 };
 
 class AstroWeatherStation {
@@ -142,6 +143,7 @@ class AstroWeatherStation {
 		AWSLookout					lookout;
 		AWSNetwork					network;
 		bool						ntp_synced					= false;
+		AWSOTA						ota;
 		ota_setup_t					ota_setup;
 		bool						rain_event					= false;
 		bool						ready						= false;

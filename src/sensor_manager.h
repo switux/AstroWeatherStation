@@ -55,6 +55,7 @@ class AWSSensorManager {
     aws_device_t		available_sensors	= aws_device_t::NO_SENSOR;
     sensor_data_t		sensor_data;
     bool				debug_mode			= false;
+    bool				initialised			= false;
 	bool				rain_event			= false;
 	bool				solar_panel			= false;
     TaskHandle_t		sensors_task_handle;

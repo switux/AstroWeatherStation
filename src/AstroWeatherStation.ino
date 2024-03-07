@@ -1,5 +1,5 @@
 /*	
-  	AstroWeatherStation.ino
+	AstroWeatherStation.ino
 
 	(c) 2023-2024 F.Lesage
 
@@ -36,8 +36,8 @@
 
 extern char			catch_rain_event;
 
-const etl::string<12>		REV 				= "3.0.0";
-const unsigned long 		US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
+const etl::string<12>		REV					= "3.0.0";
+const unsigned long			US_SLEEP			= 5 * 60 * 1000000;					// 5 minutes
 const unsigned long long	US_HIBERNATE		= 1 * 24 * 60 * 60 * 1000000ULL;	// 1 day
 
 AstroWeatherStation station;
