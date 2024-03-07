@@ -137,7 +137,8 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 	k[4] = config->get_parameter<int>( "k5" );
 	k[5] = config->get_parameter<int>( "k6" );
 	k[6] = config->get_parameter<int>( "k7" );
-	
+
+	initialised = true;
 	return true;
 }
 
@@ -489,7 +490,8 @@ void AWSSensorManager::set_solar_panel( bool b )
 
 void AWSSensorManager::resume( void )
 {
-	vTaskResume( sensors_task_handle );
+	if ( initialised )
+		vTaskResume( sensors_task_handle );
 }
 
 bool AWSSensorManager::sensor_is_available( aws_device_t sensor )
@@ -499,5 +501,6 @@ bool AWSSensorManager::sensor_is_available( aws_device_t sensor )
 
 void AWSSensorManager::suspend( void )
 {
-	vTaskSuspend( sensors_task_handle );
+	if ( initialised )
+		vTaskSuspend( sensors_task_handle );
 }
