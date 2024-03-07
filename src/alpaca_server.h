@@ -74,7 +74,6 @@ class alpaca_server {
 		AsyncUDP		*get_discovery( void );
 		void			loop( void );
 		bool			start( IPAddress, bool );
-		void			stop( void );
 		
 	private:
 

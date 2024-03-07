@@ -1045,8 +1045,3 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 
 	return true;
 }
-
-void alpaca_server::stop( void )
-{
-	delete( server );
-}

@@ -23,6 +23,7 @@
 
 #include <SoftwareSerial.h>
 #include <TinyGPSPlus.h>
+#include "device.h"
 #include "SC16IS750.h"
 
 struct gps_data_t {
@@ -35,7 +36,7 @@ struct gps_data_t {
 
 };
 
-class AWSGPS
+class AWSGPS : public Device
 {
 	private:
 
@@ -45,16 +46,16 @@ class AWSGPS
 		SemaphoreHandle_t	i2c_mutex		= nullptr;
 		HardwareSerial		*gps_serial		= nullptr;
 		gps_data_t			*gps_data		= nullptr;
-		bool				debug_mode		= false;
 		bool				update_rtc		= false;
 	
 		void update_data( void );
 		void feed( void * );
 		void read_GPS( void );
+		void get_ublox_model( void );
 
 	public:
 
-					AWSGPS( void ) = default;
+					AWSGPS( void ); // = default;
 		bool		initialise( gps_data_t * );
 		bool		initialise( gps_data_t *, I2C_SC16IS750 *, SemaphoreHandle_t );
 		void		resume( void );

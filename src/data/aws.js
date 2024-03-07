@@ -33,7 +33,7 @@ const	DOME_DEVICE = 0x80;
 const	RESET_REASON = [ 'Unknown', 'Power on', '', 'SW reset', 'OWDT reset', 'Deep sleep reset', 'SDIO reset', 'Timer group 0 WD reset', 'Timer group 1 WD reset', 'RTC WD reset core', 'Intrusion reset', 'Time group reset CPU', 'SW reset CPU', 'RTC WD reset CPU', 'Reset by PRO CPU', 'Brown out', 'RTC WD Reset' ];
 const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
 
-var sleepSetTimeout_ctrl;
+let sleepSetTimeout_ctrl;
 
 function sleep(ms) {
     clearInterval(sleepSetTimeout_ctrl);
@@ -506,6 +506,12 @@ function update_dashboard( values )
 	document.getElementById("dome_shutter_closed").textContent = values['shutter_closed'];
 	document.getElementById("dome_shutter_close").textContent = values['shutter_close'];
 
+	update_sensor_dashboard( values );
+}
+
+
+function update_sensor_dashboard( values )
+{
 	document.getElementById("temperature").textContent = values['temperature'].toFixed(2);
 	document.getElementById("dewpoint").textContent = values['dew_point'].toFixed(2);
 	document.getElementById("pressure").textContent = values['pressure'].toFixed(2);

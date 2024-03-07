@@ -24,6 +24,13 @@
 
 const unsigned long	GPS_SPEED = 9600;
 
+AWSGPS::AWSGPS( void )
+{
+	set_name( "GPS Receiver" );
+	set_description( "" );
+	set_driver_version( "1.0" );
+}
+
 void AWSGPS::read_GPS( void )
 {
 	unsigned long _start = millis();
@@ -68,6 +75,27 @@ void AWSGPS::feed( void *dummy )	// NOSONAR
 		update_data();
 		delay( 5000 );
 	}
+}
+
+void AWSGPS::get_ublox_model( void )
+{
+    std::array<byte,9> ubx_nav_svinfo = { 0xB5, 0x62, 0x06, 0x30, 0x01, 0x00, 0x37, 0xE1, 0x74, 0x55 };
+
+	for( const auto &b : ubx_nav_svinfo )
+		gps_serial->write( b );
+
+	delay( 1000 );
+		for( const auto &b : ubx_nav_svinfo )
+		gps_serial->write( b );
+		delay( 1000 );
+	
+	for( int i = 0; i < 10; i++)
+		while( gps_serial->available() ) {
+			char c = gps_serial->read();
+			Serial.printf( "%c(%02x)", c, c );
+		}
+	
+	return;
 }
 
 void AWSGPS::update_data( void )
@@ -119,6 +147,7 @@ bool AWSGPS::initialise( gps_data_t *_gps_data, I2C_SC16IS750 *_sc16is750, Semap
 		xSemaphoreGive( i2c_mutex );
 		return false;
 	}
+	get_ublox_model();
 	xSemaphoreGive( i2c_mutex );
 	return true;
 }
@@ -129,7 +158,11 @@ bool AWSGPS::initialise( gps_data_t *_gps_data )
 
 	gps_serial = new HardwareSerial(2);
 	gps_serial->begin( GPS_SPEED, SERIAL_8N1, GPS_RX, GPS_TX );
-	return ( gps_serial->availableForWrite() > 0 );
+	if ( gps_serial->availableForWrite() ) {
+		get_ublox_model();
+		return true;
+	}
+	return false;
 }
 
 void AWSGPS::pilot_rtc( bool _update_rtc )
