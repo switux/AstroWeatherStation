@@ -71,7 +71,7 @@ struct ota_setup_t {
 	etl::string<32>	config;
 	etl::string<18>	device;
 	etl::string<26>	version;
-	int				status_code		= -100;
+	ota_status_t	status_code		= ota_status_t::UNKNOWN;
 	int32_t			status_ts		= 0;
 	int32_t			last_update_ts	= 0;
 };
@@ -127,6 +127,7 @@ class AWSNetwork {
 		bool		start_hotspot( void );
 		void 		webhook( const char * );
 
+
 };
 
 class AstroWeatherStation {
@@ -169,7 +170,7 @@ class AstroWeatherStation {
 		bool			initialise_network( void );
 		bool			initialise_wifi( void );
 		byte			mask_to_cidr( uint32_t );
-		const char		*OTA_message( int );
+		const char		*OTA_message( ota_status_t );
 		void			periodic_tasks( void * );
 		bool			post_content( const char *, const char * );
 		template<typename... Args>

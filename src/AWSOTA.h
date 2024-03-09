@@ -1,7 +1,7 @@
 /*
   	AWSOTA.h
 
-	(c) 2024 F.Lesage and heavily inspired from ESP32-OTA-Pull by M.Hart
+	(c) 2024 F.Lesage and inspired from ESP32-OTA-Pull by M.Hart
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -23,47 +23,52 @@
 
 #include <ArduinoJson.h>
 
+enum struct ota_action_t: int {
+
+	CHECK_ONLY,
+	UPDATE_ONLY,
+	UPDATE_AND_BOOT
+};
+
+enum struct ota_status_t : int {
+
+	UPDATE_AVAILABLE = -3,
+	NO_UPDATE_PROFILE_FOUND = -2,
+	NO_UPDATE_AVAILABLE = -1,
+	UPDATE_OK = 0,
+	HTTP_FAILED = 1,
+	WRITE_ERROR = 2,
+	JSON_PROBLEM = 3,
+	OTA_UPDATE_FAIL = 4,
+	CONFIG_ERROR = 5,
+	UNKNOWN = 6
+};
+
 class AWSOTA {
 
 	public:
 
-		enum ActionType {
-			DONT_DO_UPDATE,
-			UPDATE_BUT_NO_BOOT,
-			UPDATE_AND_BOOT
-		};
-
-		enum ErrorCode {
-			UPDATE_AVAILABLE = -3,
-			NO_UPDATE_PROFILE_FOUND = -2,
-			NO_UPDATE_AVAILABLE = -1,
-			UPDATE_OK = 0,
-			HTTP_FAILED = 1,
-			WRITE_ERROR = 2,
-			JSON_PROBLEM = 3,
-			OTA_UPDATE_FAIL = 4,
-			CONFIG_ERROR = 5
-		};
-
 			AWSOTA( void );
-		int check_for_update( const char *, etl::string<26> &, ActionType );
-		void set_board_name( etl::string<24> & );
-		void set_config_name( etl::string<32> & );
-		void set_device_name( etl::string<18> & );
-		void set_callback( void (*)( int, int ) );
+		ota_status_t	check_for_update( const char *, const char *root_ca, etl::string<26> &, ota_action_t );
+		
+		void			set_aws_board_id( etl::string<24> & );
+		void			set_aws_config( etl::string<32> & );
+		void			set_aws_device_id( etl::string<18> & );
+		void			set_progress_callback( std::function<void(int, int)> );
 
 	private:
 
-		etl::string_view		board_name;
-	    void 					(*callback)( int, int )		= nullptr;
-		etl::string_view		config_name;
-		DeserializationError	deserialisation_status;
-		etl::string_view		device_name;
-		DynamicJsonDocument		*json_ota_config			= nullptr;
+		etl::string_view				aws_board_id;
+		etl::string_view				aws_config;
+		etl::string_view				aws_device_id;
+		DeserializationError			deserialisation_status;
+		int								http_status;
+		DynamicJsonDocument				*json_ota_config		= nullptr;
+	    std::function<void (int, int)>	progress_callback		= nullptr;
+		ota_status_t					status_code				= ota_status_t::UNKNOWN;
 
-		int do_ota_update( const char *, ActionType );
-		int download_json( const char * );
-
+		bool	do_ota_update( const char *, const char *, ota_action_t );
+		bool	download_json( const char *, const char * );
 };
 
 #endif

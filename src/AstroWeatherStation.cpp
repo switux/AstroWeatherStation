@@ -85,28 +85,23 @@ AstroWeatherStation::AstroWeatherStation( void )
 
 void AstroWeatherStation::check_ota_updates( bool force_update = false )
 {
-	int		ret_code;
+	ota_status_t	ota_retcode;
 
 	Serial.printf( "[INFO] Checking for OTA firmware update.\n" );
 
-//	sensor_manager.suspend();
-//	lookout.suspend();
-
 	ota_update_ongoing = true;
-	ota.set_board_name( ota_setup.board );
-	ota.set_device_name( ota_setup.device );
-	ota.set_config_name( ota_setup.config );
-	ota.set_callback( OTA_callback );
+	ota.set_aws_board_id( ota_setup.board );
+	ota.set_aws_device_id( ota_setup.device );
+	ota.set_aws_config( ota_setup.config );
+	ota.set_progress_callback( OTA_callback );
 	ota_setup.last_update_ts = get_timestamp();
 
-	ret_code = ota.check_for_update( "https://www.datamancers.net/images/AWS.json", ota_setup.version, force_update ? AWSOTA::UPDATE_AND_BOOT : AWSOTA::DONT_DO_UPDATE );
-	Serial.printf( "[INFO] Firmware OTA update result: (%d) %s.\n", ret_code, OTA_message( ret_code ));
+	ota_retcode = ota.check_for_update( "https://www.datamancers.net/images/AWS.json", config.get_root_ca().data(), ota_setup.version, force_update ? ota_action_t::UPDATE_AND_BOOT : ota_action_t::CHECK_ONLY );
+	Serial.printf( "[INFO] Firmware OTA update result: (%d) %s.\n", ota_retcode, OTA_message( ota_retcode ));
 	ota_update_ongoing = false;
 
 	updater.check_for_new_files( ota_setup.version.data(), config.get_root_ca().data(), "www.datamancers.net", "images" );
 
-//	sensor_manager.resume();
-//	lookout.resume();
 }
 
 void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
@@ -299,7 +294,7 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	json_data["init_heap_size"] = station_data.health.init_heap_size;
 	json_data["current_heap_size"] = station_data.health.current_heap_size;
 	json_data["largest_free_heap_block" ] = station_data.health.largest_free_heap_block;
-	json_data["ota_code" ] = ota_setup.status_code;
+	json_data["ota_code" ] = static_cast<int>( ota_setup.status_code );
 	json_data["ota_status_ts" ] = ota_setup.status_ts;
 	json_data["ota_last_update_ts" ] = ota_setup.last_update_ts;
 	json_data["reset_reason0"] = station_data.reset_reason0;
@@ -629,41 +624,43 @@ void OTA_callback( int offset, int total_length )
 	esp_task_wdt_reset();
 }
 
-const char *AstroWeatherStation::OTA_message( int code )
+const char *AstroWeatherStation::OTA_message( ota_status_t code )
 {
 	ota_setup.status_code = code;
 	switch ( code ) {
 
-		case AWSOTA::UPDATE_AVAILABLE:
+    case ota_status_t::UPDATE_AVAILABLE:
 			return "An update is available but wasn't installed";
 
-		case AWSOTA::NO_UPDATE_PROFILE_FOUND:
+		case ota_status_t::NO_UPDATE_PROFILE_FOUND:
 			return "No profile matches";
 
-		case AWSOTA::NO_UPDATE_AVAILABLE:
+		case ota_status_t::NO_UPDATE_AVAILABLE:
 			return "Profile matched, but update not applicable";
 
-		case AWSOTA::UPDATE_OK:
+		case ota_status_t::UPDATE_OK:
 			return "An update was done, but no reboot";
 
-		case AWSOTA::HTTP_FAILED:
+		case ota_status_t::HTTP_FAILED:
 			return "HTTP GET failure";
 
-		case AWSOTA::WRITE_ERROR:
+		case ota_status_t::WRITE_ERROR:
 			return "Write error";
 
-		case AWSOTA::JSON_PROBLEM:
+		case ota_status_t::JSON_PROBLEM:
 			return "Invalid JSON";
 
-		case AWSOTA::OTA_UPDATE_FAIL:
+		case ota_status_t::OTA_UPDATE_FAIL:
 			return "Update failure (no OTA partition?)";
 
-		default:
-			if ( code > 0 )
-				return "Unexpected HTTP response code";
-			break;
+		case ota_status_t::CONFIG_ERROR:
+			return "OTA config has a problem";
+
+		case ota_status_t::UNKNOWN:
+			return "Undefined status";
+		
 	}
-	return "Unknown error";
+	return "Unhandled OTA status code";
 }
 
 void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
