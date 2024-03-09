@@ -1,8 +1,7 @@
 /*
   	AWSOTA.cpp
 
-	(c) 2024 F.Lesage and 
-
+	(c) 2024 F.Lesage and inspired from ESP32-OTA-Pull by M.Hart
 
 	This program is free software: you can redistribute it and/or modify it
 	under the terms of the GNU General Public License as published by the
@@ -33,22 +32,20 @@ AWSOTA::AWSOTA( void )
 	json_ota_config = new DynamicJsonDocument( 6000 );
 }
 
-int AWSOTA::check_for_update( const char *url, etl::string<26> &current_version, ActionType action = DONT_DO_UPDATE )
+ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY )
 {
 	etl::string<32>	board;
 	etl::string<32>	config;
 	int				deserialisation_status;
 	etl::string<32>	device;
-	bool			found_profile = false;
-	int				http_status;
+	bool			profile_match = false;
 	etl::string<32>	version;
 
-	http_status = download_json( url );
-	if ( http_status != 200 )
-		return http_status > 0 ? http_status : HTTP_FAILED;
+	if ( !download_json( url, root_ca ))
+		return status_code;
 
-	if ( !board_name.size() || !config_name.size() || !device_name.size() )
-		return CONFIG_ERROR;
+	if ( !aws_board_id.size() || !aws_config.size() || !aws_device_id.size() )
+		return ota_status_t::CONFIG_ERROR;
 
 	for( auto ota_config : (*json_ota_config)["Configurations"].as<JsonArray>() ) {
 
@@ -64,32 +61,42 @@ int AWSOTA::check_for_update( const char *url, etl::string<26> &current_version,
 		if ( ota_config.containsKey( "Version" ))
 			version.assign( ota_config["Version"].as<const char *>() );
 
-		if (( !board.size() || ( board == board_name )) &&
-			( !device.size() || ( device == device_name )) &&
-			( !config.size() || ( config == config_name ))) {
+		if (( !board.size() || ( board == aws_board_id )) &&
+			( !device.size() || ( device == aws_device_id )) &&
+			( !config.size() || ( config == aws_config ))) {
 
-					if ( !version.size() || ( version > current_version ))
-						return ( action == DONT_DO_UPDATE ? UPDATE_AVAILABLE : do_ota_update( ota_config["URL"], action ));
-			found_profile = true;
-		}
+			if ( !version.size() || ( version > current_version )) {
+
+				if ( action == ota_action_t::CHECK_ONLY )
+					return ota_status_t::UPDATE_AVAILABLE;
+				
+				if ( do_ota_update( ota_config["URL"], root_ca, action ))
+					return status_code;
+					
+				profile_match = true;
+			}
+			}
 	}
-	return found_profile ? NO_UPDATE_AVAILABLE : NO_UPDATE_PROFILE_FOUND;
+	return profile_match ? ota_status_t::NO_UPDATE_AVAILABLE : ota_status_t::NO_UPDATE_PROFILE_FOUND;
 }
 
-int AWSOTA::do_ota_update( const char *url, ActionType action )
+bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t action )
 {
 	HTTPClient	http;
-	int			http_status;
 	
-	if ( !http.begin( url ))
-		return HTTP_FAILED;
+	if ( !http.begin( url, root_ca )) {
+
+		status_code = ota_status_t::HTTP_FAILED;
+		return false;
+
+	}
 
 	http_status = http.GET();
 
 	if ( http_status != 200 ) {
 
 		http.end();
-		return http_status;
+		return false;
 	}
 
 	int total_length = http.getSize();
@@ -97,7 +104,8 @@ int AWSOTA::do_ota_update( const char *url, ActionType action )
 	if ( !Update.begin( UPDATE_SIZE_UNKNOWN )) {
 
 		http.end();
-		return OTA_UPDATE_FAIL;
+		status_code = ota_status_t::OTA_UPDATE_FAIL;
+		return false;
 	}
 
 	std::array<uint8_t,1280>	buffer;
@@ -117,8 +125,8 @@ int AWSOTA::do_ota_update( const char *url, ActionType action )
 			if ( bytes_read != bytes_written )
 				break;
 			offset += bytes_written;
-			if ( callback != nullptr )
-				callback( offset, total_length );
+			if ( progress_callback != nullptr )
+				progress_callback( offset, total_length );
 		}
 		esp_task_wdt_reset();
 	}
@@ -132,45 +140,51 @@ int AWSOTA::do_ota_update( const char *url, ActionType action )
 		Update.end( true );
 		esp_task_wdt_reset();
 		delay( 1000 );
-		if ( action == UPDATE_BUT_NO_BOOT )
-			return UPDATE_OK;
+		if ( action == ota_action_t::UPDATE_ONLY ) {
+
+			status_code = ota_status_t::UPDATE_OK;
+			return true;
+		}
 		ESP.restart();
 	}
 	
-	return WRITE_ERROR;
+	status_code = ota_status_t::WRITE_ERROR;
+	return false;
 }
 
-int AWSOTA::download_json( const char *url )
+bool AWSOTA::download_json( const char *url, const char *root_ca )
 {
 	HTTPClient	http;
-	int			http_status;
 
-	if ( !http.begin( url ))
-		return HTTP_FAILED;
+	if ( !http.begin( url, root_ca )) {
 
+		status_code = ota_status_t::HTTP_FAILED;
+		return false;
+	}
+	
 	if ( ( http_status = http.GET()) == 200 )
 		deserialisation_status = deserializeJson( *json_ota_config, http.getString() );
 
 	http.end();
-	return http_status;
+	return (( http_status == 200 ) && ( deserialisation_status == DeserializationError::Ok ));
 }
 
-void AWSOTA::set_board_name( etl::string<24> &board )
+void AWSOTA::set_aws_board_id( etl::string<24> &board )
 {
-	board_name = etl::string_view( board.data() );
+	aws_board_id = etl::string_view( board.data() );
 }
 
-void AWSOTA::set_callback( void (*_callback)(int, int) )
+void AWSOTA::set_progress_callback( std::function<void(int, int)> callback )
 {
-	callback = _callback;
+	progress_callback = callback;
 }
 
-void AWSOTA::set_config_name( etl::string<32> &config )
+void AWSOTA::set_aws_config( etl::string<32> &config )
 {
-	config_name = etl::string_view( config.data() );
+	aws_config = etl::string_view( config.data() );
 }
 
-void AWSOTA::set_device_name( etl::string<18> &device )
+void AWSOTA::set_aws_device_id( etl::string<18> &device )
 {
-	device_name = etl::string_view( device.data() );
+	aws_device_id = etl::string_view( device.data() );
 }

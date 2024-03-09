@@ -55,7 +55,7 @@ class AWSGPS : public Device
 
 	public:
 
-					AWSGPS( void ); // = default;
+					AWSGPS( void );
 		bool		initialise( gps_data_t * );
 		bool		initialise( gps_data_t *, I2C_SC16IS750 *, SemaphoreHandle_t );
 		void		resume( void );
