@@ -48,9 +48,6 @@ class AWSOTA {
 
 	public:
 
-
-
-
 			AWSOTA( void );
 		ota_status_t	check_for_update( const char *, const char *root_ca, etl::string<26> &, ota_action_t );
 		
@@ -72,7 +69,6 @@ class AWSOTA {
 
 		bool	do_ota_update( const char *, const char *, ota_action_t );
 		bool	download_json( const char *, const char * );
-
 };
 
 #endif

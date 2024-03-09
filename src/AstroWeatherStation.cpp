@@ -101,6 +101,7 @@ void AstroWeatherStation::check_ota_updates( bool force_update = false )
 	ota_update_ongoing = false;
 
 	updater.check_for_new_files( ota_setup.version.data(), config.get_root_ca().data(), "www.datamancers.net", "images" );
+
 }
 
 void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
@@ -628,7 +629,7 @@ const char *AstroWeatherStation::OTA_message( ota_status_t code )
 	ota_setup.status_code = code;
 	switch ( code ) {
 
-		case ota_status_t::UPDATE_AVAILABLE:
+    case ota_status_t::UPDATE_AVAILABLE:
 			return "An update is available but wasn't installed";
 
 		case ota_status_t::NO_UPDATE_PROFILE_FOUND:

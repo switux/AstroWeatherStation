@@ -97,6 +97,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 
 		http.end();
 		return false;
+
 	}
 
 	int total_length = http.getSize();
@@ -106,6 +107,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 		http.end();
 		status_code = ota_status_t::OTA_UPDATE_FAIL;
 		return false;
+
 	}
 
 	std::array<uint8_t,1280>	buffer;
@@ -125,6 +127,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 			if ( bytes_read != bytes_written )
 				break;
 			offset += bytes_written;
+
 			if ( progress_callback != nullptr )
 				progress_callback( offset, total_length );
 		}
@@ -140,7 +143,8 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 		Update.end( true );
 		esp_task_wdt_reset();
 		delay( 1000 );
-		if ( action == ota_action_t::UPDATE_ONLY ) {
+
+    if ( action == ota_action_t::UPDATE_ONLY ) {
 
 			status_code = ota_status_t::UPDATE_OK;
 			return true;
