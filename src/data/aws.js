@@ -30,8 +30,13 @@ const	GPS_DEVICE	= 0x40;
 const	DOME_DEVICE = 0x80;
 
 // 12=After OTA Update
-const	RESET_REASON = [ 'Unknown', 'Power on', '', 'SW reset', 'OWDT reset', 'Deep sleep reset', 'SDIO reset', 'Timer group 0 WD reset', 'Timer group 1 WD reset', 'RTC WD reset core', 'Intrusion reset', 'Time group reset CPU', 'SW reset CPU', 'RTC WD reset CPU', 'Reset by PRO CPU', 'Brown out', 'RTC WD Reset' ];
+const	RESET_REASON = [ 'Unknown', 'Power on', 'PIN reset', 'Reboot', 'Exception/Panic reset', 'Interrupt WD', 'Task WD', 'Other WD', 'Deepsleep', 'Brownout', 'SDIO reset', 'USB reset', 'JTAG reset' ];
 const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
+const	PANELS = [ 'general', 'network', 'sensors', 'devices', 'lookout', 'alpaca', 'dashboard' ];
+const	SENSORS = [ 'bme', 'tsl', 'mlx', 'rain_sensor', 'ws', 'wv', 'gps' ];
+const	WIFI_PARAMETERS = [ 'wifi_mode', 'sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
+const	ETH_PARAMETERS = [ 'eth_ip_mode', 'eth_ip', 'eth_gw', 'eth_dns' ];
+const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
 
 let sleepSetTimeout_ctrl;
 
@@ -56,25 +61,37 @@ function checkbox_change( param )
 	}
 }
 
+function close_dome_shutter()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/close_dome_shutter", true );
+	req.send();
+
+}
+
 function config_section_active( section_name, yes_no )
 {
+	let _class = '';
 	if ( yes_no ) {
 
-		document.getElementById( section_name ).style.display = 'flex';
-		document.getElementById( section_name ).style.backgroundColor = '#f6f6f6';
-		document.getElementById( "banner_"+section_name ).style.backgroundColor = "#f6f6f6";
-		document.getElementById( "banner_"+section_name ).style.marginBottom = '0px';
-		if ( section_name != 'general' )
-			document.getElementById( section_name ).style.borderRadius = '5px 5px 5px 5px';
-		else
-			document.getElementById( section_name ).style.borderRadius = '0px 5px 5px 5px';
+		document.getElementById( "banner_"+section_name ).className = "top_menu selected_top_menu";
+		_class='panel active_panel';
+		if ( section_name == 'general' )
+			_class += ' left_panel';
+		document.getElementById( section_name ).className = _class;
 
 	} else {
 
-		document.getElementById( section_name ).style.display = 'none';
-		document.getElementById( section_name ).style.backgroundColor = '#dbdbdb';
-		document.getElementById( "banner_"+section_name ).style.backgroundColor = "#dbdbdb";
-		document.getElementById( "banner_"+section_name ).style.marginBottom = '2px';
+		document.getElementById( section_name ).className = 'panel';
+		document.getElementById( "banner_"+section_name ).className = "top_menu unselected_top_menu";
 
 	}
 }
@@ -120,21 +137,10 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	document.getElementById("eth_ip").value = values['eth_ip'];
-	document.getElementById("eth_gw").value = values['eth_gw'];
-	document.getElementById("eth_dns").value = values['eth_dns'];
-	document.getElementById("ap_ssid").value = values['ap_ssid'];
-	document.getElementById("wifi_ap_password").value = values['wifi_ap_password'];
-	document.getElementById("wifi_ap_ip").value = values['wifi_ap_ip'];
-	document.getElementById("wifi_ap_gw").value = values['wifi_ap_gw'];
-	document.getElementById("wifi_ap_dns").value = values['wifi_ap_dns'];
-	document.getElementById("sta_ssid").value = values['sta_ssid'];
-	document.getElementById("wifi_sta_password").value = values['wifi_sta_password'];
-	document.getElementById("wifi_sta_ip").value = values['wifi_sta_ip'];
-	document.getElementById("wifi_sta_gw").value = values['wifi_sta_gw'];
-	document.getElementById("wifi_sta_dns").value = values['wifi_sta_dns'];
-	document.getElementById("remote_server").value = values['remote_server'];
-	document.getElementById("url_path").value = values['url_path'];
+	let parameters = [ "ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	parameters.forEach(( parameter ) => {
+		document.getElementById( parameter ).value = values[ parameter ];
+	});
 
 	if ( values['has_ethernet'] === true )
 		document.getElementById("iface_option").style.display = "table-row";
@@ -180,26 +186,21 @@ function fill_network_values( values )
 
 function fill_sensor_values( values )
 {
-	document.getElementById("has_bme").checked = values['has_bme'];
-	document.getElementById("has_tsl").checked = values['has_tsl'];
-	document.getElementById("has_mlx").checked = values['has_mlx'];
-	document.getElementById("has_ws").checked = values['has_ws'];
-	document.getElementById("has_wv").checked = values['has_wv'];
-	document.getElementById("has_rain_sensor").checked = values['has_rain_sensor'];
-	document.getElementById("has_gps").checked = values['has_gps'];
+	SENSORS.forEach((sensor) => {
+		document.getElementById("has_"+sensor).checked = values['has_'+sensor];
+	});
 	document.querySelector("#anemometer_model").value=values['anemometer_model'];
 	document.querySelector("#wind_vane_model").value=values['wind_vane_model'];
 }
 
 function fill_cloud_coverage_parameter_values( values )
 {
-	document.getElementById("k1").value = values['k1'];
-	document.getElementById("k2").value = values['k2'];
-	document.getElementById("k3").value = values['k3'];
-	document.getElementById("k4").value = values['k4'];
-	document.getElementById("k5").value = values['k5'];
-	document.getElementById("k6").value = values['k6'];
-	document.getElementById("k7").value = values['k7'];
+	for( let i = 1; i<8; i++ )
+		document.getElementById("k"+i).value = values['k'+i];
+	document.getElementById("cc_aws_cloudy").value = values['cc_aws_cloudy'];
+	document.getElementById("cc_aws_overcast").value = values['cc_aws_overcast'];
+	document.getElementById("cc_aag_cloudy").value = values['cc_aag_cloudy'];
+	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
 }
 
 function makeRequest() {
@@ -235,26 +236,16 @@ function force_ota()
 
 function hide_wifi()
 {
-	document.getElementById("show_wifi_mode").style.display = "none";
-	document.getElementById("show_sta_ssid").style.display = "none";
-	document.getElementById("show_wifi_sta_password").style.display = "none";
-	document.getElementById("show_wifi_sta_ip_mode").style.display = "none";
-	document.getElementById("show_wifi_sta_ip").style.display = "none";
-	document.getElementById("show_wifi_sta_gw").style.display = "none";
-	document.getElementById("show_wifi_sta_dns").style.display = "none";
-	document.getElementById("show_ap_ssid").style.display = "none";
-	document.getElementById("show_wifi_ap_password").style.display = "none";
-	document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
-	document.getElementById("show_wifi_ap_ip").style.display = "none";
-	document.getElementById("show_wifi_ap_gw").style.display = "none";
-	document.getElementById("show_wifi_ap_dns").style.display = "none";
-	document.getElementById("show_eth_ip_mode").style.display = "table-row";
-	document.getElementById("show_eth_ip").style.display = "table-row";
-	document.getElementById("show_eth_gw").style.display = "table-row";
-	document.getElementById("show_eth_dns").style.display = "table-row";
+	WIFI_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "none";
+	});
+	ETH_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "table-row";
+	});
+
 }
 
-function retrieve_display_data()
+function retrieve_data()
 {
 	toggle_panel( 'general' );
 
@@ -290,14 +281,12 @@ function retrieve_display_data()
 
 function toggle_panel( panel_id )
 {
-	config_section_active( "general", false );
-	config_section_active( "network", false );
-	config_section_active( "sensors", false );
-	config_section_active( "others", false );
-	config_section_active( "lookout", false );
-	config_section_active( "alpaca", false );
-	config_section_active( "dashboard", false );
-	config_section_active( panel_id, true );
+	PANELS.forEach(( panel ) => {
+		if ( panel == panel_id )
+			config_section_active( panel, true );
+		else
+			config_section_active( panel, false );
+	}); 
 	if ( panel_id == 'dashboard' ) {
 
 		fetch_station_data();
@@ -323,7 +312,6 @@ function toggle_wifi_mode( wifi_mode )
 			document.getElementById("show_wifi_sta_ip").style.display = "table-row";
 			document.getElementById("show_wifi_sta_gw").style.display = "table-row";
 			document.getElementById("show_wifi_sta_dns").style.display = "table-row";
-
 			break;
 		case 1:
 			document.getElementById("show_sta_ssid").style.display = "none";
@@ -402,23 +390,12 @@ function send_config()
 
 function show_wifi()
 {
-	document.getElementById("show_wifi_mode").style.display = "table-row";
-	document.getElementById("show_sta_ssid").style.display = "table-row";
-	document.getElementById("show_wifi_sta_password").style.display = "table-row";
-	document.getElementById("show_wifi_sta_ip_mode").style.display = "table-row";
-	document.getElementById("show_wifi_sta_ip").style.display = "table-row";
-	document.getElementById("show_wifi_sta_gw").style.display = "table-row";
-	document.getElementById("show_wifi_sta_dns").style.display = "table-row";
-	document.getElementById("show_ap_ssid").style.display = "table-row";
-	document.getElementById("show_wifi_ap_password").style.display = "table-row";
-	document.getElementById("show_wifi_ap_ip_mode").style.display = "none";
-	document.getElementById("show_wifi_ap_ip").style.display = "table-row";
-	document.getElementById("show_wifi_ap_gw").style.display = "table-row";
-	document.getElementById("show_wifi_ap_dns").style.display = "table-row";
-	document.getElementById("show_eth_ip_mode").style.display = "none";
-	document.getElementById("show_eth_ip").style.display = "none";
-	document.getElementById("show_eth_gw").style.display = "none";
-	document.getElementById("show_eth_dns").style.display = "none";
+	WIFI_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "table-row";
+	});
+	ETH_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "none";
+	});
 }
 
 function fetch_station_data()
@@ -439,6 +416,22 @@ function fetch_station_data()
 	req.send();
 }
 
+function open_dome_shutter()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/open_dome_shutter", true );
+	req.send();
+
+}
+
 function update_dashboard( values )
 {
 	document.getElementById("battery_level").textContent = values['battery_level']+'%';
@@ -451,7 +444,7 @@ function update_dashboard( values )
 	document.getElementById("build_id").textContent = 'V'+values['build_id'];
 
 	document.getElementById("uptime").textContent = days+' days '+hours+' hours '+mins+' minutes '+secs+' seconds';
-	document.getElementById("reset_reason").textContent = RESET_REASON[ values['reset_reason0'] ];
+	document.getElementById("reset_reason").textContent = RESET_REASON[ values['reset_reason'] ];
 	document.getElementById("initial_heap").textContent = values['init_heap_size']+' bytes';
 	document.getElementById("current_heap").textContent = values['current_heap_size']+' bytes';
 	document.getElementById("largest_heap_block").textContent = values['largest_free_heap_block']+' bytes';
@@ -529,6 +522,7 @@ function update_sensor_dashboard( values )
 	document.getElementById("ambient_temperature").textContent = values['ambient_temperature'].toFixed(2);
 	document.getElementById("sky_temperature").textContent = values['sky_temperature'].toFixed(2);
 	document.getElementById("raw_sky_temperature").textContent = values['raw_sky_temperature'].toFixed(2);
+	document.getElementById("cloud_coverage").textContent = CLOUD_COVERAGE[ values['cloud_coverage'] ];
 
 	document.getElementById("rainintensity").textContent = values['rain_intensity'];
 

@@ -50,7 +50,6 @@ class AWSOTA {
 
 			AWSOTA( void );
 		ota_status_t	check_for_update( const char *, const char *root_ca, etl::string<26> &, ota_action_t );
-		
 		void			set_aws_board_id( etl::string<24> & );
 		void			set_aws_config( etl::string<32> & );
 		void			set_aws_device_id( etl::string<18> & );
@@ -69,6 +68,8 @@ class AWSOTA {
 
 		bool	do_ota_update( const char *, const char *, ota_action_t );
 		bool	download_json( const char *, const char * );
+		void	save_firmware_sha256( const char * );
+
 };
 
 #endif

@@ -254,23 +254,23 @@ int8_t I2C_SC16IS750::read_register( uint8_t register_address )
 		case 0:
 			break;
 		case 1:
-			Serial.printf("ERROR: SC16IS750 transmission failed: data to long to fit in buffer\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: data to long to fit in buffer\n" );
 			break;
 		case 2:
-			Serial.printf("ERROR: SC16IS750 transmission failed: NACK on transmit of address\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: NACK on transmit of address\n" );
 			break;
 		case 3:
-			Serial.printf("ERROR: SC16IS750 transmission failed: NACK on transmit of data\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: NACK on transmit of data\n" );
 			break;
 		case 4:
-			Serial.printf("ERROR: SC16IS750 transmission failed: other error\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: other error\n" );
 			break;
 		case 5:
-			Serial.printf("ERROR: SC16IS750 transmission failed: timeout\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: timeout\n" );
 			break;
 	}
 	if ( ( n = Wire.requestFrom( address, 1 )) != 1 )
-		Serial.printf( "ERROR: SC16IS750 received %d bytes instead of 1 while addressing register 0x%02x\n", n, register_address );
+		Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 received %d bytes instead of 1 while addressing register 0x%02x\n", n, register_address );
 	// flawfinder: ignore
 	return Wire.read();
 }
@@ -285,19 +285,19 @@ bool I2C_SC16IS750::write_register (uint8_t register_address, uint8_t value )
 			return true;
 			break;
 		case 1:
-			Serial.printf("ERROR: SC16IS750 transmission failed: data to long to fit in buffer\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: data to long to fit in buffer\n" );
 			break;
 		case 2:
-			Serial.printf("ERROR: SC16IS750 transmission failed: NACK on transmit of address\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: NACK on transmit of address\n" );
 			break;
 		case 3:
-			Serial.printf("ERROR: SC16IS750 transmission failed: NACK on transmit of data\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: NACK on transmit of data\n" );
 			break;
 		case 4:
-			Serial.printf("ERROR: SC16IS750 transmission failed: other error\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: other error\n" );
 			break;
 		case 5:
-			Serial.printf("ERROR: SC16IS750 transmission failed: timeout\n" );
+			Serial.printf( "[GPIOEXT   ] [ERROR] SC16IS750 transmission failed: timeout\n" );
 			break;
 	}
     return false;

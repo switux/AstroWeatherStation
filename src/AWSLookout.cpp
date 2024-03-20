@@ -40,7 +40,7 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 		unsafe_rule.ts = 0;
 		return ( rule.satisfied = true );
 	}
-	
+
 	if ( value > rule.max )
 		return ( rule.satisfied = false );
 
@@ -50,9 +50,9 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 	if (( now - rule.ts ) >= rule.delay ) {
 
 		if ( std::is_same<T, float>::value )
-			Serial.printf( "[INFO] Safe rule '%s' satisfied: %f <= %f\n", name, value, rule.max );
+			Serial.printf( "[LOOKOUT   ] [INFO ] Safe rule '%s' satisfied: %f <= %f\n", name, value, rule.max );
 		else if ( std::is_same<T, uint8_t>::value )
-			Serial.printf( "[INFO] Safe rule '%s' satisfied: %d <= %d\n", name, value, rule.max );
+			Serial.printf( "[LOOKOUT   ] [INFO ] Safe rule '%s' satisfied: %d <= %d\n", name, value, rule.max );
 
 		unsafe_rule.ts = 0;
 		return ( rule.satisfied = true );
@@ -60,9 +60,9 @@ bool AWSLookout::check_safe_rule( const char *name, lookout_rule_t<T> &rule, T v
 	}
 
 	if ( std::is_same<T, float>::value )
-		Serial.printf( "[INFO] Safe rule '%s' pending delay: %f >= %f (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Safe rule '%s' pending delay: %f >= %f (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
 	else if ( std::is_same<T, uint8_t>::value )
-		Serial.printf( "[INFO] Safe rule '%s' pending delay: %d >= %d (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Safe rule '%s' pending delay: %d >= %d (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
 
 	return ( rule.satisfied = false );
 }
@@ -75,7 +75,7 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 
 	if ( !sensor_available && rule.check_available ) {
 
-		Serial.printf( "[INFO] Unsafe rule '%s' satisfied: sensor not available\n", name );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Unsafe rule '%s' satisfied: sensor not available\n", name );
 		safe_rule.ts = 0;
 		return ( rule.satisfied = true );
 	}
@@ -89,9 +89,9 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 	if (( now - rule.ts ) >= rule.delay ) {
 
 		if ( std::is_same<T, float>::value )
-			Serial.printf( "[INFO] Unsafe rule '%s' satisfied: %f >= %f\n", name, value, rule.max );
+			Serial.printf( "[LOOKOUT   ] [INFO ] Unsafe rule '%s' satisfied: %f >= %f\n", name, value, rule.max );
 		else if ( std::is_same<T, uint8_t>::value )
-			Serial.printf( "[INFO] Unsafe rule '%s' satisfied: %d >= %d\n", name, value, rule.max );
+			Serial.printf( "[LOOKOUT   ] [INFO ] Unsafe rule '%s' satisfied: %d >= %d\n", name, value, rule.max );
 
 		safe_rule.ts = 0;
 		return ( rule.satisfied = true );
@@ -99,9 +99,9 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 	}
 
 	if ( std::is_same<T, float>::value )
-		Serial.printf( "[INFO] Unsafe rule '%s' pending delay: %f >= %f (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Unsafe rule '%s' pending delay: %f >= %f (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
 	else if ( std::is_same<T, uint8_t>::value )
-		Serial.printf( "[INFO] Unsafe rule '%s' pending delay: %d >= %d (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Unsafe rule '%s' pending delay: %d >= %d (%ds < %ds).\n", name, value, rule.max, now - rule.ts, rule.delay );
 
 	return ( rule.satisfied = false );
 }
@@ -115,14 +115,14 @@ void AWSLookout::check_rules( void )
 	bool				tmp_is_safe			= true;
 	bool				tmp_is_unsafe		= false;
 	
-	// Safety net: the moment we get rain drops, if the rain intensity rule is active, we close the shutter without even checking rain intensity!
 	if ( rain_event ) {
 
-		Serial.printf( "[INFO] Lookout: rain event\n" );
-		if ( unsafe_rain_intensity.active ) {
+		Serial.printf( "[LOOKOUT   ] [INFO ] Rain event\n" );
+		if ( unsafe_rain_event.active ) {
 
-			unsafe_rain_intensity.ts = sensor_manager->get_sensor_data()->timestamp;
-			Serial.printf( "[INFO] Rain monitor is active, closing dome shutter.\n");
+			unsafe_rain_event.ts = sensor_manager->get_sensor_data()->timestamp;
+			unsafe_rain_event.satisfied = true;
+			Serial.printf( "[LOOKOUT   ] [INFO ] Rain monitor is active, closing dome shutter.\n");
 			tmp_is_unsafe |= true;
 
 		}
@@ -130,6 +130,8 @@ void AWSLookout::check_rules( void )
 
 	} else {
 	
+		unsafe_rain_event.satisfied = false;
+
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1",
 																		unsafe_wind_speed_1,
 																		sensor_manager->sensor_is_available( aws_device_t::ANEMOMETER_SENSOR ),
@@ -210,7 +212,7 @@ void AWSLookout::check_rules( void )
 	if ( decide_is_safe( tmp_is_unsafe, tmp_is_safe ))
 		return;
 	
-	snprintf( str.data(), str.capacity(), "[INFO] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
+	snprintf( str.data(), str.capacity(), "[LOOKOUT   ] [INFO ] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
 }
@@ -219,7 +221,7 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 {
 	if ( is_safe && !unsafe ) {
 
-		Serial.printf( "[INFO] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Previous conditions were <SAFE> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
 		return true;
 
@@ -228,7 +230,7 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 	if ( !safe || unsafe ) {
 
 		is_safe = false;
-		Serial.printf( "[INFO] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
 		dome->close_shutter();
 		return true;
 	}
@@ -236,7 +238,7 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 	if ( !unsafe && safe ) {
 
 		is_safe = true;
-		Serial.printf( "[INFO] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
+		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
 		return true;
 	}
@@ -244,12 +246,14 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 etl::string_view AWSLookout::get_rules_state( void )
 {
-	DynamicJsonDocument	rules_state_json(128);
-
-	rules_state_json["unsafe_cloud_coverage_1"] = unsafe_cloud_coverage_1.satisfied;
-	rules_state_json["unsafe_cloud_coverage_2"] = unsafe_cloud_coverage_2.satisfied;
+	DynamicJsonDocument	rules_state_json(140);
+	int					i;
+	
+	rules_state_json["unsafe_rain_event"] = unsafe_rain_event.satisfied;
 	rules_state_json["unsafe_wind_speed_1"] = unsafe_wind_speed_1.satisfied;
 	rules_state_json["unsafe_wind_speed_2"] = unsafe_wind_speed_2.satisfied;
+	rules_state_json["unsafe_cloud_coverage_1"] = unsafe_cloud_coverage_1.satisfied;
+	rules_state_json["unsafe_cloud_coverage_2"] = unsafe_cloud_coverage_2.satisfied;
 	rules_state_json["unsafe_rain_intensity"] = unsafe_rain_intensity.satisfied;
 
 	rules_state_json["safe_wind_speed"] = safe_wind_speed.satisfied;
@@ -257,15 +261,18 @@ etl::string_view AWSLookout::get_rules_state( void )
 	rules_state_json["safe_cloud_coverage_2"] = safe_cloud_coverage_2.satisfied;
 	rules_state_json["safe_rain_intensity"] = safe_rain_intensity.satisfied;
 
-	if ( measureJson( rules_state_json ) > rules_state_data.capacity() ) {
+	if ( (i = measureJson( rules_state_json )) > rules_state_data.capacity() ) {
 
-		Serial.printf( "[BUG] rules_state_data json is too small. Please report to support!\n" );
+		etl::string<64> tmp;
+		Serial.printf( "[LOOKOUT   ] [BUG  ] rules_state_data json is too small (%d > %d). Please report to support!\n", i, rules_state_data.capacity() );
+		snprintf( tmp.data(), tmp.capacity(), "rules_state_data json is too small (%d > %d)", i, rules_state_data.capacity() );
+		station.send_alarm( "[STATION] LOOKOUT BUG", tmp.data() );
 		return etl::string_view( "" );
 
 	}
 	int l = serializeJson( rules_state_json, rules_state_data.data(), rules_state_data.capacity() );
 	if ( debug_mode )
-		Serial.printf( "[DEBUG] lookout_data is %d bytes long, max size is %d bytes.\n", l, rules_state_data.capacity() );
+		Serial.printf( "[LOOKOUT   ] [DEBUG] lookout_data is %d bytes long, max size is %d bytes.\n", l, rules_state_data.capacity() );
 
 	return etl::string_view( rules_state_data );
 }
@@ -274,7 +281,7 @@ void AWSLookout::loop( void * )	// NOSONAR
 {
 	while( true ) {
 
-		if ( enabled )
+		if ( initialised )
 			check_rules();
 		delay( 1000 );
 
@@ -287,7 +294,7 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 	dome = _dome;
 	sensor_manager = _mngr;
 
-	Serial.printf( "[INFO] Initialising lookout.\n" );
+	Serial.printf( "[LOOKOUT   ] [INFO ] Initialising.\n" );
 
 	initialise_rules( _config );
 
@@ -298,12 +305,19 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 			(*periodic_tasks_proxy)( NULL );
 		}, "AWSLookout Task", 10000, &_loop, 5, &watcher_task_handle, 1 );
 
-	enabled = true;
-	Serial.printf( "[INFO] Lookout enabled.\n" );
+	initialised = true;
+	Serial.printf( "[LOOKOUT   ] [INFO ] Initialised.\n" );
 }
 
 void AWSLookout::initialise_rules( AWSConfig *_config )
 {
+	unsafe_rain_event.active = true;
+	unsafe_rain_event.max = 1;
+	unsafe_rain_event.delay = 0;
+	unsafe_rain_event.check_available = 1;
+	unsafe_rain_event.ts = 0;
+	unsafe_rain_event.satisfied = false;
+	
 	unsafe_wind_speed_1.active = _config->get_parameter<bool>( "unsafe_wind_speed_1_active" ) && _config->get_has_device( aws_device_t::ANEMOMETER_SENSOR );
 	unsafe_wind_speed_1.max = _config->get_parameter<float>( "unsafe_wind_speed_1_max" );
 	unsafe_wind_speed_1.delay = _config->get_parameter<int>( "unsafe_wind_speed_1_delay" );
@@ -366,7 +380,7 @@ bool AWSLookout::issafe( void )
 
 void AWSLookout::resume( void )
 {
-	if ( enabled )
+	if ( initialised )
 		vTaskResume( watcher_task_handle );
 }
 
@@ -377,6 +391,6 @@ void AWSLookout::set_rain_event()
 
 void AWSLookout::suspend( void )
 {
-	if ( enabled )
+	if ( initialised )
 		vTaskSuspend( watcher_task_handle );
 }

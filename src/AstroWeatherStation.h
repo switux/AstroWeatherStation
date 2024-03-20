@@ -22,13 +22,13 @@
 #define _AstroWeatherStation_H
 
 #include "AWSOTA.h"
-
 #include "AWSUpdater.h"
 #include "config_server.h"
 #include "sensor_manager.h"
 #include "dome.h"
 #include "AWSLookout.h"
 #include "alpaca_server.h"
+#include "AWSNetwork.h"
 
 const byte LOW_BATTERY_COUNT_MIN = 5;
 const byte LOW_BATTERY_COUNT_MAX = 10;
@@ -86,56 +86,13 @@ struct station_devices_t {
 
 void OTA_callback( int, int );
 
-class AWSNetwork {
-
-	private:
-
-		AWSConfig			*config;
-		aws_iface			current_pref_iface;
-		aws_wifi_mode		current_wifi_mode;
-		bool				debug_mode;
-		IPAddress			eth_dns;
-		IPAddress			eth_gw;
-		IPAddress			eth_ip;
-		IPAddress			eth_subnet;
-		EthernetClient		*ethernet;
-		SSLClient			*ssl_eth_client;
-		IPAddress			wifi_ap_dns;
-		IPAddress			wifi_ap_gw;
-		IPAddress			wifi_ap_ip;
-		IPAddress			wifi_ap_subnet;
-		uint8_t				wifi_mac[6];		// NOSONAR
-		IPAddress			wifi_sta_dns;
-		IPAddress			wifi_sta_gw;
-		IPAddress			wifi_sta_ip;
-		IPAddress			wifi_sta_subnet;
-
-		bool eth_post_content( const char *, etl::string<128> &, const char * );
-		bool wifi_post_content( const char *, etl::string<128> &, const char * );
-
-	public:
-
-					AWSNetwork( void );
-		IPAddress	cidr_to_mask( byte cidr );
-		bool 		connect_to_wifi( void );
-		uint8_t		*get_wifi_mac( void );	
-		bool		initialise( AWSConfig *, bool );
-		bool		initialise_ethernet( void );
-		bool		initialise_wifi( void );
-		byte		mask_to_cidr( uint32_t );
-		bool		post_content( const char *, size_t, const char * );
-		bool		start_hotspot( void );
-		void 		webhook( const char * );
-
-
-};
-
 class AstroWeatherStation {
 
 	private:
 
 		alpaca_server				alpaca;
 		TaskHandle_t				aws_periodic_task_handle;
+		bool						force_ota_update			= false;
 		AWSConfig					config;
 		bool						debug_mode					= false;
 		etl::string<1096>			json_sensor_data;
@@ -192,6 +149,7 @@ class AstroWeatherStation {
 
 							AstroWeatherStation( void );
 		void				check_ota_updates( bool );
+		void				close_dome_shutter( void );
 		etl::string_view	get_anemometer_sensorname( void );
 		bool				get_debug_mode( void );
 		Dome				*get_dome( void );
@@ -202,7 +160,7 @@ class AstroWeatherStation {
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( float *, float * );
-		etl::string_view	get_lookout_rules_state_json( void );
+		etl::string_view	get_lookout_rules_state_json_string( void );
         etl::string_view	get_root_ca( void );
 		time_t				get_timestamp( void );
 		etl::string_view	get_unique_build_id( void );
@@ -218,6 +176,7 @@ class AstroWeatherStation {
 		bool				issafe( void );
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();
+		void				open_dome_shutter( void );
 		bool				poll_sensors( void );
 		bool				rain_sensor_available( void );
 		void				reboot( void );
@@ -226,6 +185,7 @@ class AstroWeatherStation {
 		void				send_alarm( const char *, const char * );
 		void				send_data( void );
 		bool				sync_time( bool );
+		void				trigger_ota_update( void );
 		bool				update_config( JsonVariant & );
 };
 

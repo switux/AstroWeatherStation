@@ -23,6 +23,7 @@
 
 #include <ArduinoJson.h>
 
+#include "device.h"
 enum struct aws_iface : int {
 
 	wifi_ap,
@@ -76,6 +77,10 @@ const int				DEFAULT_K4								= 100;
 const int				DEFAULT_K5								= 100;
 const int				DEFAULT_K6								= 0;
 const int				DEFAULT_K7								= 0;
+const int				DEFAULT_CC_AWS_OVERCAST					= -20;
+const int				DEFAULT_CC_AWS_CLOUDY					= -25;
+const int				DEFAULT_CC_AAG_OVERCAST					= -15;
+const int				DEFAULT_CC_AAG_CLOUDY					= -20;
 
 const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME			= 60;
 
@@ -123,6 +128,8 @@ const uint16_t			DEFAULT_PUSH_FREQ						= 300;
 const bool				DEFAULT_DISCORD_ENABLED					= false;
 const char				DEFAULT_DISCORD_WEBHOOK[]				= "";
 
+const char				DEFAULT_OTA_URL[]						= "https://www.datamancers.net/images/AWS.json";
+
 class AWSConfig {
 
 	public:
@@ -130,6 +137,7 @@ class AWSConfig {
 								AWSConfig( void );
 		bool					can_rollback( void );
 		etl::string_view		get_anemometer_model_str( void );
+		uint32_t				get_fs_free_space( void );
 		template <typename T>
 		T 						get_lookout_safe_parameter( const char * );
 		template <typename T>
@@ -138,6 +146,7 @@ class AWSConfig {
 		T 						get_parameter( const char * );
 		bool					get_has_device( aws_device_t );
 		etl::string_view		get_json_string_config( void );
+		etl::string_view		get_ota_sha256( void );
 		etl::string_view		get_pcb_version( void );
 		aws_pwr_src				get_pwr_mode( void );
 		etl::string_view		get_root_ca( void );
@@ -153,12 +162,14 @@ class AWSConfig {
 		const size_t		MAX_CONFIG_FILE_SIZE	= 2048;
 		bool				debug_mode				= false;
 		aws_device_t		devices					= aws_device_t::NO_SENSOR;
+		uint32_t			fs_free_space			= 0;
 		bool				initialised				= false;
 		DynamicJsonDocument	*json_config;
+		etl::string<64>		ota_sha256;
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;
-
+		
 		template <typename T>
 		T 		get_aag_parameter( const char * );
 		void	list_files( void );
@@ -172,6 +183,7 @@ class AWSConfig {
 		void	set_missing_network_parameters_to_default_values( void );
 		void	set_missing_parameters_to_default_values( void );
 		void	set_root_ca( JsonVariant & );
+		void	update_fs_free_space( void );
 		bool	verify_entries( JsonVariant & );
 };
 
@@ -201,7 +213,7 @@ T AWSConfig::get_lookout_safe_parameter( const char *key )
 		case str2int( "safe_wind_speed_max" ):
 			return (*json_config)[key].as<T>();
 	}
-	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
 
@@ -232,7 +244,7 @@ T AWSConfig::get_lookout_unsafe_parameter( const char *key )
 		case str2int( "unsafe_wind_speed_2_missing" ):
 			return (*json_config)[key].as<T>();
 	}
-	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
 
@@ -247,9 +259,13 @@ T AWSConfig::get_aag_parameter( const char *key )
 		case str2int( "k5" ):
 		case str2int( "k6" ):
 		case str2int( "k7" ):
+		case str2int( "cc_aws_cloudy" ):
+		case str2int( "cc_aws_overcast" ):
+		case str2int( "cc_aag_cloudy" ):
+		case str2int( "cc_aag_overcast" ):
 			return (*json_config)[key].as<T>();
 	}
-	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
 
@@ -262,7 +278,7 @@ T AWSConfig::get_parameter( const char *key )
 	if ( !strncmp( key, "safe_", 5 ))
 		return get_lookout_safe_parameter<T>( key );
 
-	if ( *key == 'k' )
+	if (( *key == 'k' ) || ( !strncmp( key, "cc_", 3  )))
 		return get_aag_parameter<T>( key );
 
 	switch( str2int( key )) {
@@ -285,6 +301,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "eth_ip_mode" ):
 		case str2int( "lookout_enabled" ):
 		case str2int( "msas_calibration_offset" ):
+		case str2int( "ota_url" ):
 		case str2int( "pref_iface" ):
 		case str2int( "push_freq" ):
 		case str2int( "rain_event_guard_time" ):
@@ -306,7 +323,7 @@ T AWSConfig::get_parameter( const char *key )
 			return (*json_config)[key].as<T>();
 
 	}
-	Serial.printf( "[ERROR]: Unknown parameter [%s]\n", key );
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
 

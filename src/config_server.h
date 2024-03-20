@@ -49,10 +49,14 @@ class AWSWebServer {
 		bool			debug_mode	= false;
 		bool			initialised	= false;
 		
+		void		close_dome_shutter( AsyncWebServerRequest * );
+		void 		get_lookout_rules_state( AsyncWebServerRequest * );
 		void		get_uptime( AsyncWebServerRequest * );
 		void		handle404( AsyncWebServerRequest * );
 		void		index( AsyncWebServerRequest * );
+		void		open_dome_shutter( AsyncWebServerRequest * );
 		void		reboot( AsyncWebServerRequest * );
+		void		rm_file( AsyncWebServerRequest * );
 		const char 	*save_configuration( const char *json_string );
 		void 		set_configuration( AsyncWebServerRequest *, JsonVariant & );
 		void		send_file( AsyncWebServerRequest * );

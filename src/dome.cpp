@@ -69,7 +69,7 @@ bool Dome::get_shutter_closed_status( void )
 {
 	if ( !is_connected ) {
 
-		Serial.printf( "[ERROR] Dome is not initialised, cannot get shutter closed status!\n" );
+		Serial.printf( "[DOME      ] [ERROR] Dome is not initialised, cannot get shutter closed status!\n" );
 		return false;
 	}
 
@@ -88,7 +88,7 @@ bool Dome::get_shutter_closed_status( void )
 	}
 
 	if ( get_debug_mode() )
-		Serial.printf( "[DEBUG] Dome shutter closed : %s\n", x ? "yes" : "no" );
+		Serial.printf( "[DOME      ] [DEBUG] Dome shutter closed : %s\n", x ? "yes" : "no" );
 
 	return x;
 }
@@ -102,12 +102,11 @@ bool Dome::close_shutter( void )
 {
 	if ( !is_connected ) {
 
-		Serial.printf( "[ERROR] Dome is not initialised, cannot close shutter!\n" );
+		Serial.printf( "[DOME      ] [ERROR] Dome is not initialised, cannot close shutter!\n" );
 		return false;
 	}
 
 	dome_data->close_command = true;
-	Serial.printf( "[INFO] Closing dome shutter\n" );
 
 	if ( sc16is750 ) {
 
@@ -155,7 +154,7 @@ void Dome::control_task( void *dummy )	// NOSONAR
 				}
 				shutter_is_moving = false;
 			}
-			delay( 500 );
+			delay( 1000 );
 			dome_data->moving_sensor = false;
 			get_shutter_closed_status();
 			get_shutter_moving_status();
@@ -216,15 +215,13 @@ bool Dome::open_shutter( void )
 {
 	if ( !is_connected ) {
 
-		Serial.printf( "[ERROR] Dome is not initialised, cannot open shutter!\n" );
+		Serial.printf( "[DOME      ] [ERROR] Dome is not initialised, cannot open shutter!\n" );
 		return false;
 	}
 
 	dome_data->close_command = close_shutter_command = do_close_shutter = false;
 	do_open_shutter = false;
-	station.send_alarm( "[Station] Opening dome shutter", "" );
 
-	Serial.printf( "[INFO] Opening dome shutter.\n" );
 	if ( sc16is750 ) {
 
 		while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );

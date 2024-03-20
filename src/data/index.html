@@ -24,8 +24,13 @@
 		AstroWeatherStation -- Configuration
 	</title>
 	<style>
-		body { background: black; font-family: helvetica, sans-serif;}
-		td { border-bottom: 1px dotted #606060; }
+		body {
+			background: black;
+			font-family: helvetica, sans-serif;
+		}
+		td {
+			border-bottom: 1px dotted #606060;
+		}
 		.led {
 			display: inline-flex;
 			align-items: center;
@@ -37,28 +42,82 @@
 			background-color: red;
 			margin-right: 5px;
 		}
+		.top_menu {
+			display: flex;
+			flex-direction: row;
+		}
+		.top_menu {
+			margin-right: 2px;
+			border-top: 0px solid;
+			border-left: 0px solid;
+			border-right: 0px solid;
+			border-radius: 10px 10px 0px 0px;
+			padding: 10px;
+			cursor: zoom-in;
+		}
+		.unselected_top_menu {
+			background: #dbdbdb;
+			margin-bottom: 2px;
+		}
+		.selected_top_menu {
+			background: #f6f6f6;
+			margin-bottom: 0px;
+		}
+		.panel {
+			display: none;
+			border-radius: 5px;
+		}
+		.active_panel {
+			display: flex;
+			background-color: #f6f6f6;
+		}
+		.left_panel {
+			border-radius: 0px 5px 5px;
+		}
+		.awsbutton {
+			text-align:center;
+			background: #f6f6f6;
+			font-weight: bold;
+			width: 80px;
+			padding-top: 5px;
+			padding-bottom: 5px;
+			border: 3px solid #ff3030;
+			border-radius: 20px;
+			-webkit-transition: all .15s ease-in-out; 
+			transition: all .15s ease-in-out;
+			color: #ff3030;
+		}
+		.awsstatus {
+			margin-left:30px;
+			text-align:center;
+			font-weight: bold;
+			padding-top: 5px;
+			padding-bottom: 5px;
+			padding-left: 10px;
+			padding-right: 10px;
+		}
 		@keyframes blink { 50% { opacity: 0; } }
 	</style>
-	<script src="aws.js"></script>
+	<script src="/aws.js"></script>
 </head>
 	
-<body onload="retrieve_display_data();">
+<body onload="retrieve_data();">
 
-	<div id="banners" style="display:flex;flex-direction: row">
-		<div id="banner_general" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #f6f6f6;padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
-		<div id="banner_network" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
-		<div id="banner_sensors" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
-		<div id="banner_others" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('others');" role="button" tabIndex="0">Devices</div>
-		<div id="banner_lookout" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('lookout');" role="button" tabIndex="0">Lookout</div>
-		<div id="banner_alpaca" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('alpaca');" role="button" tabIndex="0">ALPACA</div>
-		<div id="banner_dashboard" style="margin-right:2px; border-top: 0px solid; border-left: 0px solid; border-right: 0px solid;background: #dbdbdb; padding: 10px;border-radius: 10px 10px 0px 0px;cursor: zoom-in" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
+	<div id="banners" style="display:flex; flex-direction: row">
+		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
+		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
+		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
+		<div id="banner_devices"  class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" role="button" tabIndex="0">Devices</div>
+		<div id="banner_lookout" class="top_menu unselected_top_menu" onclick="toggle_panel('lookout');" role="button" tabIndex="0">Lookout</div>
+		<div id="banner_alpaca"  class="top_menu unselected_top_menu" onclick="toggle_panel('alpaca');" role="button" tabIndex="0">ALPACA</div>
+		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
 	</div> <!-- banners -->
 
 	<form method="post" action="" id="config"/>
 
 	<div id="config_panel">
 
-		<div id="general" style="border-radius: 0px 5px 5px 5px">
+		<div id="general" class="panel active_panel" style="border-radius: 0px 5px 5px 5px">
 
 			<div id="_general" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
@@ -66,7 +125,9 @@
 					<tr><th style="border-bottom: 1px solid">Parameter</th><th style="border-bottom: 1px solid">Value</th></tr>
 					<tr><td>Timezone Name</td><td><input form="config" name="tzname" id="tzname" type="text" value="" size="35"/></td></tr>
 					<tr><td>Automatic updates</td><td><input form="config" name="automatic_updates" id="automatic_updates" type="checkbox"/></td></tr>
-					<tr><td>Data push</td><td>Frequency:<input form="config" name="push_freq" id="push_freq" type="text" value="" size="4"/>s <input form="config" name="data_push" id="data_push" type="checkbox"/> Enabled</td></tr>
+					<tr><td>Data push</td><td>Frequency: <input form="config" name="push_freq" id="push_freq" style="text-align:right" type="text" value="" size="4"/>s <input form="config" name="data_push" id="data_push" type="checkbox"/> Enabled</td></tr>
+					<tr><td>OTA URL</td><td><input form="config" name="ota_url" id="ota_url" type="text" value="" size="80"/></td></tr>
+					<tr><td>Discord webhook</td><td><input form="config" name="discord_wh" id="discord_wh" type="text" value="" size="140"/> <input form="config" name="discord_enabled" id="discord_enabled" type="checkbox"/> Enabled</td></tr>
 				</table>
 
 			</div> <!-- _general -->
@@ -254,11 +315,35 @@
 
 			</div> <!-- sensor_list -->
 
+			<div id="cloud_detection" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+				<table aria-describedby="Cloud detection config" style="margin: 0 auto">
+					<tr><th style="border-bottom: 1px solid">Attribute</th><th style="border-bottom: 1px solid">Value</th></tr>
+					<tr>
+						<td>AWS corrected sky temperature for "cloudy"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aws_cloudy" type="text" id="cc_aws_cloudy" size=4/></td>
+					</tr>
+					<tr>
+						<td>AWS corrected sky temperature for "overcast"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aws_overcast" type="text" id="cc_aws_overcast" size=4/></td>
+					</tr>
+					<tr>
+						<td>AAG corrected sky temperature for "cloudy"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aag_cloudy" type="text" id="cc_aag_cloudy" size=4/></td>
+					</tr>
+					<tr>
+						<td>AAG corrected sky temperature for "overcast"</td>
+						<td style="text-align:center">&ge;<input form="config" name="cc_aag_overcast" type="text" id="cc_aag_overcast" size=4/></td>
+					</tr>
+				</table>
+
+			</div> <!-- sensor_list -->
+
 		</div> <!-- sensors -->
 
-		<div id="others">
+		<div id="devices">
 
-			<div id="devices" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+			<div id="_devices" style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
 				<table aria-describedby="Other devices config"  style="margin: 0 auto">
 					<tr><th style="border-bottom: 1px solid">Device</th><th  style="border-bottom: 1px solid">Enabled</th></tr>
@@ -274,7 +359,7 @@
 
 			</div> <!-- devices -->
 			
-		</div> <!-- others -->
+		</div> <!-- devices -->
 
 		<div id="alpaca">
 
@@ -292,7 +377,7 @@
 			
 		</div> <!-- alpaca -->
 
-		<div id="lookout" style="display: flex; flex-direction: column">
+		<div id="lookout" style="flex-direction: column">
 
 			<div id="enabled" style="text-align:center; width:auto; display:flex; border: 2px solid; border-color: red; border-radius: 5px; margin: 10px">
 				<p style="font-weight: bold;color: red;display:inline-block;margin: auto; padding: 20px">Lookout enabled : <input form="config" type="checkbox" name="lookout_enabled" id="lookout_enabled"></p>
@@ -309,7 +394,7 @@
 					<table style="width: 100%;border: 1px solid; border-color: #000000;border-radius:10px;margin: 5px" aria-describedby="Lookout config">
 						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th><th style="border-bottom: 1px solid">Sensor issue</th></tr>
 						<tr>
-							<td>Rain alarm</td>
+							<td id="unsafe_rain_event">Rain alarm</td>
 							<td><input form="" type="checkbox" name="unsafe_rain_event_active" id="unsafe_rain_event_active" checked onclick="return false;"></td>
 							<td>&ge; 
 								<select form="config" name="unsafe_rain_event_max" id="unsafe_rain_event_max" disabled>
@@ -444,7 +529,7 @@
 
 		</div> <!-- loookout -->
 
-		<div id="dashboard" style="display: flex; flex-direction: column">
+		<div id="dashboard" style="flex-direction: column">
 
 			<div style="display: flex; flex-direction: row">
 
@@ -490,7 +575,7 @@
 				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
 					<table aria-describedby="Dome" style="margin: 0 auto">
-						<tr><th colspan="2" style="border-bottom: 1px solid">Dome</tr>
+						<tr><th colspan="2" style="border-bottom: 1px solid"><span><button type="button" onclick="close_dome_shutter();">CLOSE</button></span>Dome<span style="text-align:right"><button type="button" onclick="open_dome_shutter();">OPEN</button></span></tr>
 						<tr><td>Dome shutter</td><td><span id="dome_shutter_status"></span></td></tr>
 						<tr><td>Dome closed sensor</td><td><span id="dome_shutter_closed"></span></td></tr>
 						<tr><td>Dome moving sensor</td><td><span id="dome_shutter_moving"></span></td></tr>
@@ -556,12 +641,12 @@
 		</div> <!-- dashboard -->
 
 		<div id="apply" style="margin: 10px">
-			<input style="text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
-			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 80px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="reboot();" value="REBOOT">
-			<input style="margin-left:30px; text-align:center; background: #f6f6f6; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; border: 3px solid #ff3030;  border-radius: 20px;  -webkit-transition: all .15s ease-in-out;  transition: all .15s ease-in-out;  color: #ff3030;" type="button" onclick="force_ota();" value="Check for new version">
+			<input class="awsbutton" style="width: 80px" type="button" onclick="send_config();" id="toto" form="config" value="SAVE">
+			<input class="awsbutton" style="width: 80px" type="button" onclick="reboot();" value="REBOOT">
+			<input class="awsbutton" style="width: 160px" type="button" onclick="force_ota();" value="Check for new version">
 			<span id="ota_msg"></span>
-			<span style="margin-left:30px; text-align:center; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; padding-left: 10px; padding-right: 10px; color: #80a080;" id="build_id"></span>
-			<span style="margin-left:30px; text-align:center; font-weight: bold; width: 160px; padding-top: 5px; padding-bottom: 5px; padding-left: 10px; padding-right: 10px; color: #a08080;" id="status"></span>
+			<span class="awsstatus" style="width: 160px;color: #80a080" id="build_id"></span>
+			<span class="awsstatus" style="width: 160px;color: #a08080" id="status"></span>
 			<p style="font-weight: bold" id="feedback"></p>
 		</div>
 	

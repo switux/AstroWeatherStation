@@ -80,13 +80,13 @@ bool alpaca_dome::closeshutter( AsyncWebServerRequest *request, const char *tran
 
 		snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
 		if ( get_debug_mode() )
-			Serial.printf( "[DEBUG] Alpaca dome.closeshutter OK\n" );
+			Serial.printf( "[ALPACADOME] [DEBUG] dome.closeshutter OK\n" );
 
 	} else {
 
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Dome is not connected",%s})json", transaction_details );
 		if ( get_debug_mode() )
-			Serial.printf( "[DEBUG] Alpaca dome.closeshutter NOK (not connected) : %s\n", message_str );
+			Serial.printf( "[ALPACADOME] [DEBUG] dome.closeshutter NOK (not connected) : %s\n", message_str );
 	}
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;

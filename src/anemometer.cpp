@@ -82,11 +82,11 @@ float Anemometer::get_wind_speed( bool verbose )
 		if ( verbose ) {
 
 			etl::string<8> str( cmd.begin(), cmd.end() );
-			Serial.printf( "[DEBUG] Sending command to the anemometer: %s\n", str.data() );
+			Serial.printf( "[ANEMOMETER] [DEBUG] Sending command: %s\n", str.data() );
 
 		} else
 
-			Serial.printf( "[DEBUG] Probing anemometer.\n" );
+			Serial.printf( "[ANEMOMETER] [DEBUG] Probing.\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -101,7 +101,7 @@ float Anemometer::get_wind_speed( bool verbose )
 		if ( get_debug_mode() && verbose ) {
 
 			etl::string<7> str( answer.begin(), answer.end() );
-			Serial.printf( "[DEBUG] Anemometer answer: %s", str.data() );
+			Serial.printf( "[ANEMOMETER] [DEBUG] Answer: %s", str.data() );
 
 		}
 
@@ -110,7 +110,7 @@ float Anemometer::get_wind_speed( bool verbose )
 			wind_speed = static_cast<float>(answer[4]) / 10.F;
 
 			if ( get_debug_mode() && verbose )
-				Serial.printf( "\n[DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
+				Serial.printf( "\n[ANEMOMETER] [DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
 
 		} else {
 
@@ -137,5 +137,7 @@ float Anemometer::get_wind_speed( bool verbose )
 
 float Anemometer::get_wind_gust( void )
 {
+	if ( !wind_speeds_size )
+		return wind_speed;
 	return ( wind_gust = *std::max_element( wind_speeds.begin(), wind_speeds.end() ));
 }
