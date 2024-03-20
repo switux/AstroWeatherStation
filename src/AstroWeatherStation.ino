@@ -23,7 +23,6 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
-
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
@@ -45,12 +44,11 @@ AstroWeatherStation station;
 void setup()
 {
 	Serial.begin( 115200 );
-
-	delay( 500 );	// TO CHECK: not sure we really need it, except maybe after a firmware update via USB, to give some time to the serial monitor
-
+	delay( 500 );
+	        
 	if ( !station.initialise()) {
 		
-		Serial.printf( "[PANIC] ===> AstroWeatherStation did not properly initialise. Stopping here! <===\n" );
+		Serial.printf( "[CORE      ] [PANIC] ===> AstroWeatherStation did not properly initialise. Stopping here! <===\n" );
 		while( true ) { delay( 100000 ); }
 	}
 
@@ -74,31 +72,32 @@ void setup()
 			if ( catch_rain_event ) {
 
 				if ( station.get_debug_mode() )
-					Serial.printf( "[DEBUG] Monitoring rain sensor.\n" );
+					Serial.printf( "[CORE      ] [DEBUG] Monitoring rain sensor.\n" );
 				esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
 
 			 } else {
 
 				if ( station.get_debug_mode() )
-					Serial.printf( "[DEBUG] Not monitoring rain sensor.\n" );
+					Serial.printf( "[CORE      ] [DEBUG] Not monitoring rain sensor.\n" );
 			 }
 		}
-		Serial.printf( "[INFO] Entering sleep mode.\n" );
+		Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
 		esp_deep_sleep_start();
 	}
-
 }
 
 void loop()
 {
 	if ( station.on_solar_panel() ) {
 
-		Serial.printf( "[PANIC] Must not execute this code when running on solar panel!\n" );
-		while (true) { delay( 10000 ); }
+		while (true) {
+
+			Serial.printf( "[CORE      ] [PANIC] Must not execute this code when running on solar panel!\n" );
+			delay( 10000 );
+		}
 	}
 
-	while( true )
-		delay( 1000 * 60 * 1 );
+	while( true );
 }
 
 void IRAM_ATTR _handle_dome_shutter_is_moving( void )

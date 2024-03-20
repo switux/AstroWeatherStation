@@ -42,6 +42,7 @@ RTC_DATA_ATTR long	available_sensors = 0;		// NOSONAR
 
 SemaphoreHandle_t sensors_read_mutex = NULL;	// Issue #7
 const aws_device_t ALL_SENSORS	= ( aws_device_t::MLX_SENSOR | aws_device_t::TSL_SENSOR | aws_device_t::BME_SENSOR | aws_device_t::WIND_VANE_SENSOR | aws_device_t::ANEMOMETER_SENSOR | aws_device_t::RAIN_SENSOR | aws_device_t::GPS_SENSOR );
+const std::array<etl::string_view,3> CLOUD_COVERAGE_STR = { etl::string_view( "Clear" ), etl::string_view( "Cloudy" ), etl::string_view( "Overcast" ) };
 
 extern AstroWeatherStation station;
 
@@ -146,12 +147,12 @@ void AWSSensorManager::initialise_BME( void )
 {
 	if ( !bme->begin( 0x76 ) )
 
-		Serial.printf( "[ERROR] Could not find BME280.\n" );
+		Serial.printf( "[SENSORMNGR] [ERROR] Could not find BME280.\n" );
 
 	else {
 
 		if ( debug_mode )
-			Serial.printf( "[INFO] Found BME280.\n" );
+			Serial.printf( "[SENSORMNGR] [INFO ] Found BME280.\n" );
 
 		available_sensors |= aws_device_t::BME_SENSOR;
 	}
@@ -161,12 +162,12 @@ void AWSSensorManager::initialise_MLX( void )
 {
 	if ( !mlx->begin() )
 
-		Serial.printf( "[ERROR] Could not find MLX90614.\n" );
+		Serial.printf( "[SENSORMNGR] [ERROR] Could not find MLX90614.\n" );
 
 	else {
 
 		if ( debug_mode )
-			Serial.printf( "[INFO] Found MLX90614.\n" );
+			Serial.printf( "[SENSORMNGR] [INFO ] Found MLX90614.\n" );
 
 		available_sensors |= aws_device_t::MLX_SENSOR;
 	}
@@ -204,7 +205,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 		else {
 
-			Serial.printf( "[INFO] Found anemometer.\n" );
+			Serial.printf( "[SENSORMNGR] [INFO ] Found anemometer.\n" );
 			available_sensors |= aws_device_t::ANEMOMETER_SENSOR;
 		}
 	}
@@ -217,7 +218,7 @@ void AWSSensorManager::initialise_sensors( I2C_SC16IS750 *_sc16is750 )
 
 		else {
 
-			Serial.printf( "[INFO] Found wind vane.\n" );
+			Serial.printf( "[SENSORMNGR] [INFO ] Found wind vane.\n" );
 			available_sensors |= aws_device_t::WIND_VANE_SENSOR;
 		}
 	}
@@ -237,12 +238,12 @@ void AWSSensorManager::initialise_TSL( void )
 	if ( !tsl->begin() ) {
 
 		if ( debug_mode )
-			Serial.printf( "[ERROR] Could not find TSL2591.\n" );
+			Serial.printf( "[SENSORMNGR] [ERROR] Could not find TSL2591.\n" );
 
 	} else {
 
 		if ( debug_mode )
-			Serial.printf( "[INFO] Found TSL2591.\n" );
+			Serial.printf( "[SENSORMNGR] [INFO ] Found TSL2591.\n" );
 
 		tsl->setGain( TSL2591_GAIN_LOW );
 		tsl->setTiming( TSL2591_INTEGRATIONTIME_100MS );
@@ -268,7 +269,7 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 
 		if ( sensor_data.weather.rain_event )
 			station.send_alarm( "[Station] RAIN EVENT", "Rain event!" );
-			
+
 		if ( xSemaphoreTake( sensors_read_mutex, 5000 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
 			retrieve_sensor_data();
@@ -318,10 +319,10 @@ void AWSSensorManager::read_BME( void  )
 
 		if ( debug_mode ) {
 
-			Serial.printf( "[DEBUG] Temperature = %2.2f °C\n", sensor_data.weather.temperature  );
-			Serial.printf( "[DEBUG] Pressure = %4.2f hPa\n", sensor_data.weather.pressure );
-			Serial.printf( "[DEBUG] RH = %3.2f %%\n", sensor_data.weather.rh );
-			Serial.printf( "[DEBUG] Dew point = %2.2f °C\n", sensor_data.weather.dew_point );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Temperature = %2.2f °C\n", sensor_data.weather.temperature  );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Pressure = %4.2f hPa\n", sensor_data.weather.pressure );
+			Serial.printf( "[SENSORMNGR] [DEBUG] RH = %3.2f %%\n", sensor_data.weather.rh );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Dew point = %2.2f °C\n", sensor_data.weather.dew_point );
 		}
 		return;
 	}
@@ -341,8 +342,16 @@ void AWSSensorManager::read_MLX( void )
 		sensor_data.weather.raw_sky_temperature = mlx->readObjectTempC();
 
 		if ( config->get_parameter<int>( "cloud_coverage_formula" ) == 0 ) {
+
 			sensor_data.weather.sky_temperature -= sensor_data.weather.ambient_temperature;
 			sensor_data.weather.cloud_coverage = ( sensor_data.weather.sky_temperature <= -15 ) ? 0 : 2;
+			if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aws_cloudy" ) )
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLEAR );
+			else if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aws_overcast" ) )
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLOUDY );
+			else
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::OVERCAST );
+
 		}
 		else {
 
@@ -355,9 +364,16 @@ void AWSSensorManager::read_MLX( void )
 			t += t67;
 			sensor_data.weather.sky_temperature -= t;
 
+			if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aag_cloudy" ) )
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLEAR );
+			else if ( sensor_data.weather.sky_temperature < config->get_parameter<int>( "cc_aag_overcast" ) )
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::CLOUDY );
+			else
+				sensor_data.weather.cloud_coverage = static_cast<uint8_t>( cloud_coverage::OVERCAST );
+
 		}
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f / Cloud coverage = %s (%d)\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature, CLOUD_COVERAGE_STR[sensor_data.weather.cloud_coverage].data(), sensor_data.weather.cloud_coverage );
 		return;
 	}
 	sensor_data.weather.ambient_temperature = -99.F;
@@ -396,7 +412,7 @@ void AWSSensorManager::read_TSL( void )
 		lux = tsl->calculateLux( full, ir );
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Infrared=%05d Full=%05d Visible=%05d Lux = %05d\n", ir, full, full - ir, lux );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Infrared=%05d Full=%05d Visible=%05d Lux = %05d\n", ir, full, full - ir, lux );
 	}
 
 	// Avoid aberrant readings

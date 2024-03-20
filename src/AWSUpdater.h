@@ -25,10 +25,11 @@ class AWSUpdater {
 	
 	private:
 
-		bool	debug_mode = true;
+		bool	debug_mode		= true;
 
-		int download_file( const char *, const char *, const char *, const char *, const char *, const char * );
-
+		int			download_file( const char *, const char *, const char *, const char *, const char *, const char * );
+		uint32_t	fs_free_space( void );
+		
 	public:
 	
 			AWSUpdater( void ) = default;

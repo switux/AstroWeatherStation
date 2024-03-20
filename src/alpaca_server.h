@@ -22,8 +22,6 @@
 #ifndef _ALPACA_SERVER_H
 #define _ALPACA_SERVER_H
 
-#include <AsyncUDP_ESP32_W5500.hpp>
-
 #include "alpaca_dome.h"
 #include "alpaca_safetymonitor.h"
 #include "alpaca_observingconditions.h"

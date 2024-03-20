@@ -74,6 +74,7 @@ using dome_shutter_status_t = dome_shutter_status_type;
 struct health_data_t {
 
 	float			battery_level;
+	uint32_t		fs_free_space;
 	uint32_t		uptime;
 	uint32_t		init_heap_size;
 	uint32_t		current_heap_size;
@@ -90,7 +91,7 @@ struct sqm_data_t {
 	uint16_t	ir_luminosity;
 	uint16_t	vis_luminosity;
 	uint16_t	full_luminosity;
-	
+
 };
 
 struct weather_data_t {
@@ -105,14 +106,14 @@ struct weather_data_t {
 	float	dew_point;
 
 	bool	rain_event;
-	byte	rain_intensity;
+	uint8_t	rain_intensity;
 
 	float	ambient_temperature;
 	float	raw_sky_temperature;
 	float	sky_temperature;
 	float	cloud_cover;
-	byte	cloud_coverage;
-	
+	uint8_t	cloud_coverage;
+
 };
 
 struct sun_data_t {
@@ -147,8 +148,8 @@ struct station_data_t {
 	dome_data_t		dome_data;
 //	lookout_data_t	lookout_data;
 	struct timeval	ntp_time;
-	int				reset_reason0;
-	int				reset_reason1;
+	int				reset_reason;
+	etl::string<64>	firmware_sha56;
 };
 
 void loop( void );

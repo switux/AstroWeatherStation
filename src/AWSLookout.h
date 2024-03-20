@@ -38,12 +38,13 @@ class AWSLookout
 		TaskHandle_t			watcher_task_handle;
 		bool 					debug_mode				= false;
 		Dome					*dome					= nullptr;
-		bool					enabled 				= false;
+		bool					initialised				= false;
 		bool					is_safe					= true;
-		etl::string<128>		rules_state_data;
+		etl::string<248>		rules_state_data;
 		bool					rain_event				= false;
 		AWSSensorManager		*sensor_manager			= nullptr;
 		AWSConfig				*config					= nullptr;
+		lookout_rule_t<uint8_t>	unsafe_rain_event;
 		lookout_rule_t<float>	unsafe_wind_speed_1;
 		lookout_rule_t<float>	unsafe_wind_speed_2;
 		lookout_rule_t<uint8_t>	unsafe_cloud_coverage_1;

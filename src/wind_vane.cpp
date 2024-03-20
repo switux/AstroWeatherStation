@@ -76,11 +76,11 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 		if ( verbose ) {
 
 			etl::string<8> str( cmd.begin(), cmd.end() );
-			Serial.printf( "[DEBUG] Sending command to the wind vane: %s\n", str.data() );
+			Serial.printf( "[WINDVANE  ] [DEBUG] Sending command: %s\n", str.data() );
 
 		} else
 
-			Serial.printf( "[DEBUG] Probing wind vane.\n" );
+			Serial.printf( "[WINDVANE  ] [DEBUG] Probing.\n" );
 	}
 
 	while ( answer[1] != 0x03 ) {
@@ -96,7 +96,7 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 		if ( get_debug_mode() && verbose ) {
 
 			etl::string<7> str( answer.begin(), answer.end() );
-			Serial.printf( "[DEBUG] Anemometer answer: %s", str.data() );
+			Serial.printf( "[WINDVANE  ] [DEBUG] Answer: %s", str.data() );
 		}
 
 		if ( answer[1] == 0x03 ) {
@@ -104,7 +104,7 @@ int16_t Wind_vane::get_wind_direction( bool verbose  )
 			wind_direction = ( answer[5] << 8 ) + answer[6];
 
 			if ( get_debug_mode() && verbose )
-				Serial.printf( "\n[DEBUG] Wind direction: %d°\n", wind_direction );
+				Serial.printf( "\n[WINDVANE  ] [DEBUG] Wind direction: %d°\n", wind_direction );
 
 		} else {
 

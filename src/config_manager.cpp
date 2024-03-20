@@ -50,6 +50,11 @@ etl::string_view AWSConfig::get_anemometer_model_str( void )
 	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ get_parameter<int>( "anemometer_model" ) ].c_str() );
 }
 
+uint32_t AWSConfig::get_fs_free_space( void )
+{
+	return fs_free_space;
+}
+
 etl::string_view AWSConfig::get_pcb_version( void )
 {
 	return etl::string_view( pcb_version );
@@ -77,10 +82,15 @@ etl::string_view AWSConfig::get_json_string_config( void )
 
 	if ( ( i = serializeJson( *json_config, json_string.data(), json_string.capacity() )) >= json_string.capacity() ) {
 
-		Serial.printf( "[ERROR] Reached configuration string limit (%d > 1024). Please contact support\n", i );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Reached configuration string limit (%d > 1024). Please contact support\n", i );
 		return etl::string_view( "" );
 	}
 	return etl::string_view( json_string.data() );
+}
+
+etl::string_view AWSConfig::get_ota_sha256( void )
+{
+	return etl::string_view( ota_sha256 );
 }
 
 etl::string_view AWSConfig::get_wind_vane_model_str( void )
@@ -95,7 +105,7 @@ void AWSConfig::list_files( void )
 
 	while( file ) {
 
-      Serial.printf( "[DEBUG] Filename: %05d /%s\n", file.size(), file.name() );
+      Serial.printf( "[CONFIGMNGR] [DEBUG] Filename: %05d /%s\n", file.size(), file.name() );
       file = root.openNextFile();
 	}
 	close( root );
@@ -107,11 +117,14 @@ bool AWSConfig::load( bool _debug_mode  )
 
 	if ( !LittleFS.begin( true )) {
 
-		Serial.printf( "[ERROR] Could not access flash filesystem, bailing out!\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Could not access flash filesystem, bailing out!\n" );
 		return false;
 	}
+
 	if ( debug_mode )
 		list_files();
+
+	update_fs_free_space();
 
 	return read_config();
 }
@@ -126,10 +139,10 @@ bool AWSConfig::read_config( void )
 
 		if ( !read_file( "/aws.conf.dfl" )) {
 
-			Serial.printf( "\n[ERROR] Could not read config file.\n" );
+			Serial.printf( "\n[CONFIGMNGR] [ERROR] Could not read config file.\n" );
 			return false;
 		}
-		Serial.printf( "[INFO] Using minimal/factory config file.\n" );
+		Serial.printf( "[CONFIGMNGR] [INFO ] Using minimal/factory config file.\n" );
 	}
 
 	devices |= aws_device_t::DOME_DEVICE * ( json_config->containsKey( "has_dome" ) ? (*json_config)["has_dome"].as<int>() : DEFAULT_HAS_DOME );
@@ -153,10 +166,10 @@ void AWSConfig::read_root_ca( void )
 
 	if ( !file ) {
 
-		Serial.printf( "[ERROR] Cannot read ROOT CA file. Using default CA.\n");
+		Serial.printf( "[CONFIGMNGR] [ERROR] Cannot read ROOT CA file. Using default CA.\n");
 		s = strlen( DEFAULT_ROOT_CA );
 		if ( s > root_ca.capacity() )
-			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
 		return;
@@ -165,10 +178,10 @@ void AWSConfig::read_root_ca( void )
 	if (!( s = file.size() )) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Empty ROOT CA file. Using default CA.\n" );
+			Serial.printf( "[CONFIGMNGR] [DEBUG] Empty ROOT CA file. Using default CA.\n" );
 		s = strlen( DEFAULT_ROOT_CA );
 		if ( s > root_ca.capacity() )
-			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
 		return;
@@ -176,10 +189,10 @@ void AWSConfig::read_root_ca( void )
 
 	if ( s > root_ca.capacity() ) {
 
-		Serial.printf( "[ERROR] ROOT CA file is too big. Using default CA.\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] ROOT CA file is too big. Using default CA.\n" );
 		s = strlen( DEFAULT_ROOT_CA );
 		if ( s > root_ca.capacity() )
-			Serial.printf( "[BUG] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
+			Serial.printf( "[CONFIGMNGR] [BUG  ] Size of default ROOT CA is too big [%d > %d].\n", s, root_ca.capacity() );
 		else
 			root_ca.assign( DEFAULT_ROOT_CA );
 		return;
@@ -199,26 +212,26 @@ bool AWSConfig::read_file( const char *filename )
 
 	if ( !file ) {
 
-		Serial.printf( "[ERROR] Cannot read config file [%s]\n", filename );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Cannot read config file [%s]\n", filename );
 		return false;
 	}
 
 	if (!( s = file.size() )) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Empty config file [%s]\n", filename );
+			Serial.printf( "[CONFIGMNGR] [DEBUG] Empty config file [%s]\n", filename );
 		return false;
 	}
 
 	if ( DeserializationError::Ok == deserializeJson( *json_config, file )) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Configuration is valid.\n");
+			Serial.printf( "[CONFIGMNGR] [DEBUG] Configuration is valid.\n");
 
 		return true;
 	}
 
-	Serial.printf( "[ERROR] Configuration file has been corrupted.\n");
+	Serial.printf( "[CONFIGMNGR] [ERROR] Configuration file has been corrupted.\n");
 	return false;
 }
 
@@ -227,23 +240,28 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 	Preferences nvs;
 	char		x;
 
-	Serial.printf( "[INFO] Reading NVS values.\n" );
-	nvs.begin( "aws", false );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS values.\n" );
+
+	nvs.begin( "fimware", true );
+	nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() );
+	nvs.end();
+
+	nvs.begin( "aws", true );
 	if ( !nvs.getString( "pcb_version", pcb_version.data(), pcb_version.capacity() )) {
 
-		Serial.printf( "[PANIC] Could not get PCB version from NVS. Please contact support.\n" );
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get PCB version from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
 	if ( static_cast<byte>(( pwr_mode = (aws_pwr_src) nvs.getChar( "pwr_mode", 127 ))) == 127 ) {
 
-		Serial.printf( "[PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get Power Mode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
 	if ( ( x = nvs.getChar( "has_sc16is750", 127 )) == 127 ) {
 
-		Serial.printf( "[PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
+		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
@@ -251,7 +269,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
-		printf( "[PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
+		printf( "[CONFIGMNGR] [PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
@@ -265,22 +283,22 @@ bool AWSConfig::rollback()
 	if ( !_can_rollback ) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] No configuration to rollback.\n");
+			Serial.printf( "[CONFIGMNGR] [DEBUG] No configuration to rollback.\n");
 		return true;
 
 	}
 
-	Serial.printf( "[INFO] Rolling back last submitted configuration.\n" );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Rolling back last submitted configuration.\n" );
 
 	if ( !LittleFS.begin( true )) {
 
-		Serial.printf( "[ERROR] Could not open filesystem.\n" );
+		Serial.printf( "[CONFMGR] [ERROR] Could not open filesystem.\n" );
 		return false;
 	}
 
 	LittleFS.remove( "/aws.conf" );
 	LittleFS.rename( "/aws.conf.bak", "/aws.conf" );
-	Serial.printf( "[INFO] Rollback successful.\n" );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Rollback successful.\n" );
 	_can_rollback = 0;
 	return true;
 }
@@ -297,13 +315,15 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 	set_root_ca( _json_config );
 
-	Serial.printf( "[INFO] Saving submitted configuration.\n" );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Saving submitted configuration.\n" );
 
 	if ( !LittleFS.begin( true )) {
 
-		Serial.printf( "[ERROR] Could not open filesystem.\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Could not open filesystem.\n" );
 		return false;
 	}
+
+	update_fs_free_space();
 
 	LittleFS.remove( "/aws.conf.bak.try" );
 	LittleFS.rename( "/aws.conf", "/aws.conf.bak.try" );
@@ -313,7 +333,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	File file = LittleFS.open( "/aws.conf.try", FILE_WRITE );
 	if ( !file ) {
 
-		Serial.printf( "[ERROR] Cannot write configuration file, rolling back.\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Cannot write configuration file, rolling back.\n" );
 		return false;
 	}
 
@@ -324,7 +344,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 		LittleFS.remove( "/aws.conf" );
 		LittleFS.remove( "/aws.conf.try" );
 		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
-		Serial.printf( "[ERROR] Empty configuration file, rolling back.\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Empty configuration file, rolling back.\n" );
 		return false;
 
 	}
@@ -332,7 +352,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 		LittleFS.remove( "/aws.conf.try" );
 		LittleFS.rename( "/aws.conf.bak.try", "/aws.conf" );
-		Serial.printf( "[ERROR] Configuration file is too big [%d bytes].\n" );
+		Serial.printf( "[CONFIGMNGR] [ERROR] Configuration file is too big [%d bytes].\n" );
 		station.send_alarm( "Configuration error", "Configuration file is too big. Not applying changes!" );
 		return false;
 
@@ -345,7 +365,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 	LittleFS.rename( "/aws.conf.try", "/aws.conf" );
 	LittleFS.rename( "/aws.conf.bak.try", "/aws.conf.bak" );
-	Serial.printf( "[INFO] Wrote %d bytes, configuration save successful.\n", s );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Wrote %d bytes, configuration save successful.\n", s );
 
 	LittleFS.remove( "/root_ca.txt.try" );
 	LittleFS.rename( "/root_ca.txt", "/root_ca.txt.try" );
@@ -353,7 +373,7 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 	file = LittleFS.open( "/root_ca.txt.try", FILE_WRITE );
 	s = file.print( root_ca.data() );
 	file.close();
-	Serial.printf( "[INFO] Wrote %d bytes of ROOT CA.\n", s );
+	Serial.printf( "[CONFIGMNGR] [INFO ] Wrote %d bytes of ROOT CA.\n", s );
 	LittleFS.rename( "/root_ca.txt.try", "/root_ca.txt" );
 
 	_can_rollback = 1;
@@ -552,6 +572,18 @@ void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
 	if ( !json_config->containsKey( "k7" ))
 		(*json_config)["k7"] = DEFAULT_K7;
 
+	if ( !json_config->containsKey( "cc_aag_cloudy" ))
+		(*json_config)["cc_aag_cloudy"] = DEFAULT_CC_AAG_CLOUDY;
+
+	if ( !json_config->containsKey( "cc_aag_overcast" ))
+		(*json_config)["cc_aag_overcast"] = DEFAULT_CC_AAG_OVERCAST;
+
+	if ( !json_config->containsKey( "cc_aws_cloudy" ))
+		(*json_config)["cc_aws_cloudy"] = DEFAULT_CC_AWS_CLOUDY;
+
+	if ( !json_config->containsKey( "cc_aws_overcast" ))
+		(*json_config)["cc_aws_overcast"] = DEFAULT_CC_AWS_OVERCAST;
+
 	if ( !json_config->containsKey( "lookout_enabled" ))
 		(*json_config)["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
 
@@ -563,7 +595,7 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 {
 	set_missing_network_parameters_to_default_values();
 	set_missing_lookout_parameters_to_default_values();
-
+	
 	if ( !json_config->containsKey( "msas_calibration_offset" ))
 		(*json_config)["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
 
@@ -588,6 +620,9 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	if ( !json_config->containsKey( "discord_wh" ))
 		(*json_config)["discord_wh"] = DEFAULT_DISCORD_WEBHOOK;
 
+	if ( !json_config->containsKey( "ota_url" ))
+		(*json_config)["ota_url"] = DEFAULT_OTA_URL;
+
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
@@ -601,6 +636,11 @@ void AWSConfig::set_root_ca( JsonVariant &_json_config )
 		}
 	}
 	root_ca.empty();
+}
+
+void AWSConfig::update_fs_free_space( void )
+{
+	fs_free_space = LittleFS.totalBytes() - LittleFS.usedBytes();
 }
 
 bool AWSConfig::verify_entries( JsonVariant &proposed_config )
@@ -617,6 +657,10 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 			case str2int( "alpaca_iface" ):
 			case str2int( "anemometer_model" ):
+			case str2int( "cc_aag_cloudy" ):
+			case str2int( "cc_aag_overcast" ):
+			case str2int( "cc_aws_cloudy" ):
+			case str2int( "cc_aws_overcast" ):
 			case str2int( "cloud_coverage_formula" ):
 			case str2int( "discord_wh" ):
 			case str2int( "eth_dns" ):
@@ -629,6 +673,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 			case str2int( "k5" ):
 			case str2int( "k6" ):
 			case str2int( "k7" ):
+			case str2int( "ota_url" ):
 			case str2int( "pref_iface" ):
 			case str2int( "push_freq" ):
 			case str2int( "rain_event_guard_time" ):
@@ -701,7 +746,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 				proposed_config[ item.key().c_str() ] = 1;
 				break;
 			default:
-				Serial.printf( "[ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
+				Serial.printf( "[CONFIGMNGR] [ERROR] Unknown configuration key [%s]\n",  item.key().c_str() );
 				return false;
 		}
 	}

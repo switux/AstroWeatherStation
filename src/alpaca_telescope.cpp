@@ -75,7 +75,6 @@ void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, const char 
 				const struct tm *local_time = localtime_r( &station.get_station_data()->gps.time.tv_sec, &dummy );
 				time_t time2 = mktime( utc_time );
 				astro_lib.setTimeZone( (int)( station.get_station_data()->gps.time.tv_sec - time2 ) / 3600 );
-				Serial.printf("TZ OFFSET=%d\n", (int)( station.get_station_data()->gps.time.tv_sec - time2 ) / 3600);
 				if ( local_time->tm_isdst == 1 )
 					astro_lib.setDST();
 				else

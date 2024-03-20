@@ -17,6 +17,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <esp_task_wdt.h>
 #include <ArduinoJson.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
@@ -50,24 +51,34 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 	if ( LittleFS.exists( local_filename.data() ))
 		LittleFS.remove( local_filename.data() );
 
-	Serial.printf( "[INFO] Downloading file [%s] from update package [%s].\n", filename, package );
+	Serial.printf( "[UPDATER   ] [INFO ] Downloading file [%s] from update package [%s].\n", filename, package );
 
 	if ( !http.begin( end_point.data(), root_ca )) {
 	
-       	Serial.printf( "[ERROR] Cannot connect to file packager server, aborting.\n" );
+       	Serial.printf( "[UPDATER   ] [ERROR] Cannot connect to file packager server, aborting.\n" );
 		return false;
 		
 	}
 
 	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
+	esp_task_wdt_reset();
 	http_code = http.GET();
+	esp_task_wdt_reset();
 	if ( http_code != 200 ) {
 		
-       	Serial.printf( "[ERROR] Cannot download file from server (error code: %d), aborting.\n", http_code );
+       	Serial.printf( "[UPDATER   ] [ERROR] Cannot download file from server (error code: %d), aborting.\n", http_code );
 		http.end();
 		return false;
 	}
 
+	if ( http.getSize() >= fs_free_space() ) {
+
+		Serial.printf( "[UPDATER   ] [ERROR] No space left to save file, aborting.\n" );
+		http.end();
+		return false;
+	}
+	
+	esp_task_wdt_reset();
 	file = LittleFS.open( local_filename.data(), FILE_WRITE );
 	if ( file ) {
 
@@ -81,22 +92,24 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 
 			LittleFS.remove( filename );
 			LittleFS.rename( local_filename.data(), filename );
-			Serial.printf( "[INFO] New version of file [%s] has been installed.\n", filename );
+			Serial.printf( "[UPDATER   ] [INFO ] New version of file [%s] has been installed.\n", filename );
 			return true;
 
 		}
-		Serial.printf( "[ERROR] New version of file [%s] could not be installed.\n", filename );
+		Serial.printf( "[UPDATER   ] [ERROR] New version of file [%s] could not be installed.\n", filename );
 		LittleFS.remove( local_filename.data() );	
 		return false;
 
 	}
 
-	Serial.printf( "[ERROR] Cannot create new version of file [%s].\n", filename );
+	esp_task_wdt_reset();
+	Serial.printf( "[UPDATER   ] [ERROR] Cannot create new version of file [%s].\n", filename );
+	esp_task_wdt_reset();
 	http.end();
 	return false;
 }
 
-bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, const char *server, const char *path )
+bool AWSUpdater::check_for_new_files( const char *current_version, const char *root_ca, const char *server, const char *path )
 {
 	uint8_t								http_code;
 	HTTPClient 							http;
@@ -109,13 +122,13 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 	end_point += "/";
 	end_point += path;
 	end_point += "/";
-	end_point += "filelist.json";
+	end_point += "ota_file_packages.json";
 
-	Serial.printf( "[INFO] Checking availability of file package update.\n" );
+	Serial.printf( "[UPDATER   ] [INFO ] Checking availability of file package update.\n" );
 
 	if ( !http.begin( end_point.data(), root_ca )) {
 	
-       	Serial.printf( "[ERROR] Cannot connect to file package server, aborting.\n" );
+       	Serial.printf( "[UPDATER   ] [ERROR] Cannot connect to file package server, aborting.\n" );
 		return false;
 		
 	}
@@ -124,7 +137,7 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 	http_code = http.GET();
 	if ( http_code != 200 ) {
 		
-       	Serial.printf( "[ERROR] Could not retrive file package manifest (error code: %d), aborting.\n", http_code );
+       	Serial.printf( "[UPDATER   ] [ERROR] Could not retrive file package manifest (error code: %d), aborting.\n", http_code );
 		http.end();
 		return false;
 
@@ -132,7 +145,7 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 
 	if ( ( ret = deserializeJson( json, http.getString() )) != DeserializationError::Ok ) {
 
-		Serial.printf( "[ERROR] Problem with manifest file (error: %d), aborting!\n", ret );
+		Serial.printf( "[UPDATER   ] [ERROR] Problem with manifest file (error: %d), aborting!\n", ret );
 		http.end();
 		return false;
 
@@ -142,7 +155,7 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 
 	if (!LittleFS.begin()) {
 
-    	Serial.printf( "[ERROR] Cannot access flash storage, aborting!\n" );
+    	Serial.printf( "[UPDATER   ] [ERROR] Cannot access flash storage, aborting!\n" );
 		return false;
 	}
 
@@ -150,10 +163,10 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 	for( JsonObject package : packages ) {
 		
 		const char *mv = package["min_version"];
-		if ( strcmp( version, mv ) > 0 ) {
+		if ( strcmp( current_version, mv ) < 0 ) {
 
 			const char *id = package["id"];
-			Serial.printf( "[INFO] Found applicable file package [%s]\n", id );
+			Serial.printf( "[UPDATER   ] [INFO ] Found applicable file package [%s]\n", id );
 			JsonArray files = package["files"];
 			for( JsonObject file_item : files )
 				for( JsonPair file : file_item )
@@ -163,6 +176,11 @@ bool AWSUpdater::check_for_new_files( const char *version, const char *root_ca, 
 		}
 	}
 
-	Serial.printf( "[INFO] No applicable file package found.\n" );
+	Serial.printf( "[UPDATER   ] [INFO ] No applicable file package found.\n" );
 	return true;
+}
+
+uint32_t AWSUpdater::fs_free_space( void )
+{
+	return LittleFS.totalBytes() - LittleFS.usedBytes();
 }

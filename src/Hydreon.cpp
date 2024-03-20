@@ -74,14 +74,14 @@ void Hydreon::probe( uint16_t baudrate )
 
 	if ( !strncmp( str.data(), "Baud ", 5 )) {
 
-		Serial.printf( "%s[INFO] Found rain sensor @ %d bps\n", get_debug_mode()?"\n":"", baudrate );
+		Serial.printf( "%s[HYDREON   ] [INFO ] Found rain sensor @ %d bps\n", get_debug_mode()?"\n":"", baudrate );
 		status = RAIN_SENSOR_OK;
 		rain_sensor_baud = baudrate;
 
 	} else if ( !strncmp( str.data(), "Reset " , 6 )) {
 
 		status = str[6];
-		Serial.printf( "%s[INFO] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO] Rain sensor boot message:\n", get_debug_mode()?"\n":"", baudrate, reset_cause() );
+		Serial.printf( "%s[HYDREON   ] [INFO ] Found rain sensor @ %dbps after it was reset because of '%s'\n[INFO ] Rain sensor boot message:\n", get_debug_mode()?"\n":"", baudrate, reset_cause() );
 
 		while ( read_string() )
 			Serial.printf( "%s", str.data() );
@@ -95,7 +95,7 @@ bool Hydreon::initialise( void )
 	if ( rain_sensor_baud ) {
 
 		if ( get_debug_mode() )
-			Serial.printf( "[DEBUG] Probing rain sensor using previous birate " );
+			Serial.printf( "[HYDREON   ] [DEBUG] Probing rain sensor using previous birate " );
 		probe( rain_sensor_baud );
 
 	} else
@@ -103,7 +103,7 @@ bool Hydreon::initialise( void )
 
 	if ( status == RAIN_SENSOR_FAIL ) {
 
-		Serial.printf( "[ERROR] Could not find rain sensor, resetting.\n" );
+		Serial.printf( "[HYDREON   ] [ERROR] Could not find rain sensor, resetting.\n" );
 		pinMode( reset_pin, OUTPUT );
 		digitalWrite( reset_pin, LOW );
 		delay( 500 );
@@ -131,7 +131,7 @@ bool Hydreon::initialise( void )
 			station.send_alarm( "Rain sensor problem", "Reset because of stack underflow, report problem to support." );
 			break;
 		default:
-			Serial.printf( "[INFO] Unhandled rain sensor reset code: %d. Report to support.\n", status );
+			Serial.printf( "[HYDREON   ] [INFO ] Unhandled rain sensor reset code: %d. Report to support.\n", status );
 			set_initialised( false );
 			break;
 	}
@@ -149,7 +149,7 @@ byte Hydreon::get_rain_intensity( void )
 {
 	if ( !get_initialised() && !initialise() ) {
 
-		Serial.printf( "[ERROR] Cannot initialise rain sensor. Not returning rain data.\n" );
+		Serial.printf( "[HYDREON   ] [ERROR] Cannot initialise rain sensor. Not returning rain data.\n" );
 		return -1;
 	}
 
@@ -161,7 +161,7 @@ byte Hydreon::get_rain_intensity( void )
 		intensity = 0;
 
 	if ( get_debug_mode() )
-		Serial.printf( "[DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str.data(), intensity );
+		Serial.printf( "[HYDREON   ] [DEBUG] Rain sensor status string = [%s] intensity=[%d]\n", str.data(), intensity );
 
 	return intensity;
 }
@@ -226,7 +226,7 @@ void Hydreon::try_baudrates( void )
 	for ( byte i = 0; i < HYDREON_PROBE_RETRIES; i++ ) {
 
 		if ( get_debug_mode() )
-			Serial.printf( "[DEBUG] Probing rain sensor, attempt #%d: ...", i );
+			Serial.printf( "[HYDREON   ] [DEBUG] Probing rain sensor, attempt #%d: ...", i );
 
 		for ( byte j = 0; j < BPS.size(); j++ ) {
 

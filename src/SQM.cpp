@@ -107,7 +107,7 @@ bool SQM::decrease_gain( tsl2591Gain_t *gain_idx )
 	if ( *gain_idx != TSL2591_GAIN_LOW ) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Decreasing gain.\n" );
+			Serial.printf( "[SQM       ] [DEBUG] Decreasing gain.\n" );
 		change_gain( DOWN, gain_idx );
 		return false;
 
@@ -120,7 +120,7 @@ bool SQM::decrease_integration_time( tsl2591IntegrationTime_t *int_time_idx )
 	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_100MS ) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Decreasing integration time.\n" );
+			Serial.printf( "[SQM       ] [DEBUG] Decreasing integration time.\n" );
 		change_integration_time( DOWN, int_time_idx );
 		return true;
 	}
@@ -132,7 +132,7 @@ bool SQM::increase_gain( tsl2591Gain_t *gain_idx )
 	if ( *gain_idx != TSL2591_GAIN_MAX ) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] Increasing gain.\n" );
+			Serial.printf( "[SQM       ] [DEBUG] Increasing gain.\n" );
 		change_gain( UP, gain_idx );
 		return true;
 	}
@@ -144,7 +144,7 @@ bool SQM::increase_integration_time( tsl2591IntegrationTime_t *int_time_idx )
 	if ( *int_time_idx != TSL2591_INTEGRATIONTIME_600MS ) {
 
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] SQM: Increasing integration time.\n" );
+			Serial.printf( "[SQM       ] [DEBUG] Increasing integration time.\n" );
 		change_integration_time( UP, int_time_idx );
 		return true;
 	}
@@ -179,7 +179,7 @@ bool SQM::get_msas_nelm( float ambient_temp )
 		return false;
 
 	if ( debug_mode )
-		Serial.printf( "[DEBUG] SQM: gain=0x%02x (%dx) time=0x%02x (%dms)/ temp=%2.2f° / Infrared=%05d Full=%05d Visible=%05d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir_luminosity, full_luminosity, visible_luminosity );
+		Serial.printf( "[SQM       ] [DEBUG] gain=0x%02x (%dx) time=0x%02x (%dms)/ temp=%2.2f° / Infrared=%05d Full=%05d Visible=%05d\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], ambient_temp, ir_luminosity, full_luminosity, visible_luminosity );
 
 	// Auto gain and integration time, increase time before gain to avoid increasing noise if we can help it, decrease gain first for the same reason
 	// Then retry by returning false
@@ -227,7 +227,7 @@ bool SQM::get_msas_nelm( float ambient_temp )
 	sqm_data->full_luminosity = full_luminosity;
 	sqm_data->ir_luminosity = ir_luminosity;
 	if ( debug_mode )
-		Serial.printf("[DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, sqm_data->msas, sqm_data->nelm );
+		Serial.printf( "[SQM       ] [DEBUG] GAIN=[0x%02hhx/%ux] TIME=[0x%02hhx/%ums] Iterations=[%d] Visible=[%05d] Infrared=[%05d] MPSAS=[%f] NELM=[%2.2f]\n", gain_idx, gain_factor[ gain_idx >> 4 ], int_time_idx, integration_time[ int_time_idx ], iterations, visible_luminosity, ir_luminosity, sqm_data->msas, sqm_data->nelm );
 
 	return true;
 }

@@ -128,13 +128,12 @@ void alpaca_server::alpaca_getdescription( AsyncWebServerRequest *request )
 	etl::string<256> str;
 
 	snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({"Value":{"ServerName":"AWS","Manufacturer":"L-OpenAstroDevices","ManufacturerVersion":"%s","Location":"%s"},%s})json", station.get_unique_build_id().data() , station.get_location().data(), R"json("ClientTransactionID":0,"ServerTransactionID":0)json");
-Serial.printf("DESC=[%s]\n",str.data());
 	request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 }
 
 void alpaca_server::alpaca_getsetup( AsyncWebServerRequest *request )
 {
-	request->send( LittleFS, "/ascom_home.html" );
+	request->send( LittleFS, "/index.html" );
 }
 
 void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
@@ -833,7 +832,7 @@ void alpaca_server::does_not_exist( AsyncWebServerRequest *request )
 	server_transaction_id++;
 	if ( debug_mode ) {
 
-		Serial.printf( "\n[DEBUG] ALPACA: unimplemented endpoint: %x %s, with parameters: ", request->method(), request->url().c_str());
+		Serial.printf( "\n[ALPACASERV] [DEBUG] ALPACA: unimplemented endpoint: %x %s, with parameters: ", request->method(), request->url().c_str());
 		for( int i = 0; i < params; i++ )
 			  Serial.printf( "(%s=%s) ", request->getParam(i)->name().c_str(), request->getParam(i)->value().c_str() );
 		  Serial.printf("\n");
@@ -916,7 +915,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 	if ( debug_mode ) {
 
-		Serial.printf( "\n[DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
+		Serial.printf( "\n[ALPACASERV] [DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
 		for( int i = 0; i < request->params(); i++ )
 			Serial.printf( "(%s=%s)", request->getParam(i)->name().c_str(),request->getParam(i)->value().c_str() );
 		Serial.printf( "\n" );
@@ -936,7 +935,7 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 	server_transaction_id++;
 	
 	if ( debug_mode )
-		Serial.printf( "\n[DEBUG] Alpaca : not implemented endpoint: %s\n", request->url().c_str());
+		Serial.printf( "\n[ALPACASERV] [DEBUG] Not implemented endpoint: %s\n", request->url().c_str());
 
 	if ( extract_transaction_details( request, false ) ) {
 
@@ -955,30 +954,27 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 
 void alpaca_server::on_packet( AsyncUDPPacket packet )
 {
-Serial.printf("ONPACKET\n");
 	if ( packet.length() ) {
-Serial.printf("OK1\n");
 
 		// flawfinder: ignore
 		int len = packet.read( reinterpret_cast<uint8_t *>( buf ), 255 );
-Serial.printf("READ %d bytes in packet [%s]\n",len,buf);
 		if ( len > 0 )
 			buf[ len ] = 0;
 		if ( len < 16 ) {
 			if ( debug_mode )
-				Serial.printf( "[INFO] ALPACA Discovery: short packet [%s] from %s:%d\n" , buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
+				Serial.printf( "[ALPACASERV] [INFO ] Discovery: short packet [%s] from %s:%d\n" , buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
 		if ( strncmp( "alpacadiscovery1", buf, 16 ) != 0 ) {
 			if ( debug_mode )
-				Serial.printf( "[INFO] ALPACA Discovery: bad header [%s] from %s:%d\n",  buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
+				Serial.printf( "[ALPACASERV] [INFO ] Discovery: bad header [%s] from %s:%d\n",  buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
 		int l = snprintf( buf, 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
 		if ( l > 0 )
 			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );
 		else
-			Serial.printf( "[ERROR] ALPACA: Could not build discovery answer. Please contact support.\n" );
+			Serial.printf( "[ALPACASERV] [ERROR] Could not build discovery answer. Please contact support.\n" );
 	}
 }
 
@@ -987,7 +983,7 @@ void alpaca_server::send_file( AsyncWebServerRequest *request )
 	if ( !LittleFS.exists( request->url().c_str() )) {
 
 		etl::string<64> msg;
-		Serial.printf( "[ERROR] File [%s] not found.", request->url().c_str() );
+		Serial.printf( "[ALPACASERV] [ERROR] File [%s] not found.", request->url().c_str() );
 		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", request->url().c_str() );
 		request->send( 500, "text/html", msg.data() );
 		return;
@@ -1010,19 +1006,19 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 
 		server = new AsyncWebServer( ALPACA_SERVER_PORT );
 		if ( server )
-			Serial.printf("[INFO] Started ALPACA server.\n" );
+			Serial.printf("[ALPACASERV] [INFO ] Started ALPACA server.\n" );
 		else
-			Serial.printf("[ERROR] Failed to start ALPACA server.\n" );
+			Serial.printf("[ALPACASERV] [ERROR] Failed to start ALPACA server.\n" );
 
 	}
 	if ( !ascom_discovery.listen( 32227 ))
 
-		Serial.printf( "[ERROR] Could not start ALPACA discovery service.\n" );
+		Serial.printf( "[ALPACASERV] [ERROR] Could not start ALPACA discovery service.\n" );
 		
 	else {	
 
 		if ( debug_mode )
-			Serial.printf( "[INFO] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
+			Serial.printf( "[ALPACASERV] [INFO ] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
 
 		ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
 	}

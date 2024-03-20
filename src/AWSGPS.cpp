@@ -79,7 +79,7 @@ void AWSGPS::feed( void *dummy )	// NOSONAR
 
 void AWSGPS::get_ublox_model( void )
 {
-  std::array<byte,10> ubx_nav_svinfo = { 0xB5, 0x62, 0x06, 0x30, 0x01, 0x00, 0x37, 0xE1, 0x74, 0x55 };
+    std::array<byte,10> ubx_nav_svinfo = { 0xB5, 0x62, 0x06, 0x30, 0x01, 0x00, 0x37, 0xE1, 0x74, 0x55 };
 
 	for( const auto &b : ubx_nav_svinfo )
 		gps_serial->write( b );
@@ -143,7 +143,7 @@ bool AWSGPS::initialise( gps_data_t *_gps_data, I2C_SC16IS750 *_sc16is750, Semap
 
 	if ( !sc16is750->begin( GPS_SPEED )) {
 
-		Serial.printf( "[ERROR] Could not find I2C UART. GPS disabled!\n" );
+		Serial.printf( "[GPS       ] [ERROR] Could not find I2C UART. GPS disabled!\n" );
 		xSemaphoreGive( i2c_mutex );
 		return false;
 	}

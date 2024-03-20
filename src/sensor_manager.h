@@ -37,6 +37,14 @@
 const float			LUX_TO_IRRADIANCE_FACTOR	= 0.88;
 const unsigned int	TSL_MAX_LUX					= 88000;
 
+enum struct cloud_coverage : uint8_t {
+
+	CLEAR,
+	CLOUDY,
+	OVERCAST
+
+};
+
 class AWSSensorManager {
 
   private:
@@ -51,7 +59,7 @@ class AWSSensorManager {
 	std::array<int,7>	k;
 	AWSConfig 			*config				= nullptr;
 	SoftwareSerial		rs485_bus;
-	
+
     aws_device_t		available_sensors	= aws_device_t::NO_SENSOR;
     sensor_data_t		sensor_data;
     bool				debug_mode			= false;
