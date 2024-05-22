@@ -23,8 +23,6 @@
 
 #include "device.h"
 
-void IRAM_ATTR _handle_dome_shutter_is_moving( void );
-
 class Dome : public Device {
 
 	private:
@@ -38,7 +36,6 @@ class Dome : public Device {
 		SemaphoreHandle_t		i2c_mutex;
 		bool					do_open_shutter					= false;
 		TaskHandle_t			dome_task_handle;
-		bool					shutter_is_moving				= false;
 		dome_shutter_status_t	shutter_status					= dome_shutter_status_t::Open;
 
 		bool get_shutter_moving_status( void );
@@ -50,11 +47,12 @@ class Dome : public Device {
 		void					control_task( void * );
 		bool					get_connected( void );
 		bool					get_shutter_closed_status( void );
+		bool					get_shutter_open_status( void );
 		void					initialise( dome_data_t *, bool );
 		void					initialise( I2C_SC16IS750 *, SemaphoreHandle_t, dome_data_t *, bool );
 		bool					open_shutter( void );
 		void 					shutter_closed_change( void );
-		void 					set_shutter_is_moving( void );
+		void 					shutter_open_change( void );
 		void					trigger_close_shutter( void );
 };
 

@@ -144,6 +144,15 @@ void AWSWebServer::open_dome_shutter( AsyncWebServerRequest *request )
 	delay( 500 );
 }
 
+void AWSWebServer::resume_lookout( AsyncWebServerRequest *request )
+{
+	if ( station.resume_lookout() )
+		request->send( 200, "text/plain", "OK" );
+	else
+		request->send( 500, "text/plain", "NOK" );
+}
+
+
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
 	if ( !LittleFS.begin()) {
@@ -204,6 +213,7 @@ void AWSWebServer::rm_file( AsyncWebServerRequest *request )
 
 void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVariant &json )
 {
+Serial.printf("SET CONFIG\n");
 	if ( station.update_config( json ) ) {
 
 		request->send( 200, "text/plain", "OK\n" );
@@ -227,6 +237,8 @@ void AWSWebServer::start( void )
 	server->on( "/get_root_ca", HTTP_GET, std::bind( &AWSWebServer::get_root_ca, this, std::placeholders::_1 ));
 	server->on( "/get_uptime", HTTP_GET, std::bind( &AWSWebServer::get_uptime, this, std::placeholders::_1 ));
 	server->on( "/ota_update", HTTP_GET, std::bind( &AWSWebServer::attempt_ota_update, this, std::placeholders::_1 ));
+	server->on( "/resume_lookout", HTTP_GET, std::bind( &AWSWebServer::resume_lookout, this, std::placeholders::_1 ));
+	server->on( "/suspend_lookout", HTTP_GET, std::bind( &AWSWebServer::suspend_lookout, this, std::placeholders::_1 ));
 	server->on( "/rm_file", HTTP_GET, std::bind( &AWSWebServer::rm_file, this, std::placeholders::_1 ));
 	server->on( "/", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
 	server->on( "/index.html", HTTP_GET, std::bind( &AWSWebServer::index, this, std::placeholders::_1 ));
@@ -239,6 +251,14 @@ void AWSWebServer::stop( void )
 {
 	server->reset();
 	server->end();
+}
+
+void AWSWebServer::suspend_lookout( AsyncWebServerRequest *request )
+{
+	if ( station.suspend_lookout() )
+		request->send( 200, "text/plain", "OK" );
+	else
+		request->send( 500, "text/plain", "NOK" );
 }
 
 void AWSWebServer::handle404( AsyncWebServerRequest *request )

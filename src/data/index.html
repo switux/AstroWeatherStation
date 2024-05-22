@@ -143,7 +143,7 @@
 						<td>Preferred interface</td>
 						<td>
 							<input id="wifi" form="config" name="pref_iface" value="0" type="radio" onchange="show_wifi();"/> WiFi
-							<input id="ethernet" form="config" name="pref_iface" value="2" type="radio" onchange="hide_wifi();"/> Ethernet
+							<input id="ethernet" form="config" name="pref_iface" value="1" type="radio" onchange="hide_wifi();"/> Ethernet
 						</td>
 					</tr>
 					<tr id="show_alpaca_interface">
@@ -164,7 +164,7 @@
 					</tr>
 					<tr id="show_sta_ssid">
 						<td>Station SSID</td>
-						<td><input form="config" id="sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
+						<td><input form="config" id="wifi_sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
 					</tr>
 					<tr id="show_wifi_sta_password">
 						<td>Station Password</td>
@@ -191,18 +191,11 @@
 					</tr>
 					<tr id="show_ap_ssid">
 						<td>AP SSID</td>
-						<td><input form="config" id="ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
+						<td><input form="config" id="wifi_ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
 					</tr>
 					<tr id="show_wifi_ap_password">
 						<td>AP Password</td>
 						<td><input form="config" id="wifi_ap_password" name="wifi_ap_password" type="text" value="" size="15"/></td>
-					</tr>
-					<tr id="show_wifi_ap_ip_mode">
-						<td>AP IP configuration</td>
-						<td>
-							<input form="config" id="wifi_ap_dhcp" name="wifi_ap_ip_mode" value="0" type="radio"  onchange="toggle_ap_ipgw(0);"/> DHCP
-							<input form="config" id="wifi_ap_fixed" name="wifi_ap_ip_mode" value="1" type="radio"  onchange="toggle_ap_ipgw(1);"/> Fixed
-						</td>
 					</tr>
 					<tr id="show_wifi_ap_ip">
 						<td>AP IP</td>
@@ -577,12 +570,23 @@
 					<table aria-describedby="Dome" style="margin: 0 auto">
 						<tr><th colspan="2" style="border-bottom: 1px solid"><span><button type="button" onclick="close_dome_shutter();">CLOSE</button></span>Dome<span style="text-align:right"><button type="button" onclick="open_dome_shutter();">OPEN</button></span></tr>
 						<tr><td>Dome shutter</td><td><span id="dome_shutter_status"></span></td></tr>
-						<tr><td>Dome closed sensor</td><td><span id="dome_shutter_closed"></span></td></tr>
-						<tr><td>Dome moving sensor</td><td><span id="dome_shutter_moving"></span></td></tr>
-						<tr><td>Dome close command</td><td><span id="dome_shutter_close"></span></td></tr>
+						<tr><td>Dome is closed</td><td><span id="dome_shutter_closed"></span></td></tr>
+						<tr><td>Dome is open</td><td><span id="dome_shutter_open"></span></td></tr>
+						<tr><td>Trying to close</td><td><span id="dome_shutter_close"></span></td></tr>
+						<tr><td>Control</td><td><button id="close_dome_shutter_button" type="button" onclick="close_dome_shutter();">CLOSE</button> / <button id="open_dome_shutter_button" type="button" onclick="open_dome_shutter();">OPEN</button></td></tr>
 					</table>
 
 				</div> <!-- Dome -->
+
+				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
+
+					<table aria-describedby="Lookout" style="margin: 0 auto">
+						<tr><th colspan="2" style="border-bottom: 1px solid">Lookout</th></tr>
+						<tr><td>Status</td><td><span id="lookout_status"></span></td></tr>
+						<tr><td>Control</td><td><button id="suspend_lookout_button" type="button" onclick="suspend_lookout();">SUSPEND</button> / <button id="resume_lookout_button" type="button" onclick="resume_lookout();">RESUME</button></td></tr>
+					</table>
+
+				</div> <!-- Lookout -->
 
 			</div>
 			

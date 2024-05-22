@@ -60,10 +60,22 @@ enum struct aws_events : uint8_t
 {
 	RAIN,
 	DOME_SHUTTER_CLOSED_CHANGE,
-	DOME_SHUTTER_MOVING
+	DOME_SHUTTER_OPEN_CHANGE
 
 };
 using aws_event_t = aws_events;
+
+enum struct station_status :uint8_t
+{
+	READY,
+	BOOTING,
+	CONFIG_ERROR,
+	NETWORK_INIT,
+	NETWORK_ERROR,
+	SENSOR_INIT_ERROR,
+	OTA_UPGRADE
+};
+using station_status_t = station_status;
 
 struct ota_setup_t {
 	
@@ -91,11 +103,14 @@ class AstroWeatherStation {
 	private:
 
 		alpaca_server				alpaca;
+		TaskHandle_t				aws_led_task_handle;
 		TaskHandle_t				aws_periodic_task_handle;
 		bool						force_ota_update			= false;
 		AWSConfig					config;
 		bool						debug_mode					= false;
-		etl::string<1096>			json_sensor_data;
+		etl::string<1116>			json_sensor_data;
+		size_t						json_sensor_data_len;
+		station_status_t			led_status					= station_status_t::BOOTING;
 		etl::string<128>			location;
 		AWSLookout					lookout;
 		AWSNetwork					network;
@@ -126,6 +141,7 @@ class AstroWeatherStation {
 		void			initialise_GPS( void );
 		bool			initialise_network( void );
 		bool			initialise_wifi( void );
+		void			led_task( void * );
 		byte			mask_to_cidr( uint32_t );
 		const char		*OTA_message( ota_status_t );
 		void			periodic_tasks( void * );
@@ -138,6 +154,7 @@ class AstroWeatherStation {
 		int				reformat_ca_root_line( std::array<char,97> &, int, int, int, const char * );
 		void			send_backlog_data( void );
 		void			send_rain_event_alarm( const char * );
+		void			set_led_status( station_status );
 		void			start_alpaca_server( void );
 		bool			start_config_server( void );
 		bool			start_hotspot( void );
@@ -182,8 +199,10 @@ class AstroWeatherStation {
 		void				reboot( void );
 		void				read_sensors( void );
 		void				report_unavailable_sensors( void );
+		bool				resume_lookout( void );
 		void				send_alarm( const char *, const char * );
 		void				send_data( void );
+		bool				suspend_lookout( void );
 		bool				sync_time( bool );
 		void				trigger_ota_update( void );
 		bool				update_config( JsonVariant & );

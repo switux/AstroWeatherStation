@@ -267,9 +267,6 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 {
 	while( true ) {
 
-		if ( sensor_data.weather.rain_event )
-			station.send_alarm( "[Station] RAIN EVENT", "Rain event!" );
-
 		if ( xSemaphoreTake( sensors_read_mutex, 5000 / portTICK_PERIOD_MS ) == pdTRUE ) {
 
 			retrieve_sensor_data();
@@ -280,6 +277,10 @@ void AWSSensorManager::poll_sensors_task( void *dummy )	// NOSONAR
 				sensor_data.weather.wind_gust = 0.F;
 			sensor_data.available_sensors = available_sensors;
 		}
+
+		if ( sensor_data.weather.rain_event )
+			station.send_alarm( "[Station] RAIN EVENT", "Rain event!" );
+
 		delay( polling_ms_interval );
 	}
 }

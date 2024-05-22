@@ -26,8 +26,7 @@
 #include "device.h"
 enum struct aws_iface : int {
 
-	wifi_ap,
-	wifi_sta,
+	wifi,
 	eth
 
 };
@@ -68,7 +67,7 @@ const uint8_t			DEFAULT_HAS_WS							= 0;
 const uint8_t			DEFAULT_HAS_WV							= 0;
 const bool				DEFAULT_LOOKOUT_ENABLED					= false;
 const float				DEFAULT_MSAS_CORRECTION					= -0.55;
-const aws_iface			DEFAULT_PREF_IFACE						= aws_iface::wifi_ap;
+const aws_iface			DEFAULT_PREF_IFACE						= aws_iface::wifi;
 
 const int				DEFAULT_K1								= 33;
 const int				DEFAULT_K2								= 0;
@@ -81,6 +80,8 @@ const int				DEFAULT_CC_AWS_OVERCAST					= -20;
 const int				DEFAULT_CC_AWS_CLOUDY					= -25;
 const int				DEFAULT_CC_AAG_OVERCAST					= -15;
 const int				DEFAULT_CC_AAG_CLOUDY					= -20;
+const bool				DEFAULT_CC_FORMULA_AWS					= true;
+
 
 const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME			= 60;
 
@@ -165,7 +166,7 @@ class AWSConfig {
 		uint32_t			fs_free_space			= 0;
 		bool				initialised				= false;
 		DynamicJsonDocument	*json_config;
-		etl::string<64>		ota_sha256;
+		etl::string<65>		ota_sha256;
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;

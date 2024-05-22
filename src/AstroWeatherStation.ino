@@ -45,11 +45,12 @@ void setup()
 {
 	Serial.begin( 115200 );
 	delay( 500 );
-	        
+
 	if ( !station.initialise()) {
 		
 		Serial.printf( "[CORE      ] [PANIC] ===> AstroWeatherStation did not properly initialise. Stopping here! <===\n" );
-		while( true ) { delay( 100000 ); }
+		while( true ) {
+
 	}
 
 	if ( station.on_solar_panel() ) {
@@ -100,9 +101,9 @@ void loop()
 	while( true );
 }
 
-void IRAM_ATTR _handle_dome_shutter_is_moving( void )
+void IRAM_ATTR _handle_dome_shutter_open_change( void )
 {
-	station.handle_event( aws_event_t::DOME_SHUTTER_MOVING );
+	station.handle_event( aws_event_t::DOME_SHUTTER_OPEN_CHANGE );
 }
 
 void IRAM_ATTR _handle_dome_shutter_closed_change( void )
