@@ -82,6 +82,7 @@ const int				DEFAULT_CC_AAG_OVERCAST					= -15;
 const int				DEFAULT_CC_AAG_CLOUDY					= -20;
 const bool				DEFAULT_CC_FORMULA_AWS					= true;
 
+
 const uint16_t			DEFAULT_RAIN_EVENT_GUARD_TIME			= 60;
 
 const bool				DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE	= false;

@@ -191,6 +191,7 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 		default:
 			Serial.printf( "[NETWORK   ] [ERROR] Invalid preferred iface (%d), falling back to WiFi.\n",  config->get_parameter<int>( "pref_iface" ) );
 			return initialise_wifi();
+
 	}
 	return false;
 }

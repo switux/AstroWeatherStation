@@ -96,7 +96,7 @@ function config_section_active( section_name, yes_no )
 
 	}
 }
-
+3.0
 function dome_closing()
 {
 //	document.getElementById('open_dome_shutter_button').disabled = false;
@@ -150,7 +150,8 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	let parameters = [ "wifi_ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+  
+  let parameters = [ "wifi_ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});

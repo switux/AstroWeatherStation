@@ -280,6 +280,7 @@ etl::string_view AWSLookout::get_rules_state( void )
 void AWSLookout::loop( void * )	// NOSONAR
 {
 	while( true ) {
+
 		if ( initialised )
 			check_rules();
 		delay( 1000 );
@@ -315,6 +316,7 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_rain_event.max = 1;
 	unsafe_rain_event.delay = 0;
 	unsafe_rain_event.check_available = true;
+
 	unsafe_rain_event.ts = 0;
 	unsafe_rain_event.satisfied = false;
 	

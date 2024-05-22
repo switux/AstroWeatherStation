@@ -269,7 +269,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 	
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
-		printf( "[CONFIGMNGR] [PANIC] Could not get has_ethernet from NVS. Please contact support.\n" );
+    printf( "[CONFIGMNGR] [PANIC] Could not get has_ethernet from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}

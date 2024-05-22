@@ -50,7 +50,7 @@ void setup()
 		
 		Serial.printf( "[CORE      ] [PANIC] ===> AstroWeatherStation did not properly initialise. Stopping here! <===\n" );
 		while( true ) {
-		}
+
 	}
 
 	if ( station.on_solar_panel() ) {

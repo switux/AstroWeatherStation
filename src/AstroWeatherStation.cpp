@@ -841,7 +841,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 
 		if ( data_push_timer && (( millis() - data_push_millis ) > 1000*data_push_timer )) {
 
-			send_data();
+      send_data();
 			data_push_millis = millis();
 		}
 
@@ -1068,6 +1068,7 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 bool AstroWeatherStation::resume_lookout( void )
 {
 	return lookout.resume();	
+
 }
 
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
@@ -1117,6 +1118,7 @@ void AstroWeatherStation::send_backlog_data( void )
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
+
 		return;
 	}
 
