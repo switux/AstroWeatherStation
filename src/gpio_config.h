@@ -26,7 +26,11 @@
 #endif
 
 // Misc
-#define GPIO_DEBUG		GPIO_NUM_34
+#define GPIO_DEBUG				GPIO_NUM_34
+
+// Indicator LED
+#define	GPIO_LED_BLUE			GPIO_NUM_2
+#define	GPIO_LED_GREEN			GPIO_NUM_13
 
 // Wind sensors
 #define GPIO_WIND_SENSOR_RX		GPIO_NUM_32	// RO Pin
@@ -60,11 +64,10 @@
 // Dome control
 const	uint8_t	GPIO_DOME_1			= 0;
 const	uint8_t	GPIO_DOME_2			= 1;
-const	uint8_t	GPIO_DOME_1_DIRECT	= 13;
-const	uint8_t	GPIO_DOME_2_DIRECT	= 14;
+const	uint8_t	GPIO_DOME_1_DIRECT	= 14;
 
-#define	GPIO_DOME_STATUS		GPIO_NUM_39
-#define	GPIO_DOME_MOVING		GPIO_NUM_36
+#define	GPIO_DOME_CLOSED		GPIO_NUM_39
+#define	GPIO_DOME_OPEN			GPIO_NUM_36
 
 // Direct connection between GPS and ESP32 (not through SC16IS750)
 #define	GPS_RX					GPIO_NUM_27

@@ -36,6 +36,7 @@ class AWSLookout
 	private:
 
 		TaskHandle_t			watcher_task_handle;
+		bool					active					= false;
 		bool 					debug_mode				= false;
 		Dome					*dome					= nullptr;
 		bool					initialised				= false;
@@ -68,11 +69,12 @@ class AWSLookout
 							AWSLookout( void ) = default;
 		etl::string_view	get_rules_state( void );
 		void				initialise( AWSConfig *, AWSSensorManager *, Dome *, bool _debug_mode );
+		bool				is_active( void );
 		bool				issafe( void );
 		void				loop( void * );
 		void				set_rain_event( void );
-		void				suspend( void );
-		void				resume( void );
+		bool				suspend( void );
+		bool				resume( void );
 };
 
 #endif

@@ -242,7 +242,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 
 	Serial.printf( "[CONFIGMNGR] [INFO ] Reading NVS values.\n" );
 
-	nvs.begin( "fimware", true );
+	nvs.begin( "firmware", true );
 	nvs.getString( "sha256", ota_sha256.data(), ota_sha256.capacity() );
 	nvs.end();
 
@@ -266,14 +266,15 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SC16IS750_DEVICE;
-
+	
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
-		printf( "[CONFIGMNGR] [PANIC] Could not get PowerMode from NVS. Please contact support.\n" );
+		printf( "[CONFIGMNGR] [PANIC] Could not get has_ethernet from NVS. Please contact support.\n" );
 		nvs.end();
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::ETHERNET_DEVICE;
+
 	nvs.end();
 	return true;
 }
@@ -397,11 +398,14 @@ void AWSConfig::set_missing_network_parameters_to_default_values( void )
 	if ( !json_config->containsKey( "eth_dns" ))
 		(*json_config)["eth_dns"] = DEFAULT_ETH_DNS;
 
+	if ( !json_config->containsKey( "eth_gw" ))
+		(*json_config)["eth_gw"] = DEFAULT_ETH_GW;
+
 	if ( !json_config->containsKey( "eth_ip_mode" ))
 		(*json_config)["eth_ip_mode"] = static_cast<int>( DEFAULT_ETH_IP_MODE );
 
 	if ( !json_config->containsKey( "pref_iface" ))
-		(*json_config)["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
+		(*json_config)["pref_iface"] = static_cast<int>( aws_iface::wifi );
 
 	if ( !json_config->containsKey( "remote_server" ))
 		(*json_config)["remote_server"] = DEFAULT_SERVER;
@@ -441,6 +445,9 @@ void AWSConfig::set_missing_network_parameters_to_default_values( void )
 
 	if ( !json_config->containsKey( "wifi_sta_password" ))
 		(*json_config)["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
+
+	(*json_config)["has_ethernet"] = get_has_device( aws_device_t::ETHERNET_DEVICE );
+	
 }
 
 void AWSConfig::set_missing_lookout_safe_parameters_to_default_values( void )
@@ -586,6 +593,9 @@ void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
 
 	if ( !json_config->containsKey( "lookout_enabled" ))
 		(*json_config)["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
+
+	if ( !json_config->containsKey( "cloud_coverage_formula" ))
+		(*json_config)["cloud_coverage_formula"] = DEFAULT_CC_FORMULA_AWS ? 0 : 1;
 
 	set_missing_lookout_safe_parameters_to_default_values();
 	set_missing_lookout_unsafe_parameters_to_default_values();

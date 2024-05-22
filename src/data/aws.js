@@ -68,6 +68,7 @@ function close_dome_shutter()
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
+				dome_closing();
 			} else if ( this.status == 503 ) {
 			}
 		}
@@ -96,6 +97,18 @@ function config_section_active( section_name, yes_no )
 	}
 }
 
+function dome_closing()
+{
+//	document.getElementById('open_dome_shutter_button').disabled = false;
+//	document.getElementById('close_dome_shutter_button').disabled = true;
+}
+
+function dome_opening()
+{
+//	document.getElementById('open_dome_shutter_button').disabled = true;
+//	document.getElementById('close_dome_shutter_button').disabled = false;
+}
+
 function fill_lookout_value( parameter, from_list, sensor_available, values )
 {
 	document.getElementById( parameter+"_active" ).checked = ( values[ parameter+"_active" ] == "1" )? 'true' : 'false';
@@ -111,7 +124,7 @@ function fill_lookout_value( parameter, from_list, sensor_available, values )
 function fill_lookout_values( values )
 {
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
-
+	
 	fill_lookout_value( "unsafe_wind_speed_1", false, true, values );
 	fill_lookout_value( "unsafe_wind_speed_2", false, true, values );
 	fill_lookout_value( "unsafe_cloud_coverage_1", true, true, values );
@@ -137,7 +150,7 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	let parameters = [ "ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	let parameters = [ "wifi_ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});
@@ -147,7 +160,7 @@ function fill_network_values( values )
 	else
 		document.getElementById("iface_option").style.display = "none";
 
-	if ( values['pref_iface'] == "2" ) {
+	if ( values['pref_iface'] == "1" ) {
 
 		hide_wifi();
 		document.getElementById("show_alpaca_interface").style.display = "none";
@@ -181,8 +194,6 @@ function fill_network_values( values )
 		document.getElementById("eth_dhcp").checked = true;
 
 }
-
-
 
 function fill_sensor_values( values )
 {
@@ -242,7 +253,16 @@ function hide_wifi()
 	ETH_PARAMETERS.forEach( (parameter) => {
 		document.getElementById("show_"+parameter).style.display = "table-row";
 	});
+}
 
+function lookout_resumed()
+{
+	document.getElementById("lookout_status").innerHTML = '<span style="color:green">Active</span>';
+}
+
+function lookout_suspended()
+{
+	document.getElementById("lookout_status").innerHTML = '<span style="color:red">Inactive/Suspended</span>';
 }
 
 function retrieve_data()
@@ -259,6 +279,9 @@ function retrieve_data()
 			document.getElementById("automatic_updates").checked = values['automatic_updates'];
 			document.getElementById("push_freq").value = values['push_freq'];
 			document.getElementById("data_push").checked = values['data_push'];
+			document.getElementById("ota_url").value = values['ota_url'];
+			document.getElementById("discord_wh").value = values['discord_wh'];
+
 			fill_network_values( values );
 			fill_sensor_values( values );
 			fill_cloud_coverage_parameter_values( values );
@@ -277,6 +300,40 @@ function retrieve_data()
 	};
 	req2.open( "GET", "/get_root_ca", true );
 	req2.send();
+}
+
+function resume_lookout()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				lookout_resumed();
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/resume_lookout", true );
+	req.send();
+
+}
+
+function suspend_lookout()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				lookout_suspended();
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/suspend_lookout", true );
+	req.send();
+
 }
 
 function toggle_panel( panel_id )
@@ -423,6 +480,7 @@ function open_dome_shutter()
 	req.onreadystatechange = function() {
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
+				dome_opening();
 			} else if ( this.status == 503 ) {
 			}
 		}
@@ -495,9 +553,11 @@ function update_dashboard( values )
 	document.getElementById("gps_time").textContent = iso[1]+' '+iso[2];
 
 	document.getElementById("dome_shutter_status").textContent = DOME_SHUTTER_STATUS[ values['shutter_status'] ];
-	document.getElementById("dome_shutter_moving").textContent = values['shutter_moving'];
+	document.getElementById("dome_shutter_open").textContent = values['shutter_open'];
 	document.getElementById("dome_shutter_closed").textContent = values['shutter_closed'];
 	document.getElementById("dome_shutter_close").textContent = values['shutter_close'];
+
+	document.getElementById("lookout_status").innerHTML = ( values['lookout_active'] ) ? '<span style="color:green">Active</span>':'<span style="color:red">Inactive/Suspended</span>';
 
 	update_sensor_dashboard( values );
 }

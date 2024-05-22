@@ -280,7 +280,6 @@ etl::string_view AWSLookout::get_rules_state( void )
 void AWSLookout::loop( void * )	// NOSONAR
 {
 	while( true ) {
-
 		if ( initialised )
 			check_rules();
 		delay( 1000 );
@@ -306,6 +305,7 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 		}, "AWSLookout Task", 10000, &_loop, 5, &watcher_task_handle, 1 );
 
 	initialised = true;
+	active = true;
 	Serial.printf( "[LOOKOUT   ] [INFO ] Initialised.\n" );
 }
 
@@ -314,7 +314,7 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_rain_event.active = true;
 	unsafe_rain_event.max = 1;
 	unsafe_rain_event.delay = 0;
-	unsafe_rain_event.check_available = 1;
+	unsafe_rain_event.check_available = true;
 	unsafe_rain_event.ts = 0;
 	unsafe_rain_event.satisfied = false;
 	
@@ -373,15 +373,24 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	safe_rain_intensity.ts = 0;
 }
 
+bool AWSLookout::is_active( void )
+{
+	return active;
+}
+
 bool AWSLookout::issafe( void )
 {
 	return is_safe;
 }
 
-void AWSLookout::resume( void )
+bool AWSLookout::resume( void )
 {
-	if ( initialised )
+	if ( initialised ) {
 		vTaskResume( watcher_task_handle );
+		active = true;
+		return true;
+	}
+	return false;
 }
 
 void AWSLookout::set_rain_event()
@@ -389,8 +398,12 @@ void AWSLookout::set_rain_event()
 	rain_event = true;
 }
 
-void AWSLookout::suspend( void )
+bool AWSLookout::suspend( void )
 {
-	if ( initialised )
+	active = false;
+	if ( initialised ) {
 		vTaskSuspend( watcher_task_handle );
+		return true;
+	}
+	return false;
 }

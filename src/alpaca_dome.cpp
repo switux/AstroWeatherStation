@@ -161,6 +161,8 @@ bool alpaca_dome::shutterstatus( AsyncWebServerRequest *request, const char *tra
 		// Issue #26 : Of that we can be sure, but the rest?
 		if ( station.get_dome()->get_shutter_closed_status() )
 			dome_shutter_status = dome_shutter_status_t::Closed;
+		if ( station.get_dome()->get_shutter_open_status() )
+			dome_shutter_status = dome_shutter_status_t::Open;
 
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", static_cast<byte>( dome_shutter_status ), transaction_details );
 

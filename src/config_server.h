@@ -56,12 +56,12 @@ class AWSWebServer {
 		void		index( AsyncWebServerRequest * );
 		void		open_dome_shutter( AsyncWebServerRequest * );
 		void		reboot( AsyncWebServerRequest * );
+		void		resume_lookout( AsyncWebServerRequest * );
 		void		rm_file( AsyncWebServerRequest * );
 		const char 	*save_configuration( const char *json_string );
 		void 		set_configuration( AsyncWebServerRequest *, JsonVariant & );
 		void		send_file( AsyncWebServerRequest * );
-
-
+		void		suspend_lookout( AsyncWebServerRequest * );
 
 };
 

@@ -200,9 +200,10 @@ void AstroWeatherStation::display_banner()
 
 	} else {
 
-		print_config_string( "# Dome command  : %d / %d", gpioext ? GPIO_DOME_1 : GPIO_DOME_1_DIRECT, gpioext ? GPIO_DOME_2 : GPIO_DOME_2_DIRECT );
-		print_config_string( "# Dome movement : %d", GPIO_DOME_MOVING );
-		print_config_string( "# Dome closed   : %d", GPIO_DOME_STATUS );
+		print_config_string( "# Status LEDs   : G=%d B=%d", GPIO_LED_GREEN, GPIO_LED_BLUE  );
+		print_config_string( "# Dome command  : %d", gpioext ? GPIO_DOME_1 : GPIO_DOME_1_DIRECT );
+		print_config_string( "# Dome open     : %d", GPIO_DOME_OPEN );
+		print_config_string( "# Dome closed   : %d", GPIO_DOME_CLOSED );
 		print_config_string( "# GPS           : RX=%d TX=%d", GPS_RX,GPS_TX );
 		print_config_string( "# Ethernet      : MOSI=%d MISO=%d SCK=%d CS=%d INT=%d", GPIO_SPI_MOSI, GPIO_SPI_MISO, GPIO_SPI_SCK, GPIO_SPI_CS_ETH, GPIO_SPI_INT );
 	}
@@ -260,7 +261,7 @@ Dome *AstroWeatherStation::get_dome( void )
 
 etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
-	DynamicJsonDocument	json_data(860);
+	DynamicJsonDocument	json_data(870);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 	int					l;
 	
@@ -311,8 +312,9 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	json_data["reset_reason"] = station_data.reset_reason;
 	json_data["shutter_status"] = static_cast<int>( station_data.dome_data.shutter_status );
 	json_data["shutter_closed"] = station_data.dome_data.closed_sensor;
-	json_data["shutter_moving"] = station_data.dome_data.moving_sensor;
+	json_data["shutter_open"] = station_data.dome_data.open_sensor;
 	json_data["shutter_close"] = station_data.dome_data.close_command;
+	json_data["lookout_active"] = lookout.is_active();
 
 	if ( ( l = measureJson( json_data )) > json_sensor_data.capacity() ) {
 
@@ -323,9 +325,9 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 		return etl::string_view( "" );
 
 	}
-	l = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	json_sensor_data_len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
-		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", l, json_sensor_data.capacity() );
+		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", json_sensor_data_len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
 }
@@ -403,10 +405,10 @@ void AstroWeatherStation::handle_event( aws_event_t event )
 {
 	switch( event ) {
 
-		case aws_event_t::DOME_SHUTTER_MOVING:
-			station_devices.dome.set_shutter_is_moving();
+		case aws_event_t::DOME_SHUTTER_OPEN_CHANGE:
+			station_devices.dome.shutter_open_change();
 			break;
-
+			
 		case aws_event_t::RAIN:
 			if ( solar_panel ) {
 
@@ -447,6 +449,17 @@ bool AstroWeatherStation::initialise( void )
 	byte					offset = 0;
 	std::array<uint8_t,32>	sha_256;
 
+	pinMode( GPIO_LED_GREEN, OUTPUT );
+	pinMode( GPIO_LED_BLUE, OUTPUT );
+	std::function<void(void *)> _led_task = std::bind( &AstroWeatherStation::led_task, this, std::placeholders::_1 );
+	xTaskCreatePinnedToCore(
+		[](void *param) {	// NOSONAR
+			std::function<void(void*)>* led_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
+			(*led_task_proxy)( NULL );
+		}, "AWSLedTask", 2000, &_led_task, 10, &aws_led_task_handle, 1 );
+
+	set_led_status( station_status_t::BOOTING );
+
     esp_partition_get_sha256( esp_ota_get_running_partition(), sha_256.data() );
 	for ( uint8_t _byte : sha_256 ) {
 
@@ -460,8 +473,11 @@ bool AstroWeatherStation::initialise( void )
 
 	station_data.reset_reason = esp_reset_reason();
 
-	if ( !config.load( debug_mode ) )
+	if ( !config.load( debug_mode ) ) {
+
+		set_led_status( station_status_t::CONFIG_ERROR );
 		return false;
+	}
 
 	station_data.health.fs_free_space = config.get_fs_free_space();
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
@@ -489,9 +505,18 @@ bool AstroWeatherStation::initialise( void )
 
 	read_battery_level();
 
+	set_led_status( station_status_t::NETWORK_INIT );
+
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
-	if ( !network.initialise( &config, debug_mode ) && config.can_rollback() )
-		return config.rollback();
+	if ( !network.initialise( &config, debug_mode )) {
+
+		if ( !config.rollback() ) {
+
+			set_led_status( station_status_t::NETWORK_ERROR );
+			return false;
+		}
+		reboot();
+	}
 
 	if ( config.get_parameter<bool>( "automatic_updates" ) && ( !solar_panel || ( station_data.health.battery_level > 50 )))
 		check_ota_updates( true );
@@ -518,9 +543,16 @@ bool AstroWeatherStation::initialise( void )
 
 		start_config_server();
 
-	if ( !startup_sanity_check() && config.can_rollback() )
-		return config.rollback();
+	if ( !startup_sanity_check() && config.can_rollback() ) {
 
+		if ( !config.rollback() ) {
+
+			set_led_status( station_status_t::NETWORK_ERROR );
+			return false;
+		}
+		reboot();
+	}
+	
 	display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
@@ -543,8 +575,11 @@ bool AstroWeatherStation::initialise( void )
 	if ( config.get_has_device( aws_device_t::GPS_SENSOR ) )
 		initialise_GPS();
 
-	if ( !sensor_manager.initialise( &station_devices.sc16is750, &config, false ))
+	if ( !sensor_manager.initialise( &station_devices.sc16is750, &config, false )) {
+		
+		set_led_status( station_status_t::SENSOR_INIT_ERROR );
 		return false;
+	}
 
 	if ( solar_panel )
 		return true;
@@ -573,6 +608,7 @@ bool AstroWeatherStation::initialise( void )
 
 
 	ready = true;
+	set_led_status( station_status_t::READY );
 	return true;
 }
 
@@ -637,6 +673,75 @@ bool AstroWeatherStation::is_sensor_initialised( aws_device_t sensor_id )
 	return (( sensor_manager.get_available_sensors() & sensor_id ) == sensor_id );
 }
 
+void AstroWeatherStation::led_task( void *dummy )
+{
+	while( true ) {
+
+		switch( led_status ) {
+
+			case station_status_t::BOOTING:
+
+				analogWrite( GPIO_LED_GREEN, 0 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 100 );
+				break;
+
+			case station_status_t::READY:
+
+				analogWrite( GPIO_LED_GREEN, 127 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 1000 );
+				break;
+
+			case station_status_t::CONFIG_ERROR:
+
+				analogWrite( GPIO_LED_GREEN, 255 );
+				analogWrite( GPIO_LED_BLUE, 255 );
+				delay( 1000 );
+				break;
+
+			case station_status_t::NETWORK_INIT:
+
+				analogWrite( GPIO_LED_BLUE, 255 );
+				analogWrite( GPIO_LED_GREEN, 0 );
+				delay( 500 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 500 );
+				break;
+
+			case station_status_t::NETWORK_ERROR:
+
+				analogWrite( GPIO_LED_BLUE, 255 );
+				analogWrite( GPIO_LED_GREEN, 0 );
+				delay( 1000 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 1000 );
+				break;
+
+			case station_status_t::SENSOR_INIT_ERROR:
+
+				analogWrite( GPIO_LED_GREEN, 255 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 1000 );
+				analogWrite( GPIO_LED_GREEN, 0 );
+				delay( 1000 );
+				break;
+
+			case station_status_t::OTA_UPGRADE:
+
+				analogWrite( GPIO_LED_GREEN, 255 );
+				analogWrite( GPIO_LED_BLUE, 0 );
+				delay( 500 );
+				analogWrite( GPIO_LED_GREEN, 0 );
+				delay( 500 );
+				break;
+
+			default:
+				delay( 100 );
+
+		}
+	}
+}
 bool AstroWeatherStation::on_solar_panel( void )
 {
 	return solar_panel;
@@ -726,7 +831,6 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 
 		if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
 
-Serial.printf("OTAT=%ld OTAM=%ld MIL=%ld FORCE=%d\n", ota_timer, ota_millis, millis(), force_ota_update );
 			force_ota_update = false;
 			check_ota_updates( true );
 			ota_millis = millis();			
@@ -737,7 +841,6 @@ Serial.printf("OTAT=%ld OTAM=%ld MIL=%ld FORCE=%d\n", ota_timer, ota_millis, mil
 
 		if ( data_push_timer && (( millis() - data_push_millis ) > 1000*data_push_timer )) {
 
-		Serial.printf( "DPT=%d millis=%ld DPM=%ld\n", data_push_timer, millis(), data_push_millis );
 			send_data();
 			data_push_millis = millis();
 		}
@@ -810,7 +913,7 @@ void AstroWeatherStation::print_runtime_config( void )
 
 	print_config_string( "# DOME             : %s", config.get_has_device( aws_device_t::DOME_DEVICE ) ? "Yes" : "No" );
 	print_config_string( "# GPS              : %s", config.get_has_device( aws_device_t::GPS_SENSOR ) ? "Yes" : "No" );
-	print_config_string( "# SQM/IRRANDIANCE  : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
+	print_config_string( "# SQM/IRRADIANCE   : %s", config.get_has_device( aws_device_t::TSL_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# CLOUD SENSOR     : %s", config.get_has_device( aws_device_t::MLX_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# RH/TEMP/PRES.    : %s", config.get_has_device( aws_device_t::BME_SENSOR ) ? "Yes" : "No" );
 	print_config_string( "# WINDVANE         : %s", config.get_has_device( aws_device_t::WIND_VANE_SENSOR ) ? "Yes" : "No" );
@@ -924,7 +1027,7 @@ void AstroWeatherStation::read_sensors( void )
 
 		low_battery_event_count++;
 		if ( debug_mode )
-			Serial.printf( "[DEBUG] %s", string.data() );
+			Serial.printf( "[CORE      ] [DEBUG] %s", string.data() );
 	}
 }
 
@@ -962,6 +1065,11 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 		send_alarm( "[STATION   ] Unavailable sensors report", unavailable_sensors.data() );
 }
 
+bool AstroWeatherStation::resume_lookout( void )
+{
+	return lookout.resume();	
+}
+
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 {
 	DynamicJsonDocument content( 512 );
@@ -984,14 +1092,28 @@ void AstroWeatherStation::send_backlog_data( void )
 	etl::string<1024> line;
 	bool	empty = true;
 
-	// Issue #154
-return;
 	LittleFS.begin( FORMAT_LITTLEFS_IF_FAILED );
 
+	if ( !LittleFS.exists( "/unsent.txt" )) {
+
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] No backlog file.\n" );
+		return;
+		
+	}
 	// flawfinder: ignore
 	File backlog = LittleFS.open( "/unsent.txt", FILE_READ );
 
 	if ( !backlog ) {
+
+		if ( debug_mode )
+			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
+		return;
+	}
+
+	if ( !backlog.size() ) {
+
+		backlog.close();
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
@@ -1022,6 +1144,7 @@ return;
 
 	if ( !empty ) {
 
+		LittleFS.remove( "/unsent.txt" );
 		LittleFS.rename( "/unsent.new", "/unsent.txt" );
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
@@ -1068,16 +1191,22 @@ void AstroWeatherStation::send_rain_event_alarm( const char *str )
 	send_alarm( "Rain event", msg.data() );
 }
 
+void AstroWeatherStation::set_led_status( station_status_t x )
+{
+	led_status = x;
+	if ( debug_mode )
+		Serial.printf( "[STATION   ] [DEBUG] LED STATUS=%d\n",static_cast<int>(x) );
+}
+
 void AstroWeatherStation::start_alpaca_server( void )
 {
 	switch ( static_cast<aws_iface>( config.get_parameter<int>( "alpaca_iface" ))) {
 
-		case aws_iface::wifi_sta:
-			alpaca.start( WiFi.localIP(), debug_mode );
-			break;
-
-		case aws_iface::wifi_ap:
-			alpaca.start( WiFi.softAPIP(), debug_mode );
+		case aws_iface::wifi:
+			if ( static_cast<aws_wifi_mode>( config.get_parameter<int>( "wifi_mode" )) != aws_wifi_mode::ap )
+				alpaca.start( WiFi.localIP(), debug_mode );
+			else
+				alpaca.start( WiFi.softAPIP(), debug_mode );
 			break;
 
 		case aws_iface::eth:
@@ -1097,14 +1226,15 @@ bool AstroWeatherStation::startup_sanity_check( void )
 {
 	switch ( static_cast<aws_iface>( config.get_parameter<int>( "pref_iface" ) )) {
 
-		case aws_iface::wifi_sta:
-			return Ping.ping( WiFi.gatewayIP(), 3 );
+		case aws_iface::wifi:
+			if ( static_cast<aws_wifi_mode>( config.get_parameter<int>( "wifi_mode" ) ) != aws_wifi_mode::ap )
+				return Ping.ping( WiFi.gatewayIP(), 3 );
+			else
+				return true;
 
 		case aws_iface::eth:
 			return Ping.ping( Ethernet.gatewayIP(), 3 );
 
-		case aws_iface::wifi_ap:
-			return true;
 	}
 	return false;
 }
@@ -1114,7 +1244,6 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 	bool ok;
 
 	// Issue #154
-	return false;
 	LittleFS.begin( FORMAT_LITTLEFS_IF_FAILED );
 
 	// flawfinder: ignore
@@ -1126,7 +1255,7 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 		return false;
 	}
 
-	if (( ok = ( backlog.printf( "%s\n", data.data() ) == ( data.size() + 1 )) )) {
+	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Ok, data secured for when server is available. data=%s\n", data.data() );
@@ -1137,6 +1266,11 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 
 	backlog.close();
 	return ok;
+}
+
+bool AstroWeatherStation::suspend_lookout( void )
+{
+	return lookout.suspend();	
 }
 
 bool AstroWeatherStation::sync_time( bool verbose )

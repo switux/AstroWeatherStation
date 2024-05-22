@@ -29,7 +29,7 @@
 #include "dome.h"
 #include "AstroWeatherStation.h"
 
-extern void IRAM_ATTR		_handle_dome_shutter_is_moving( void );
+extern void IRAM_ATTR		_handle_dome_shutter_open_change( void );
 extern void IRAM_ATTR		_handle_dome_shutter_closed_change( void );
 
 extern AstroWeatherStation	station;
@@ -39,23 +39,22 @@ extern uint16_t				ntp_time_misses;	// NOSONAR
 //
 // IMPORTANT: Some indications about dome shutter status handling by this driver
 //
-//	==> There are 4 pins to control and monitor the dome shutter
+//	==> There are 3 pins to control and monitor the dome shutter
 //
-//		Control: two independant systems can be attached, for redundancy, and they are connected to a pull-down resistor (the relay will trigger when the signal is down)
-//				GPIO_DOME_1 & GPIO_DOME_2 if a SC16IS750 GPIO extender is used
-//				GPIO_DOME_1_DIRECT & GPIO_DOME_2_DIRECT if not
+//		Control: two independant shutter closure systems can be attached, for redundancy, and they are connected to a pull-down resistor (the relay will trigger when the signal is down)
+//				GPIO_DOME_1 if a SC16IS750 GPIO extender is used
+//				GPIO_DOME_1_DIRECT if not
 //
-//				The DOME SHUTTER will be kept OPEN if and only if BOTH PINS levels are HIGH
-//					==> if the station or one of the PINS is DOWN, the dome will be CLOSED no matter what.
+//				The DOME SHUTTER will be kept OPEN if and only if the pin level is HIGH
+//					==> if the station or the pin is DOWN, the dome will be CLOSED no matter what.
 //
 //		Status:
-//				GPIO_DOME_STATUS, connected to a pull-down resistor
-//						if pin level is DOWN, the dome shutter is expected to be OPEN
+//				GPIO_DOME_CLOSED, connected to a pull-down resistor
+//						if pin level is DOWN, the dome shutter is not expected to be CLOSED (could be closing or opening)
 //							==> it requires an active action (pulling HIGH the pin level) to indicate that the shutter is CLOSED
-//				GPIO_DOME_MOVING, connected to a pull-down resistor 
-//						as long as the level is down, the dome shutter does not move
-//						if the pin level is RISING, then the dome shutter has been ordered to MOVE, a FALLING edge is not handled.
-//							if the initial status is closed, we consider it is opening and vice-versa
+//				GPIO_DOME_OPEN, connected to a pull-down resistor 
+//						if pin level is DOWN, the dome shutter is not expected to be OPEN (could be closing or opening)
+//							==> it requires an active action (pulling HIGH the pin level) to indicate that the shutter is OPEN
 //
 
 Dome::Dome( void )
@@ -73,29 +72,70 @@ bool Dome::get_shutter_closed_status( void )
 		return false;
 	}
 
-	bool x = ( digitalRead( GPIO_DOME_STATUS ) == HIGH );
+	bool closed_shutter = ( digitalRead( GPIO_DOME_CLOSED ) == HIGH );
+	bool open_shutter = ( digitalRead( GPIO_DOME_OPEN ) == HIGH );
 
-	if ( x ) {
+	if ( closed_shutter ) {
 
 		dome_data->shutter_status = dome_shutter_status_t::Closed;
 		dome_data->closed_sensor = true;
 
 	} else {
 
-		dome_data->shutter_status = dome_shutter_status_t::Open;
+		if ( open_shutter )
+			dome_data->shutter_status = dome_shutter_status_t::Open;
+
+		else {
+
+			if ( dome_data->shutter_status == dome_shutter_status_t::Closed )
+				dome_data->shutter_status = dome_shutter_status_t::Opening;
+
+		}
 		dome_data->closed_sensor = false;
 
 	}
 
 	if ( get_debug_mode() )
-		Serial.printf( "[DOME      ] [DEBUG] Dome shutter closed : %s\n", x ? "yes" : "no" );
+		Serial.printf( "[DOME      ] [DEBUG] Dome shutter closed : %s\n", closed_shutter ? "yes" : "no" );
 
-	return x;
+	return closed_shutter;
 }
 
-bool Dome::get_shutter_moving_status( void )
+bool Dome::get_shutter_open_status( void )
 {
-	return dome_data->moving_sensor = ( digitalRead( GPIO_DOME_MOVING ) == HIGH );
+	if ( !is_connected ) {
+
+		Serial.printf( "[DOME      ] [ERROR] Dome is not initialised, cannot get shutter open status!\n" );
+		return false;
+	}
+
+	bool closed_shutter = ( digitalRead( GPIO_DOME_CLOSED ) == HIGH );
+	bool open_shutter = ( digitalRead( GPIO_DOME_OPEN ) == HIGH );
+
+	if ( open_shutter ) {
+
+		dome_data->shutter_status = dome_shutter_status_t::Open;
+		dome_data->open_sensor = true;
+
+	} else {
+
+		if ( closed_shutter )
+			dome_data->shutter_status = dome_shutter_status_t::Closed;
+
+		else {
+
+			if ( dome_data->shutter_status == dome_shutter_status_t::Open )
+				dome_data->shutter_status = dome_shutter_status_t::Closing;
+
+		}
+		dome_data->open_sensor = false;
+
+	}
+
+	if ( get_debug_mode() )
+		Serial.printf( "[DOME      ] [DEBUG] Dome shutter open : %s\n", open_shutter ? "yes" : "no" );
+
+	return open_shutter;
 }
 
 bool Dome::close_shutter( void )
@@ -113,16 +153,13 @@ bool Dome::close_shutter( void )
 		while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 
 		sc16is750->digitalWrite( GPIO_DOME_1, LOW );
-		sc16is750->digitalWrite( GPIO_DOME_2, LOW );
 
 		xSemaphoreGive( i2c_mutex );
 
-	} else {
+	} else
 
 		digitalWrite( GPIO_DOME_1_DIRECT, LOW );
-		digitalWrite( GPIO_DOME_2_DIRECT, LOW );
 
-	}
 	do_close_shutter = false;
 	return true;
 }
@@ -138,26 +175,9 @@ void Dome::control_task( void *dummy )	// NOSONAR
 					open_shutter();
 			}
 
-			if ( shutter_is_moving  ) {
-
-					switch( shutter_status ) {
-
-						case dome_shutter_status_t::Closed:
-						case dome_shutter_status_t::Opening:
-							dome_data->shutter_status = shutter_status = dome_shutter_status_t::Opening;
-							break;
-						case dome_shutter_status_t::Open:
-						case dome_shutter_status_t::Closing:
-							dome_data->shutter_status = shutter_status = dome_shutter_status_t::Closing;
-							break;
-
-				}
-				shutter_is_moving = false;
-			}
 			delay( 1000 );
-			dome_data->moving_sensor = false;
 			get_shutter_closed_status();
-			get_shutter_moving_status();
+			get_shutter_open_status();
 	}
 }
 
@@ -170,29 +190,30 @@ void Dome::initialise( dome_data_t *_dome_data, bool _debug_mode )
 
 		pinMode( GPIO_DOME_1, OUTPUT );
 		digitalWrite( GPIO_DOME_1, HIGH );
-		pinMode( GPIO_DOME_2, OUTPUT );
-		digitalWrite( GPIO_DOME_2, HIGH );
 
 	} else {
 
 		pinMode( GPIO_DOME_1_DIRECT, OUTPUT );
 		digitalWrite( GPIO_DOME_1_DIRECT, HIGH );
-		pinMode( GPIO_DOME_2_DIRECT, OUTPUT );
-		digitalWrite( GPIO_DOME_2_DIRECT, HIGH );
 	}
 
-	pinMode( GPIO_DOME_MOVING, INPUT );
-	pinMode( GPIO_DOME_STATUS, INPUT );
+	pinMode( GPIO_DOME_OPEN, INPUT );
+	pinMode( GPIO_DOME_CLOSED, INPUT );
 
-	if ( !get_shutter_closed_status() )
-		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Open;
-
-	dome_data->moving_sensor = digitalRead( GPIO_DOME_MOVING );
-	dome_data->closed_sensor = digitalRead( GPIO_DOME_STATUS );
+	if ( get_shutter_closed_status() )
+		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Closed;
+	else
+		if ( get_shutter_open_status() )
+			dome_data->shutter_status = shutter_status = dome_shutter_status_t::Open;
+		else
+			dome_data->shutter_status = shutter_status = dome_shutter_status_t::Opening;	// This is a convention
+		
+	dome_data->open_sensor = digitalRead( GPIO_DOME_OPEN );
+	dome_data->closed_sensor = digitalRead( GPIO_DOME_CLOSED );
 	dome_data->close_command = false;
 
-	attachInterrupt( GPIO_DOME_STATUS, _handle_dome_shutter_closed_change, CHANGE );
-	attachInterrupt( GPIO_DOME_MOVING, _handle_dome_shutter_is_moving, RISING );
+	attachInterrupt( GPIO_DOME_CLOSED, _handle_dome_shutter_closed_change, CHANGE );
+	attachInterrupt( GPIO_DOME_OPEN, _handle_dome_shutter_open_change, RISING );
 
 	std::function<void(void *)> _control = std::bind( &Dome::control_task, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
@@ -227,30 +248,30 @@ bool Dome::open_shutter( void )
 		while ( xSemaphoreTake( i2c_mutex, 50 / portTICK_PERIOD_MS ) != pdTRUE );
 
 		sc16is750->digitalWrite( GPIO_DOME_1, HIGH );
-		sc16is750->digitalWrite( GPIO_DOME_2, HIGH );
 
 		xSemaphoreGive( i2c_mutex );
 
-	} else {
+	} else
 
 		digitalWrite( GPIO_DOME_1_DIRECT, HIGH );
-		digitalWrite( GPIO_DOME_2_DIRECT, HIGH );
 
-	}
 	return true;
 }
 
 void Dome::shutter_closed_change( void )
 {
-	if ( digitalRead( GPIO_DOME_STATUS ))
+	if ( digitalRead( GPIO_DOME_CLOSED ))
 		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Closed;
 	else
 		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Opening;
 }
 
-void Dome::set_shutter_is_moving( void )
+void Dome::shutter_open_change( void )
 {
-	dome_data->moving_sensor = shutter_is_moving = true;
+	if ( digitalRead( GPIO_DOME_OPEN ))
+		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Open;
+	else
+		dome_data->shutter_status = shutter_status = dome_shutter_status_t::Closing;
 }
 
 void Dome::trigger_close_shutter( void )

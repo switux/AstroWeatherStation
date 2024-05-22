@@ -137,7 +137,7 @@ struct dome_data_t {
 	
 	dome_shutter_status_t	shutter_status;
 	bool					closed_sensor;
-	bool					moving_sensor;
+	bool					open_sensor;
 	bool					close_command;
 };
 

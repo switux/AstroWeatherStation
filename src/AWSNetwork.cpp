@@ -38,8 +38,8 @@ extern AstroWeatherStation station;
 AWSNetwork::AWSNetwork( void )
 {
 	ssl_eth_client = nullptr;
-	current_wifi_mode = aws_wifi_mode::sta;
-	current_pref_iface = aws_iface::wifi_sta;
+	current_wifi_mode = aws_wifi_mode::ap;
+	current_pref_iface = aws_iface::wifi;
 	memset( wifi_mac, 0, 6 );
 }
 
@@ -182,17 +182,15 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 
 	switch ( static_cast<aws_iface>( config->get_parameter<int>( "pref_iface" )) ) {
 
-		case aws_iface::wifi_ap:
-		case aws_iface::wifi_sta:
+		case aws_iface::wifi:
 			return initialise_wifi();
 
 		case aws_iface::eth:
 			return initialise_ethernet();
 
 		default:
-			Serial.printf( "[NETWORK   ] [ERROR] Invalid preferred iface, falling back to WiFi.\n" );
-			initialise_wifi();
-			return false;
+			Serial.printf( "[NETWORK   ] [ERROR] Invalid preferred iface (%d), falling back to WiFi.\n",  config->get_parameter<int>( "pref_iface" ) );
+			return initialise_wifi();
 	}
 	return false;
 }
