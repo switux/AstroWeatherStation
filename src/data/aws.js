@@ -96,7 +96,7 @@ function config_section_active( section_name, yes_no )
 
 	}
 }
-3.0
+
 function dome_closing()
 {
 //	document.getElementById('open_dome_shutter_button').disabled = false;
