@@ -25,14 +25,14 @@ On top of the usual environmental readings, rain events, cloud coverage and sky 
 
 ## STATUS & DEVELOPMENT
 
-This is version 3.0 of the project. **It is still work in progress.**
+This is version 3.0 of the project. The current version is 3.0.0 and has hit production.
 
 New features in this version:
 
   - Hardware
     - Addition of POE module
-    - Addition of GPS support
-    - Addition of I2C UART/GPIO extender (SC16IS750)
+    - Addition of optional GPS support
+    - Addition of an optional I2C UART/GPIO extender (SC16IS750)
     - Two relays to control the observatory dome
     - Input to receive dome status
       
@@ -161,9 +161,7 @@ Where
 
 ## Tips
 
-- I use 24AWG single core cable to create the tracks on the PCB (you can of course have your own custom PCB made).
 - I use female pin headers for the MCU and other boards. I fried a couple of mosfet's during prototyping (even though I have a 15W iron and I am pretty careful) and lost quite some time to troubleshoot the battery level part so I decided to use pin headers too :-)
-- I solder the KF2510 terminals to the wires, maybe it is me or my crimping tool but I kept having contact failures ...
 - I cut the external antenna cable (1m is waaay too long but I could not find a shorter one) and crimped a male SMA to go with the RP-SMA pigtail
 
 ## REFERENCES
