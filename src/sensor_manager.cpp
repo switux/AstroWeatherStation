@@ -21,7 +21,7 @@
 #include <ESP32Time.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 
 #include "defaults.h"
 #include "gpio_config.h"
@@ -374,7 +374,7 @@ void AWSSensorManager::read_MLX( void )
 
 		}
 		if ( debug_mode )
-			Serial.printf( "[SENSORMNGR] [DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f / Cloud coverage = %s (%d)\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature, CLOUD_COVERAGE_STR[sensor_data.weather.cloud_coverage].data(), sensor_data.weather.cloud_coverage );
+			Serial.printf( "[SENSORMNGR] [DEBUG] Ambient temperature = %2.2f °C / Raw sky temperature = %2.2f °C / Corrected sky temperature = %2.2f °C / Cloud coverage = %s (%d)\n", sensor_data.weather.ambient_temperature, sensor_data.weather.raw_sky_temperature, sensor_data.weather.sky_temperature, CLOUD_COVERAGE_STR[sensor_data.weather.cloud_coverage].data(), sensor_data.weather.cloud_coverage );
 		return;
 	}
 	sensor_data.weather.ambient_temperature = -99.F;

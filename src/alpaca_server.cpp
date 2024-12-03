@@ -30,7 +30,7 @@
 #include <Ethernet.h>
 #include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 
 #include "common.h"

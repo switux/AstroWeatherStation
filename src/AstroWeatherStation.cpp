@@ -22,7 +22,7 @@
 #include <esp_task_wdt.h>
 #include <Preferences.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <time.h>
 #include <thread>
 #include <stdio.h>
@@ -61,6 +61,7 @@ const std::array<etl::string<10>, 3> PWR_MODE_STR = { "SolarPanel", "12VDC", "Po
 
 const bool				FORMAT_LITTLEFS_IF_FAILED = true;
 const unsigned long		CONFIG_MODE_GUARD		= 5000000;	// 5 seconds
+const unsigned long		FACTORY_RESET_GUARD		= 15000000;	// 15 seconds
 
 RTC_DATA_ATTR time_t 	rain_event_timestamp = 0;		// NOSONAR
 RTC_DATA_ATTR time_t 	boot_timestamp = 0;				// NOSONAR
@@ -144,7 +145,7 @@ void AstroWeatherStation::compute_uptime( void )
 	}
 }
 
-bool AstroWeatherStation::determine_boot_mode( void )
+void AstroWeatherStation::determine_boot_mode( void )
 {
  	unsigned long start					= micros();
 	unsigned long button_pressed_secs	= 0;
@@ -154,13 +155,17 @@ bool AstroWeatherStation::determine_boot_mode( void )
 	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
 	while ( !( gpio_get_level( GPIO_DEBUG ))) {
 
-		if (( micros() - start ) >= CONFIG_MODE_GUARD )
+		if (( micros() - start ) >= FACTORY_RESET_GUARD	) {
+			boot_mode = aws_boot_mode_t::FACTORY_RESET;
 			break;
+		}
+
+		if (( micros() - start ) >= CONFIG_MODE_GUARD )
+			boot_mode = aws_boot_mode_t::MAINTENANCE;
+
 		delay( 100 );
 		button_pressed_secs = micros() - start;
 	}
-
-	return ( button_pressed_secs > CONFIG_MODE_GUARD );
 }
 
 void AstroWeatherStation::display_banner()
@@ -227,6 +232,13 @@ void AstroWeatherStation::enter_config_mode( void )
 		Serial.printf( "[STATION   ] [ERROR] Failed to start WiFi AP, cannot enter config mode.\n ");
 	else
 		while( true );
+}
+
+void AstroWeatherStation::factory_reset( void )
+{
+	Serial.printf( "[STATION   ] [INFO ] Performing factory reset.\n ");
+	config.factory_reset();
+	reboot();
 }
 
 template<typename... Args>
@@ -444,10 +456,11 @@ bool AstroWeatherStation::has_device( aws_device_t device )
 
 bool AstroWeatherStation::initialise( void )
 {
-	bool					config_mode = determine_boot_mode();
 	std::array<uint8_t,6>	mac;
 	byte					offset = 0;
 	std::array<uint8_t,32>	sha_256;
+
+	determine_boot_mode();
 
 	pinMode( GPIO_LED_GREEN, OUTPUT );
 	pinMode( GPIO_LED_BLUE, OUTPUT );
@@ -473,6 +486,9 @@ bool AstroWeatherStation::initialise( void )
 
 	station_data.reset_reason = esp_reset_reason();
 
+	if ( boot_mode == aws_boot_mode_t::FACTORY_RESET )
+		factory_reset();
+
 	if ( !config.load( debug_mode ) ) {
 
 		set_led_status( station_status_t::CONFIG_ERROR );
@@ -483,6 +499,9 @@ bool AstroWeatherStation::initialise( void )
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
 	
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
+	if ( solar_panel )
+		setCpuFrequencyMhz( 80 );
+
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
@@ -536,7 +555,7 @@ bool AstroWeatherStation::initialise( void )
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
-		if ( config_mode )
+		if ( boot_mode == aws_boot_mode_t::MAINTENANCE )
 			enter_config_mode();
 
 	} else
@@ -841,7 +860,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 
 		if ( data_push_timer && (( millis() - data_push_millis ) > 1000*data_push_timer )) {
 
-      send_data();
+			send_data();
 			data_push_millis = millis();
 		}
 
@@ -1068,7 +1087,6 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 bool AstroWeatherStation::resume_lookout( void )
 {
 	return lookout.resume();	
-
 }
 
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
@@ -1118,7 +1136,6 @@ void AstroWeatherStation::send_backlog_data( void )
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
-
 		return;
 	}
 
@@ -1204,11 +1221,12 @@ void AstroWeatherStation::start_alpaca_server( void )
 {
 	switch ( static_cast<aws_iface>( config.get_parameter<int>( "alpaca_iface" ))) {
 
-		case aws_iface::wifi:
-			if ( static_cast<aws_wifi_mode>( config.get_parameter<int>( "wifi_mode" )) != aws_wifi_mode::ap )
-				alpaca.start( WiFi.localIP(), debug_mode );
-			else
-				alpaca.start( WiFi.softAPIP(), debug_mode );
+		case aws_iface::wifi_sta:
+			alpaca.start( WiFi.localIP(), debug_mode );
+			break;
+
+		case aws_iface::wifi_ap:
+			alpaca.start( WiFi.softAPIP(), debug_mode );
 			break;
 
 		case aws_iface::eth:
@@ -1228,15 +1246,14 @@ bool AstroWeatherStation::startup_sanity_check( void )
 {
 	switch ( static_cast<aws_iface>( config.get_parameter<int>( "pref_iface" ) )) {
 
-		case aws_iface::wifi:
-			if ( static_cast<aws_wifi_mode>( config.get_parameter<int>( "wifi_mode" ) ) != aws_wifi_mode::ap )
-				return Ping.ping( WiFi.gatewayIP(), 3 );
-			else
-				return true;
+		case aws_iface::wifi_sta:
+			return Ping.ping( WiFi.gatewayIP(), 3 );
 
 		case aws_iface::eth:
 			return Ping.ping( Ethernet.gatewayIP(), 3 );
 
+		case aws_iface::wifi_ap:
+			return true;
 	}
 	return false;
 }

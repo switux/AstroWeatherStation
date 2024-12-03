@@ -18,7 +18,7 @@
 */
 
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 
 #include "defaults.h"
 #include "gpio_config.h"

@@ -20,7 +20,7 @@
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 
 #include "common.h"
 #include "SC16IS750.h"
@@ -211,7 +211,7 @@ void AWSLookout::check_rules( void )
 
 	if ( decide_is_safe( tmp_is_unsafe, tmp_is_safe ))
 		return;
-	
+
 	snprintf( str.data(), str.capacity(), "[LOOKOUT   ] [INFO ] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
@@ -242,6 +242,8 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 		dome->open_shutter();
 		return true;
 	}
+
+	return false;
 }
 
 etl::string_view AWSLookout::get_rules_state( void )
@@ -316,7 +318,6 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_rain_event.max = 1;
 	unsafe_rain_event.delay = 0;
 	unsafe_rain_event.check_available = true;
-
 	unsafe_rain_event.ts = 0;
 	unsafe_rain_event.satisfied = false;
 	

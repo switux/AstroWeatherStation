@@ -27,7 +27,7 @@
 #include <AsyncTCP.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
 class AWSWebServer {
@@ -37,6 +37,7 @@ class AWSWebServer {
 				AWSWebServer( void ) = default;
 		void attempt_ota_update( AsyncWebServerRequest * );
 		void get_configuration( AsyncWebServerRequest * );
+		void get_hw_configuration( AsyncWebServerRequest * );
 		void get_station_data( AsyncWebServerRequest * );
 		void get_root_ca( AsyncWebServerRequest * );
 		bool initialise( bool );

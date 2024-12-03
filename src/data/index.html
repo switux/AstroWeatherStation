@@ -143,15 +143,15 @@
 						<td>Preferred interface</td>
 						<td>
 							<input id="wifi" form="config" name="pref_iface" value="0" type="radio" onchange="show_wifi();"/> WiFi
-							<input id="ethernet" form="config" name="pref_iface" value="1" type="radio" onchange="hide_wifi();"/> Ethernet
+							<input id="ethernet" form="config" name="pref_iface" value="2" type="radio" onchange="hide_wifi();"/> Ethernet
 						</td>
 					</tr>
 					<tr id="show_alpaca_interface">
 						<td>ASCOM ALPACA Interface</td>
 						<td>
 							<input id="alpaca_sta" form="config" name="alpaca_iface" value="0" type="radio"/> Station
-							<input id="alpaca_ap" form="config" name="alpaca_iface" value="1" type="radio"/> AP
-							<div style="display:none"><input id="alpaca_eth" form="config" name="alpaca_iface" value="2" type="radio"/></div>
+							<input id="alpaca_ap" form="config" name="alpaca_iface" value="0" type="radio"/> AP
+							<div style="display:none"><input id="alpaca_eth" form="config" name="alpaca_iface" value="1" type="radio"/></div>
 						</td>
 					</tr>
 					<tr id="show_wifi_mode">
@@ -282,7 +282,7 @@
 						<td> Model:
 							<select form="config" name="anemometer_model" id="anemometer_model">
 								<option id="ws_none" value="">None</option>
-								<option id="ws_0" value="0">PR-3000-FSJT-N01</option>
+								<option id="ws_0" value="0">PR-3000-FSJT-N01 and compatible</option>
 								<option id="ws_1" value="1">GD-FS-RS485</option>
 								<option id="ws_2" value="2">VMS-3003-CFSFX-N01</option>
 							</select>
@@ -294,7 +294,7 @@
 						<td> Model:
 							<select form="config" name="wind_vane_model" id="wind_vane_model">
 								<option id="wv_none" value="">None</option>
-								<option id="wv_0" value="0">PR-3000-FXJT-N01</option>
+								<option id="wv_0" value="0">PR-3000-FXJT-N01 and compatible</option>
 								<option id="wv_1" value="1">GD-FX-RS485</option>
 								<option id="wv_2" value="2">VMS-3003-CFSFX-N01</option>
 							</select>
@@ -377,7 +377,7 @@
 			</div> <!-- enabled -->
 
 			<div id="cloud_coverage_formula" style="text-align:center;width: auto;display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
-				Cloud coverage formula: <input form="config" type="radio" name="cloud_coverage_formula" value="1"> AAG <input form="config" type="radio" name="cloud_coverage_formula" value="0"> AWS
+				Cloud coverage formula: <input id="cloud_coverage_formula_aag" form="config" type="radio" name="cloud_coverage_formula" value="1"> AAG <input id="cloud_coverage_formula_aws" form="config" type="radio" name="cloud_coverage_formula" value="0"> AWS
 			</div> <!-- cloud_coverage_formula -->
 
 			<div id="conditions" style="flex-direction: row;display: flex; margin: 10px">
@@ -568,7 +568,7 @@
 				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
 					<table aria-describedby="Dome" style="margin: 0 auto">
-						<tr><th colspan="2" style="border-bottom: 1px solid"><span><button type="button" onclick="close_dome_shutter();">CLOSE</button></span>Dome<span style="text-align:right"><button type="button" onclick="open_dome_shutter();">OPEN</button></span></tr>
+						<tr><th colspan="2" style="border-bottom: 1px solid">Dome</tr>
 						<tr><td>Dome shutter</td><td><span id="dome_shutter_status"></span></td></tr>
 						<tr><td>Dome is closed</td><td><span id="dome_shutter_closed"></span></td></tr>
 						<tr><td>Dome is open</td><td><span id="dome_shutter_open"></span></td></tr>
