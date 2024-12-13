@@ -65,6 +65,14 @@ enum struct aws_events : uint8_t
 };
 using aws_event_t = aws_events;
 
+enum struct boot_mode : uint8_t
+{
+	NORMAL,
+	MAINTENANCE,
+	FACTORY_RESET	
+};
+using aws_boot_mode_t = boot_mode;
+
 enum struct station_status :uint8_t
 {
 	READY,
@@ -106,6 +114,7 @@ class AstroWeatherStation {
 		TaskHandle_t				aws_led_task_handle;
 		TaskHandle_t				aws_periodic_task_handle;
 		bool						force_ota_update			= false;
+		aws_boot_mode_t				boot_mode					= aws_boot_mode_t::NORMAL;
 		AWSConfig					config;
 		bool						debug_mode					= false;
 		etl::string<1116>			json_sensor_data;
@@ -131,9 +140,10 @@ class AstroWeatherStation {
 		IPAddress		cidr_to_mask( byte );
 		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
-		bool 			determine_boot_mode( void );
+		void 			determine_boot_mode( void );
 		void			display_banner( void );
 		void			enter_config_mode( void );
+		void			factory_reset( void );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
 		void 			initialise_dome( void );

@@ -26,7 +26,7 @@
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include "soc/rtc_wdt.h"
 
 #include "gpio_config.h"
@@ -50,7 +50,7 @@ void setup()
 		
 		Serial.printf( "[CORE      ] [PANIC] ===> AstroWeatherStation did not properly initialise. Stopping here! <===\n" );
 		while( true ) {
-
+		}
 	}
 
 	if ( station.on_solar_panel() ) {

@@ -19,7 +19,7 @@
 
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <HardwareSerial.h>
 #include <esp_task_wdt.h>
 

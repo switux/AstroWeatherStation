@@ -20,7 +20,7 @@
 #include <esp_task_wdt.h>
 // Keep these two to get rid of compile time errors because of incompatibilities between libraries
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 
 #include "common.h"
 #include "SC16IS750.h"
@@ -229,6 +229,8 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 	if ( !safe || unsafe ) {
 
+		if ( is_safe )
+			station.send_alarm( "[LOOKOUT] Flipped from SAFE to UNSAFE", "[LOOKOUT] Flipped from SAFE to UNSAFE" );
 		is_safe = false;
 		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
 		dome->close_shutter();
@@ -237,11 +239,15 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 	if ( !unsafe && safe ) {
 
+		if ( !is_safe )
+			station.send_alarm( "[LOOKOUT] Flipped from UNSAFE to SAFE", "[LOOKOUT] Flipped from UNSAFE to SAFE" );
 		is_safe = true;
 		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();
 		return true;
 	}
+
+	return false;
 }
 
 etl::string_view AWSLookout::get_rules_state( void )
@@ -316,7 +322,6 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_rain_event.max = 1;
 	unsafe_rain_event.delay = 0;
 	unsafe_rain_event.check_available = true;
-
 	unsafe_rain_event.ts = 0;
 	unsafe_rain_event.satisfied = false;
 	

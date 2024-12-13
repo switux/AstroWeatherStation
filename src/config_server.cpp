@@ -17,13 +17,15 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define DYNAMIC_JSON_DOCUMENT_SIZE  4096
+
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 #include <AsyncTCP.h>
 #include <Ethernet.h>
 #include <SSLClient.h>
 #include <AsyncUDP_ESP32_W5500.hpp>
-#include <ESPAsyncWebSrv.h>
+#include <ESPAsyncWebServer.h>
 #include <FS.h>
 #include <LittleFS.h>
 
@@ -76,7 +78,7 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 		request->send( 503, "text/plain", "Station is not ready yet" );
 		return;
 	}
-	
+
 	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE ) { esp_task_wdt_reset(); }
 		if ( debug_mode )
 			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
@@ -98,7 +100,7 @@ void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 	int				minutes	= floor( fmod( uptime, 3600 ) / 60 );
 	int				seconds	= fmod( uptime, 60 );
 	etl::string<16>	str;
-	
+
 	snprintf( str.data(), str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
 	request->send( 200, "text/plain", str.data() );
 }
@@ -112,7 +114,7 @@ void AWSWebServer::index( AsyncWebServerRequest *request )
 		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open filesystem to serve index.html" );
 		request->send( 500, "text/html", msg.data() );
 		return;
-		
+
 	}
 	request->send( LittleFS, "/index.html" );
 }
@@ -151,7 +153,6 @@ void AWSWebServer::resume_lookout( AsyncWebServerRequest *request )
 	else
 		request->send( 500, "text/plain", "NOK" );
 }
-
 
 void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {

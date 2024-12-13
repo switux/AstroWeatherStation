@@ -25,7 +25,7 @@
 #include "device.h"
 #include "anemometer.h"
 
-const std::array<std::string, 3>	Anemometer::ANEMOMETER_MODEL		= { "PR-3000-FSJT-N01", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
+const std::array<std::string, 3>	Anemometer::ANEMOMETER_MODEL		= { "PR-3000-FSJT-N01 and compatible", "GD-FS-RS485", "VMS-3003-CFSFX-N01" };
 const std::array<std::string, 3>	Anemometer::ANEMOMETER_DESCRIPTION	= { "Mechanical anemometer", "Mechanical anemometer", "Ultrasonic anemometer" };
 const std::array<uint64_t,3>		Anemometer::ANEMOMETER_CMD			= { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
 const std::array<uint16_t,3>		Anemometer::ANEMOMETER_SPEED		= { 4800, 9600, 4800 };
@@ -107,7 +107,10 @@ float Anemometer::get_wind_speed( bool verbose )
 
 		if ( answer[1] == 0x03 ) {
 
-			wind_speed = static_cast<float>(answer[4]) / 10.F;
+			if ( model == 2 )
+				wind_speed = static_cast<float>(answer[4]) / 100.F;
+			else
+				wind_speed = static_cast<float>(answer[4]) / 10.F;
 
 			if ( get_debug_mode() && verbose )
 				Serial.printf( "\n[ANEMOMETER] [DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
