@@ -156,6 +156,7 @@ class AWSConfig {
 		etl::string_view		get_wind_vane_model_str( void );
 		bool 					load( bool );
 		void					reset_parameter( const char * );
+		void					set_parameter( const char *, const char * );
 		bool					rollback( void );
 		bool					save_runtime_configuration( JsonVariant & );
 		bool 					update( JsonVariant &json );

@@ -42,11 +42,6 @@ const	WIFI_MODE = [ 'Client', 'AP', 'Both' ];
 
 let sleepSetTimeout_ctrl;
 
-function sleep(ms) {
-    clearInterval(sleepSetTimeout_ctrl);
-    return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
-}
-
 function checkbox_change( param )
 {
 	switch( param.id ) {
@@ -111,6 +106,34 @@ function dome_opening()
 //	document.getElementById('close_dome_shutter_button').disabled = false;
 }
 
+function fetch_station_data()
+{
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				let values = JSON.parse( req.responseText );
+				document.getElementById("status").textContent = "";
+				update_dashboard( values );
+			} else if ( this.status == 503 ) {
+				document.getElementById("status").textContent = "Station not ready";
+			}
+		}
+	};
+	req.open( "GET", "/get_station_data", true );
+	req.send();
+}
+
+function fill_cloud_coverage_parameter_values( values )
+{
+	for( let i = 1; i<8; i++ )
+		document.getElementById("k"+i).value = values['k'+i];
+	document.getElementById("cc_aws_cloudy").value = values['cc_aws_cloudy'];
+	document.getElementById("cc_aws_overcast").value = values['cc_aws_overcast'];
+	document.getElementById("cc_aag_cloudy").value = values['cc_aag_cloudy'];
+	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
+}
+
 function fill_device_values( values )
 {
 	DEVICES.forEach((device) => {
@@ -165,7 +188,7 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	let parameters = [ "wifi_ap_ssid", "remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	let parameters = [ "eth_ip", "eth_gw", "eth_dns", "wifi_ap_ssid", "remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});
@@ -224,36 +247,6 @@ function fill_sensor_values( values )
 	document.querySelector("#wind_vane_model").value=values['wind_vane_model'];
 }
 
-function fill_cloud_coverage_parameter_values( values )
-{
-	for( let i = 1; i<8; i++ )
-		document.getElementById("k"+i).value = values['k'+i];
-	document.getElementById("cc_aws_cloudy").value = values['cc_aws_cloudy'];
-	document.getElementById("cc_aws_overcast").value = values['cc_aws_overcast'];
-	document.getElementById("cc_aag_cloudy").value = values['cc_aag_cloudy'];
-	document.getElementById("cc_aag_overcast").value = values['cc_aag_overcast'];
-}
-
-function makeRequest() {
-	return new Promise((resolve,reject) => {
-		clearInterval( dashboardRefresh );
-		sleep( 3000 );
-		let req = new XMLHttpRequest();
-		req.open( "GET", "/ota_update", true );
-		req.onload = function () {
-			if ( req.status == 200 ) {
-				resolve( req.responseText );
-			} else {
-				reject( new Error( req.status ));
-			}
-		};
-		req.onerror = function () {
-			reject( new Error( "Network error" ));
-		};
-		req.send();
-	});
-}
-
 function force_ota()
 {
 	makeRequest()
@@ -283,6 +276,67 @@ function lookout_resumed()
 function lookout_suspended()
 {
 	document.getElementById("lookout_status").innerHTML = '<span style="color:red">Inactive/Suspended</span>';
+}
+
+function makeRequest() {
+	return new Promise((resolve,reject) => {
+		clearInterval( dashboardRefresh );
+		sleep( 3000 );
+		let req = new XMLHttpRequest();
+		req.open( "GET", "/ota_update", true );
+		req.onload = function () {
+			if ( req.status == 200 ) {
+				resolve( req.responseText );
+			} else {
+				reject( new Error( req.status ));
+			}
+		};
+		req.onerror = function () {
+			reject( new Error( "Network error" ));
+		};
+		req.send();
+	});
+}
+
+function open_dome_shutter()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				dome_opening();
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/open_dome_shutter", true );
+	req.send();
+
+}
+
+function reboot()
+{
+	let req = new XMLHttpRequest();
+	req.open( "GET", "/reboot", true );
+	req.send();
+}
+
+function resume_lookout()
+{
+	event.preventDefault();
+	let req = new XMLHttpRequest();
+	req.onreadystatechange = function() {
+		if ( this.readyState == 4 ) {
+			if ( this.status == 200 ) {
+				lookout_resumed();
+			} else if ( this.status == 503 ) {
+			}
+		}
+	};
+	req.open( "GET", "/resume_lookout", true );
+	req.send();
+
 }
 
 function retrieve_data()
@@ -323,21 +377,27 @@ function retrieve_data()
 	req2.send();
 }
 
-function resume_lookout()
+function send_config()
 {
-	event.preventDefault();
 	let req = new XMLHttpRequest();
-	req.onreadystatechange = function() {
-		if ( this.readyState == 4 ) {
-			if ( this.status == 200 ) {
-				lookout_resumed();
-			} else if ( this.status == 503 ) {
-			}
-		}
-	};
-	req.open( "GET", "/resume_lookout", true );
-	req.send();
+	req.open( "POST", "/set_config", true );
+	req.setRequestHeader( "Content-Type", "application/json;charset=UTF-8" );
+	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
+}
 
+function show_wifi()
+{
+	WIFI_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "table-row";
+	});
+	ETH_PARAMETERS.forEach( (parameter) => {
+		document.getElementById("show_"+parameter).style.display = "none";
+	});
+}
+
+function sleep(ms) {
+    clearInterval(sleepSetTimeout_ctrl);
+    return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
 }
 
 function suspend_lookout()
@@ -357,6 +417,27 @@ function suspend_lookout()
 
 }
 
+function toggle_eth_ipgw( show )
+{
+	if ( show ) {
+		document.getElementById("eth_fixed").checked = true;
+		document.getElementById("eth_ip").removeAttribute("readonly");
+		document.getElementById("eth_gw").removeAttribute("readonly");
+		document.getElementById("eth_dns").removeAttribute("readonly");
+		document.getElementById("eth_ip").style.display.background = "#d0d0d0";
+		document.getElementById("eth_gw").style.display.background = "#d0d0d0";
+		document.getElementById("eth_dns").style.display.background = "#d0d0d0";
+	} else {
+		document.getElementById("eth_dhcp").checked = true;
+		document.getElementById("eth_ip").setAttribute("readonly","true");
+		document.getElementById("eth_gw").setAttribute("readonly","true");
+		document.getElementById("eth_dns").setAttribute("readonly","true");
+		document.getElementById("eth_ip").style.display.background = "white";
+		document.getElementById("eth_gw").style.display.background = "white";
+		document.getElementById("eth_dns").style.display.background = "white";
+	}
+}
+
 function toggle_panel( panel_id )
 {
 	PANELS.forEach(( panel ) => {
@@ -372,6 +453,27 @@ function toggle_panel( panel_id )
 
 	} else
 		clearInterval( dashboardRefresh );
+}
+
+function toggle_sta_ipgw( show )
+{
+	if ( show ) {
+		document.getElementById("wifi_sta_fixed").checked = true;
+		document.getElementById("wifi_sta_ip").removeAttribute("readonly");
+		document.getElementById("wifi_sta_gw").removeAttribute("readonly");
+		document.getElementById("wifi_sta_dns").removeAttribute("readonly");
+		document.getElementById("wifi_sta_ip").style.display.background = "#d0d0d0";
+		document.getElementById("wifi_sta_gw").style.display.background = "#d0d0d0";
+		document.getElementById("wifi_sta_dns").style.display.background = "#d0d0d0";
+	} else {
+		document.getElementById("wifi_sta_dhcp").checked = true;
+		document.getElementById("wifi_sta_ip").setAttribute("readonly","true");
+		document.getElementById("wifi_sta_gw").setAttribute("readonly","true");
+		document.getElementById("wifi_sta_dns").setAttribute("readonly","true");
+		document.getElementById("wifi_sta_ip").style.display.background = "white";
+		document.getElementById("wifi_sta_gw").style.display.background = "white";
+		document.getElementById("wifi_sta_dns").style.display.background = "white";
+	}
 }
 
 function toggle_wifi_mode( wifi_mode )
@@ -407,108 +509,6 @@ function toggle_wifi_mode( wifi_mode )
 			show_wifi();
 			break;
 	}
-}
-
-function toggle_sta_ipgw( show )
-{
-	if ( show ) {
-		document.getElementById("wifi_sta_fixed").checked = true;
-		document.getElementById("wifi_sta_ip").removeAttribute("readonly");
-		document.getElementById("wifi_sta_gw").removeAttribute("readonly");
-		document.getElementById("wifi_sta_dns").removeAttribute("readonly");
-		document.getElementById("wifi_sta_ip").style.display.background = "#d0d0d0";
-		document.getElementById("wifi_sta_gw").style.display.background = "#d0d0d0";
-		document.getElementById("wifi_sta_dns").style.display.background = "#d0d0d0";
-	} else {
-		document.getElementById("wifi_sta_dhcp").checked = true;
-		document.getElementById("wifi_sta_ip").setAttribute("readonly","true");
-		document.getElementById("wifi_sta_gw").setAttribute("readonly","true");
-		document.getElementById("wifi_sta_dns").setAttribute("readonly","true");
-		document.getElementById("wifi_sta_ip").style.display.background = "white";
-		document.getElementById("wifi_sta_gw").style.display.background = "white";
-		document.getElementById("wifi_sta_dns").style.display.background = "white";
-	}
-}
-
-function toggle_eth_ipgw( show )
-{
-	if ( show ) {
-		document.getElementById("eth_fixed").checked = true;
-		document.getElementById("eth_ip").removeAttribute("readonly");
-		document.getElementById("eth_gw").removeAttribute("readonly");
-		document.getElementById("eth_dns").removeAttribute("readonly");
-		document.getElementById("eth_ip").style.display.background = "#d0d0d0";
-		document.getElementById("eth_gw").style.display.background = "#d0d0d0";
-		document.getElementById("eth_dns").style.display.background = "#d0d0d0";
-	} else {
-		document.getElementById("eth_dhcp").checked = true;
-		document.getElementById("eth_ip").setAttribute("readonly","true");
-		document.getElementById("eth_gw").setAttribute("readonly","true");
-		document.getElementById("eth_dns").setAttribute("readonly","true");
-		document.getElementById("eth_ip").style.display.background = "white";
-		document.getElementById("eth_gw").style.display.background = "white";
-		document.getElementById("eth_dns").style.display.background = "white";
-	}
-}
-
-function reboot()
-{
-	let req = new XMLHttpRequest();
-	req.open( "GET", "/reboot", true );
-	req.send();
-}
-
-function send_config()
-{
-	let req = new XMLHttpRequest();
-	req.open( "POST", "/set_config", true );
-	req.setRequestHeader( "Content-Type", "application/json;charset=UTF-8" );
-	req.send( JSON.stringify(Object.fromEntries( ( new FormData(document.querySelector('#config') )).entries())) );
-}
-
-function show_wifi()
-{
-	WIFI_PARAMETERS.forEach( (parameter) => {
-		document.getElementById("show_"+parameter).style.display = "table-row";
-	});
-	ETH_PARAMETERS.forEach( (parameter) => {
-		document.getElementById("show_"+parameter).style.display = "none";
-	});
-}
-
-function fetch_station_data()
-{
-	let req = new XMLHttpRequest();
-	req.onreadystatechange = function() {
-		if ( this.readyState == 4 ) {
-			if ( this.status == 200 ) {
-				let values = JSON.parse( req.responseText );
-				document.getElementById("status").textContent = "";
-				update_dashboard( values );
-			} else if ( this.status == 503 ) {
-				document.getElementById("status").textContent = "Station not ready";
-			}
-		}
-	};
-	req.open( "GET", "/get_station_data", true );
-	req.send();
-}
-
-function open_dome_shutter()
-{
-	event.preventDefault();
-	let req = new XMLHttpRequest();
-	req.onreadystatechange = function() {
-		if ( this.readyState == 4 ) {
-			if ( this.status == 200 ) {
-				dome_opening();
-			} else if ( this.status == 503 ) {
-			}
-		}
-	};
-	req.open( "GET", "/open_dome_shutter", true );
-	req.send();
-
 }
 
 function update_dashboard( values )
@@ -582,7 +582,6 @@ function update_dashboard( values )
 
 	update_sensor_dashboard( values );
 }
-
 
 function update_sensor_dashboard( values )
 {
