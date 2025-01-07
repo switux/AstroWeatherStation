@@ -179,6 +179,7 @@ const char *Hydreon::get_rain_intensity_str( void )
 		case 5: return "Medium heavy";
 		case 6: return "Heavy";
 		case 7: return "Violent";
+		default: return "Unknown";
 	}
 	return "Unknown";
 }

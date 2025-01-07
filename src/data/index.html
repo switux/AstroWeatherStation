@@ -282,7 +282,7 @@
 					</tr>
 					<tr>
 						<td>Anemometer</td>
-						<td style="text-align:center"><input form="config" name="has_ws" type="checkbox" id="has_ws" onclick="checkbox_change(this);"/></td>
+						<td style="text-align:center"><input form="config" name="has_ws" type="checkbox" id="has_ws" onKeyPress="checkbox_change(this)" onclick="checkbox_change(this);"/></td>
 						<td> Model:
 							<select form="config" name="anemometer_model" id="anemometer_model">
 								<option id="ws_none" value="">None</option>
@@ -294,7 +294,7 @@
 					</tr>
 					<tr>
 						<td>Wind vane</td>
-						<td style="text-align:center"><input form="config" name="has_wv" type="checkbox" id="has_wv" onclick="checkbox_change(this);"/></td>
+						<td style="text-align:center"><input form="config" name="has_wv" type="checkbox" id="has_wv" onKeyPress="checkbox_change(this)" onclick="checkbox_change(this);"/></td>
 						<td> Model:
 							<select form="config" name="wind_vane_model" id="wind_vane_model">
 								<option id="wv_none" value="">None</option>
@@ -392,7 +392,7 @@
 						<tr style="border-bottom: 3px solid"><th style="border-bottom: 1px solid">Criteria</th><th style="border-bottom: 1px solid">Active</th><th style="border-bottom: 1px solid">Value</th><th style="border-bottom: 1px solid">Delay</th><th style="border-bottom: 1px solid">Sensor issue</th></tr>
 						<tr>
 							<td id="unsafe_rain_event">Rain alarm</td>
-							<td><input form="" type="checkbox" name="unsafe_rain_event_active" id="unsafe_rain_event_active" checked onclick="return false;"></td>
+							<td><input form="" type="checkbox" name="unsafe_rain_event_active" id="unsafe_rain_event_active" checked onKeyPress="return false;" onclick="return false;"></td>
 							<td>&ge; 
 								<select form="config" name="unsafe_rain_event_max" id="unsafe_rain_event_max" disabled>
 									<option value="0" >Dry</option>
@@ -405,7 +405,7 @@
 									<option value="7">Violent</option>
 								</select>
 							<td>Immediate</td>
-							<td><input form="config" type="checkbox" name="unsafe_rain_event_missing" id="unsafe_rain_event_missing" checked onclick="return false;"></td>
+							<td><input form="config" type="checkbox" name="unsafe_rain_event_missing" id="unsafe_rain_event_missing" checked onKeyPress="return false;" onclick="return false;"></td>
 						</tr>
 						<tr>
 							<td>Wind speed 1</td>

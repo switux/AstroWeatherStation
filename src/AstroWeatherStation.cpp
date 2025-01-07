@@ -51,8 +51,6 @@
 #include "AWSUpdater.h"
 #include "AWSNetwork.h"
 #include "AstroWeatherStation.h"
-//#include "ta.h"
-
 
 extern void IRAM_ATTR		_handle_rain_event( void );
 extern SemaphoreHandle_t	sensors_read_mutex;
@@ -277,9 +275,9 @@ Dome *AstroWeatherStation::get_dome( void )
 
 etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 {
-	DynamicJsonDocument	json_data(870);
-	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
-	int					l;
+	JsonDocument	json_data;
+	sensor_data_t	*sensor_data = sensor_manager.get_sensor_data();
+	int				l;
 
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
@@ -424,7 +422,7 @@ void AstroWeatherStation::handle_event( aws_event_t event )
 		case aws_event_t::DOME_SHUTTER_OPEN_CHANGE:
 			station_devices.dome.shutter_open_change();
 			break;
-			
+
 		case aws_event_t::RAIN:
 			if ( solar_panel ) {
 
@@ -480,9 +478,9 @@ bool AstroWeatherStation::initialise( void )
     esp_partition_get_sha256( esp_ota_get_running_partition(), sha_256.data() );
 	for ( uint8_t _byte : sha_256 ) {
 
-		char h[3];
-		snprintf( h, 3, "%02x", _byte );
-		station_data.firmware_sha56 += h;
+		etl::string<3> h;
+		snprintf( h.data(), 3, "%02x", _byte );
+		station_data.firmware_sha56 += h.data();
     }
 
 	Serial.printf( "\n\n[STATION   ] [INFO ] Firmware checksum = [%s]\n", station_data.firmware_sha56.data() );
@@ -575,7 +573,7 @@ bool AstroWeatherStation::initialise( void )
 		}
 		reboot();
 	}
-	
+
 	display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
@@ -1135,7 +1133,7 @@ bool AstroWeatherStation::resume_lookout( void )
 
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
 {
-	DynamicJsonDocument content( 512 );
+	JsonDocument content;
 	// flawfinder: ignore
 	char jsonString[ 600 ];	// NOSONAR
 	content["subject"] = subject;
