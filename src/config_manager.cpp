@@ -67,6 +67,11 @@ etl::string_view AWSConfig::get_anemometer_model_str( void )
 	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ get_parameter<int>( "anemometer_model" ) ].c_str() );
 }
 
+uint8_t *AWSConfig::get_eth_mac( void )
+{
+	return eth_mac;
+}
+
 uint32_t AWSConfig::get_fs_free_space( void )
 {
 	return fs_free_space;
@@ -281,6 +286,8 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
+
+#if 0
 	if ( ( x = nvs.getChar( "has_sc16is750", 127 )) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
@@ -288,6 +295,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SC16IS750_DEVICE;
+#endif
 
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
@@ -296,6 +304,9 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::ETHERNET_DEVICE;
+	if ( x )
+		nvs.getBytes( "eth_mac", eth_mac, 6 );
+
 	nvs.end();
 
 	return true;

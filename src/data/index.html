@@ -1,4 +1,6 @@
 <!doctype html>
+<!-- COPYRIGHT_BLOCK_START -->
+<!-- NOSONAR -->
 <!--
    index.html
 
@@ -17,7 +19,7 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 -->
-
+<!-- COPYRIGHT_BLOCK_END -->
 <html lang="en">
 <head>
 	<title>
@@ -43,17 +45,17 @@
 			margin-right: 5px;
 		}
 		.top_menu {
-			display: flex;
-			flex-direction: row;
-		}
-		.top_menu {
 			margin-right: 2px;
 			border-top: 0px solid;
 			border-left: 0px solid;
 			border-right: 0px solid;
+			border-bottom: 0px solid;
 			border-radius: 10px 10px 0px 0px;
+			font-size: 11pt;
 			padding: 10px;
 			cursor: zoom-in;
+			display: flex;
+			flex-direction: row;
 		}
 		.unselected_top_menu {
 			background: #dbdbdb;
@@ -79,6 +81,8 @@
 			background: #f6f6f6;
 			font-weight: bold;
 			width: 80px;
+			text-decoration: none;
+			font-size: 9pt;
 			padding-top: 5px;
 			padding-bottom: 5px;
 			border: 3px solid #ff3030;
@@ -104,13 +108,13 @@
 <body onload="retrieve_data();">
 
 	<div id="banners" style="display:flex; flex-direction: row">
-		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
-		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
-		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
-		<div id="banner_devices"  class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" role="button" tabIndex="0">Devices</div>
-		<div id="banner_lookout" class="top_menu unselected_top_menu" onclick="toggle_panel('lookout');" role="button" tabIndex="0">Lookout</div>
-		<div id="banner_alpaca"  class="top_menu unselected_top_menu" onclick="toggle_panel('alpaca');" role="button" tabIndex="0">ALPACA</div>
-		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
+		<button id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" tabIndex="0">General</button>
+		<button id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" tabIndex="0">Network</button>
+		<button id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" tabIndex="0">Sensors</button>
+		<button id="banner_devices" class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" tabIndex="0">Devices</button>
+		<button id="banner_lookout" class="top_menu unselected_top_menu" onclick="toggle_panel('lookout');" tabIndex="0">Lookout</button>
+		<button id="banner_alpaca"  class="top_menu unselected_top_menu" onclick="toggle_panel('alpaca');" tabIndex="0">ALPACA</button>
+		<button id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" tabIndex="0">Dashboard</button>
 	</div> <!-- banners -->
 
 	<form method="post" action="" id="config"/>
@@ -143,15 +147,15 @@
 						<td>Preferred interface</td>
 						<td>
 							<input id="wifi" form="config" name="pref_iface" value="0" type="radio" onchange="show_wifi();"/> WiFi
-							<input id="ethernet" form="config" name="pref_iface" value="1" type="radio" onchange="hide_wifi();"/> Ethernet
+							<input id="ethernet" form="config" name="pref_iface" value="2" type="radio" onchange="hide_wifi();"/> Ethernet
 						</td>
 					</tr>
 					<tr id="show_alpaca_interface">
 						<td>ASCOM ALPACA Interface</td>
 						<td>
 							<input id="alpaca_sta" form="config" name="alpaca_iface" value="0" type="radio"/> Station
-							<input id="alpaca_ap" form="config" name="alpaca_iface" value="1" type="radio"/> AP
-							<div style="display:none"><input id="alpaca_eth" form="config" name="alpaca_iface" value="2" type="radio"/></div>
+							<input id="alpaca_ap" form="config" name="alpaca_iface" value="0" type="radio"/> AP
+							<div style="display:none"><input id="alpaca_eth" form="config" name="alpaca_iface" value="1" type="radio"/></div>
 						</td>
 					</tr>
 					<tr id="show_wifi_mode">
@@ -162,7 +166,7 @@
 							<input id="Both" form="config" name="wifi_mode" value="2" type="radio" onchange="toggle_wifi_mode(2);"/> AP+Station
 						</td>
 					</tr>
-					<tr id="show_sta_ssid">
+					<tr id="show_wifi_sta_ssid">
 						<td>Station SSID</td>
 						<td><input form="config" id="wifi_sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
 					</tr>
@@ -189,7 +193,7 @@
 						<td>Station DNS</td>
 						<td><input form="config" id="wifi_sta_dns" name="wifi_sta_dns" value="" type="text" size="15"></td>
 					</tr>
-					<tr id="show_ap_ssid">
+					<tr id="show_wifi_ap_ssid">
 						<td>AP SSID</td>
 						<td><input form="config" id="wifi_ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
 					</tr>
@@ -282,7 +286,7 @@
 						<td> Model:
 							<select form="config" name="anemometer_model" id="anemometer_model">
 								<option id="ws_none" value="">None</option>
-								<option id="ws_0" value="0">PR-3000-FSJT-N01</option>
+								<option id="ws_0" value="0">PR-3000-FSJT-N01 and compatible</option>
 								<option id="ws_1" value="1">GD-FS-RS485</option>
 								<option id="ws_2" value="2">VMS-3003-CFSFX-N01</option>
 							</select>
@@ -294,7 +298,7 @@
 						<td> Model:
 							<select form="config" name="wind_vane_model" id="wind_vane_model">
 								<option id="wv_none" value="">None</option>
-								<option id="wv_0" value="0">PR-3000-FXJT-N01</option>
+								<option id="wv_0" value="0">PR-3000-FXJT-N01 and compatible</option>
 								<option id="wv_1" value="1">GD-FX-RS485</option>
 								<option id="wv_2" value="2">VMS-3003-CFSFX-N01</option>
 							</select>
@@ -377,7 +381,7 @@
 			</div> <!-- enabled -->
 
 			<div id="cloud_coverage_formula" style="text-align:center;width: auto;display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 20px">
-				Cloud coverage formula: <input form="config" type="radio" name="cloud_coverage_formula" value="1"> AAG <input form="config" type="radio" name="cloud_coverage_formula" value="0"> AWS
+				Cloud coverage formula: <input id="cloud_coverage_formula_aag" form="config" type="radio" name="cloud_coverage_formula" value="1"> AAG <input id="cloud_coverage_formula_aws" form="config" type="radio" name="cloud_coverage_formula" value="0"> AWS
 			</div> <!-- cloud_coverage_formula -->
 
 			<div id="conditions" style="flex-direction: row;display: flex; margin: 10px">
@@ -568,7 +572,7 @@
 				<div style="width: auto; display:flex; border: 2px solid; border-color: black; border-radius: 5px; margin: 10px; padding: 10px;">
 
 					<table aria-describedby="Dome" style="margin: 0 auto">
-						<tr><th colspan="2" style="border-bottom: 1px solid"><span><button type="button" onclick="close_dome_shutter();">CLOSE</button></span>Dome<span style="text-align:right"><button type="button" onclick="open_dome_shutter();">OPEN</button></span></tr>
+						<tr><th colspan="2" style="border-bottom: 1px solid">Dome</tr>
 						<tr><td>Dome shutter</td><td><span id="dome_shutter_status"></span></td></tr>
 						<tr><td>Dome is closed</td><td><span id="dome_shutter_closed"></span></td></tr>
 						<tr><td>Dome is open</td><td><span id="dome_shutter_open"></span></td></tr>

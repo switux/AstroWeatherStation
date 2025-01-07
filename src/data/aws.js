@@ -33,10 +33,12 @@ const	DOME_DEVICE = 0x80;
 const	RESET_REASON = [ 'Unknown', 'Power on', 'PIN reset', 'Reboot', 'Exception/Panic reset', 'Interrupt WD', 'Task WD', 'Other WD', 'Deepsleep', 'Brownout', 'SDIO reset', 'USB reset', 'JTAG reset' ];
 const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
 const	PANELS = [ 'general', 'network', 'sensors', 'devices', 'lookout', 'alpaca', 'dashboard' ];
+const	DEVICES = [ 'dome', 'gps' ];
 const	SENSORS = [ 'bme', 'tsl', 'mlx', 'rain_sensor', 'ws', 'wv', 'gps' ];
-const	WIFI_PARAMETERS = [ 'wifi_mode', 'sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
+const	WIFI_PARAMETERS = [ 'wifi_mode', 'wifi_sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'wifi_ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
 const	ETH_PARAMETERS = [ 'eth_ip_mode', 'eth_ip', 'eth_gw', 'eth_dns' ];
 const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
+const	WIFI_MODE = [ 'Client', 'AP', 'Both' ];
 
 let sleepSetTimeout_ctrl;
 
@@ -109,6 +111,13 @@ function dome_opening()
 //	document.getElementById('close_dome_shutter_button').disabled = false;
 }
 
+function fill_device_values( values )
+{
+	DEVICES.forEach((device) => {
+		document.getElementById("has_"+device).checked = values['has_'+device];
+	});
+}
+
 function fill_lookout_value( parameter, from_list, sensor_available, values )
 {
 	document.getElementById( parameter+"_active" ).checked = ( values[ parameter+"_active" ] == "1" )? 'true' : 'false';
@@ -125,6 +134,9 @@ function fill_lookout_values( values )
 {
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
 	
+	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
+	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
+
 	fill_lookout_value( "unsafe_wind_speed_1", false, true, values );
 	fill_lookout_value( "unsafe_wind_speed_2", false, true, values );
 	fill_lookout_value( "unsafe_cloud_coverage_1", true, true, values );
@@ -139,7 +151,7 @@ function fill_lookout_values( values )
 
 function fill_network_values( values )
 {
-	switch( values['wifi_mode'] ) {
+	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
 		case 'AP':
 			document.getElementById("AP").checked = true;
 			break;
@@ -150,18 +162,22 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-  
-  let parameters = [ "wifi_ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	let parameters = [ "wifi_ap_ssid", "remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});
+
+	show_wifi();
+	let x = document.getElementById("wifi");
+	if ( x !== null )
+		x.checked = true;
 
 	if ( values['has_ethernet'] === true )
 		document.getElementById("iface_option").style.display = "table-row";
 	else
 		document.getElementById("iface_option").style.display = "none";
 
-	if ( values['pref_iface'] == "1" ) {
+	if ( values['pref_iface'] == "2" ) {
 
 		hide_wifi();
 		document.getElementById("show_alpaca_interface").style.display = "none";
@@ -178,14 +194,14 @@ function fill_network_values( values )
 	}
 
 	toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
-	switch( values['wifi_mode'] ) {
-		case 0:
+	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
+		case 'AP':
 			document.getElementById("AP").checked = true;
 			break;
-		case 1:
+		case 'Client':
 			document.getElementById("Client").checked = true;
 			break;
-		case 2:
+		case 'Both':
 			document.getElementById("Both").checked = true;
 			break;
 	}
@@ -285,6 +301,7 @@ function retrieve_data()
 
 			fill_network_values( values );
 			fill_sensor_values( values );
+			fill_device_values( values );
 			fill_cloud_coverage_parameter_values( values );
 			fill_lookout_values( values );
 
@@ -583,7 +600,7 @@ function update_sensor_dashboard( values )
 	document.getElementById("ambient_temperature").textContent = values['ambient_temperature'].toFixed(2);
 	document.getElementById("sky_temperature").textContent = values['sky_temperature'].toFixed(2);
 	document.getElementById("raw_sky_temperature").textContent = values['raw_sky_temperature'].toFixed(2);
-	document.getElementById("cloud_coverage").textContent = CLOUD_COVERAGE[ values['cloud_coverage'] ];
+	document.getElementById("cloud_coverage").textContent = values['cloud_coverage'];
 
 	document.getElementById("rainintensity").textContent = values['rain_intensity'];
 

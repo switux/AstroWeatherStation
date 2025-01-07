@@ -139,6 +139,7 @@ class AWSConfig {
 		bool					can_rollback( void );
 		void					factory_reset( void );
 		etl::string_view		get_anemometer_model_str( void );
+		uint8_t					*get_eth_mac( void );
 		uint32_t				get_fs_free_space( void );
 		template <typename T>
 		T 						get_lookout_safe_parameter( const char * );
@@ -171,6 +172,7 @@ class AWSConfig {
 		etl::string<8>		pcb_version;
 		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
 		etl::string<4096>	root_ca;
+		uint8_t				eth_mac[6]				= { 0 };
 		
 		template <typename T>
 		T 		get_aag_parameter( const char * );
@@ -324,9 +326,13 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "wifi_sta_ssid" ):
 			return (*json_config)[key].as<T>();
 
-	}
+		default:
+			break;
+ 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
 }
+
+
 
 #endif
