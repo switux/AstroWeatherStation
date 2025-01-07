@@ -424,7 +424,7 @@ void AstroWeatherStation::handle_event( aws_event_t event )
 		case aws_event_t::DOME_SHUTTER_OPEN_CHANGE:
 			station_devices.dome.shutter_open_change();
 			break;
-
+			
 		case aws_event_t::RAIN:
 			if ( solar_panel ) {
 
@@ -575,7 +575,7 @@ bool AstroWeatherStation::initialise( void )
 		}
 		reboot();
 	}
-
+	
 	display_banner();
 
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.

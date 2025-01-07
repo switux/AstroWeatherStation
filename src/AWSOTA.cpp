@@ -76,7 +76,7 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 
 				if ( action == ota_action_t::CHECK_ONLY )
 					return ota_status_t::UPDATE_AVAILABLE;
-				
+
 				if ( action == ota_action_t::UPDATE_AND_BOOT ) {
 
 					ota_update_ongoing = true;
@@ -85,7 +85,7 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 
 				if ( do_ota_update( ota_config["URL"], root_ca, action ))
 					return status_code;
-					
+
 				profile_match = true;
 			}
 		}
@@ -96,7 +96,7 @@ ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl
 bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t action )
 {
 	HTTPClient	http;
-	
+
 	if ( !http.begin( url, root_ca )) {
 
 		status_code = ota_status_t::HTTP_FAILED;
@@ -160,7 +160,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 		}
 		ESP.restart();
 	}
-	
+
 	status_code = ota_status_t::WRITE_ERROR;
 	return false;
 }
@@ -174,7 +174,7 @@ bool AWSOTA::download_json( const char *url, const char *root_ca )
 		status_code = ota_status_t::HTTP_FAILED;
 		return false;
 	}
-	
+
 	if ( ( http_status = http.GET()) == 200 )
 		deserialisation_status = deserializeJson( *json_ota_config, http.getString() );
 

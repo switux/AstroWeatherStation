@@ -137,6 +137,9 @@ function fill_lookout_values( values )
 	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
 	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
 
+	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
+	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
+
 	fill_lookout_value( "unsafe_wind_speed_1", false, true, values );
 	fill_lookout_value( "unsafe_wind_speed_2", false, true, values );
 	fill_lookout_value( "unsafe_cloud_coverage_1", true, true, values );
@@ -177,7 +180,7 @@ function fill_network_values( values )
 	else
 		document.getElementById("iface_option").style.display = "none";
 
-	if ( values['pref_iface'] == "2" ) {
+	if ( values['pref_iface'] == "1" ) {
 
 		hide_wifi();
 		document.getElementById("show_alpaca_interface").style.display = "none";

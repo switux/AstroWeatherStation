@@ -211,7 +211,7 @@ void AWSLookout::check_rules( void )
 
 	if ( decide_is_safe( tmp_is_unsafe, tmp_is_safe ))
 		return;
-	
+
 	snprintf( str.data(), str.capacity(), "[LOOKOUT   ] [INFO ] Safe conditions are <%s> AND unsafe conditions are <%s>: conditions are <UNDECIDED>, rules must be fixed!\n", tmp_is_safe?"SATISFIED":"NOT SATISFIED", tmp_is_unsafe?"SATISFIED":"NOT SATISFIED" );
 	Serial.printf( "%s", str.data() );
 	station.send_alarm( "[LOOKOUT] Configuration is not consistent", str.data() );
