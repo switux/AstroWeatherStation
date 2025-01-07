@@ -34,7 +34,7 @@ const byte DEBUG_MODE = 1;
 
 extern const unsigned long 		US_SLEEP;
 extern const etl::string<12>	REV;
-extern HardwareSerial			Serial1;
+extern HardwareSerial			Serial1;		// NOSONAR
 
 
 enum class aws_device_t : unsigned long {
@@ -151,7 +151,6 @@ struct station_data_t {
 	gps_data_t		gps;
 	health_data_t	health;
 	dome_data_t		dome_data;
-//	lookout_data_t	lookout_data;
 	struct timeval	ntp_time;
 	int				reset_reason;
 	etl::string<64>	firmware_sha56;

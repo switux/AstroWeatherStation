@@ -34,69 +34,84 @@
 extern bool	ota_update_ongoing;			// NOSONAR
 extern AstroWeatherStation	station;
 
-AWSOTA::AWSOTA( void )
-{
-	json_ota_config = new DynamicJsonDocument( 6000 );
+ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY) {
+
+	ota_status_t ota_status;
+
+	if ( !download_json( url, root_ca )) {
+
+		ota_status = ota_status_t::HTTP_FAILED;
+		goto exit;
+	}
+
+	if (!aws_board_id.size() || !aws_config.size() || !aws_device_id.size()) {
+
+		ota_status = ota_status_t::CONFIG_ERROR;
+		goto exit;
+	}
+
+	for (auto ota_config : json_ota_config["Configurations"].as<JsonArray>()) {
+
+		if (is_profile_match(ota_config, current_version)) {
+
+			ota_status = handle_action(ota_config, root_ca, action);
+			break;
+		}
+    }
+
+	ota_status = ota_status_t::NO_UPDATE_PROFILE_FOUND;
+
+exit:
+	Serial.printf( "[OTA       ] [INFO ] Firmware OTA update result: (%d) %s.\n", ota_status, OTA_message( ota_status ));
+	return ota_status;
 }
 
-ota_status_t AWSOTA::check_for_update( const char *url, const char *root_ca, etl::string<26> &current_version, ota_action_t action = ota_action_t::CHECK_ONLY )
+bool AWSOTA::is_profile_match( const JsonObject &ota_config, const etl::string<26> &current_version )
 {
-	etl::string<32>	board;
-	etl::string<32>	config;
-	int				deserialisation_status;
+	etl::string<32> board;
 	etl::string<32>	device;
-	bool			profile_match = false;
-	etl::string<32>	version;
+	etl::string<32>	config;
+	etl::string<32> version;
 
-	if ( !download_json( url, root_ca ))
-		return status_code;
+    if ( ota_config.containsKey("Board") )
+        board.assign( ota_config["Board"].as<const char *>() );
 
-	if ( !aws_board_id.size() || !aws_config.size() || !aws_device_id.size() )
-		return ota_status_t::CONFIG_ERROR;
+    if ( ota_config.containsKey("Device") )
+		device.assign( ota_config["Device"].as<const char *>() );
 
-	for( auto ota_config : (*json_ota_config)["Configurations"].as<JsonArray>() ) {
+    if ( ota_config.containsKey("Config") )
+		config.assign( ota_config["Config"].as<const char *>() );
 
-		if ( ota_config.containsKey( "Board" ))
-			board.assign( ota_config["Board"].as<const char *>() );
+    if ( ota_config.containsKey("Version") )
+		version.assign( ota_config["Version"].as<const char *>() );
 
-		if ( ota_config.containsKey( "Device" ))
-			device.assign( ota_config["Device"].as<const char *>() );
+    return ( !board.size() || (board == aws_board_id) ) &&
+           ( !device.size() || (device == aws_device_id) ) &&
+           ( !config.size() || (config == aws_config) ) &&
+           ( !version.size() || (version > current_version) );
+}
 
-		if ( ota_config.containsKey( "Config" ))
-			config.assign( ota_config["Config"].as<const char *>() );
+ota_status_t AWSOTA::handle_action( const JsonObject &ota_config, const char *root_ca, ota_action_t action )
+{
+	if ( action == ota_action_t::CHECK_ONLY )
+		return ota_status_t::UPDATE_AVAILABLE;
 
-		if ( ota_config.containsKey( "Version" ))
-			version.assign( ota_config["Version"].as<const char *>() );
+    if ( action == ota_action_t::UPDATE_AND_BOOT ) {
 
-		if (( !board.size() || ( board == aws_board_id )) &&
-			( !device.size() || ( device == aws_device_id )) &&
-			( !config.size() || ( config == aws_config ))) {
-
-			if ( !version.size() || ( version > current_version )) {
-
-				if ( action == ota_action_t::CHECK_ONLY )
-					return ota_status_t::UPDATE_AVAILABLE;
-
-				if ( action == ota_action_t::UPDATE_AND_BOOT ) {
-
-					ota_update_ongoing = true;
-					save_firmware_sha256( ota_config["SHA256"].as<const char *>() );
-				}
-
-				if ( do_ota_update( ota_config["URL"], root_ca, action ))
-					return status_code;
-
-				profile_match = true;
-			}
-		}
+		ota_update_ongoing = true;
+		save_firmware_sha256(ota_config["SHA256"].as<const char *>());
 	}
-	return profile_match ? ota_status_t::NO_UPDATE_AVAILABLE : ota_status_t::NO_UPDATE_PROFILE_FOUND;
+
+	if ( !do_ota_update( ota_config["URL"], root_ca, action ))
+		return ota_status_t::OTA_UPDATE_FAIL;
+
+	return ota_status_t::UPDATE_OK;
 }
 
 bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t action )
 {
 	HTTPClient	http;
-
+	
 	if ( !http.begin( url, root_ca )) {
 
 		status_code = ota_status_t::HTTP_FAILED;
@@ -160,7 +175,7 @@ bool AWSOTA::do_ota_update( const char *url, const char *root_ca, ota_action_t a
 		}
 		ESP.restart();
 	}
-
+	
 	status_code = ota_status_t::WRITE_ERROR;
 	return false;
 }
@@ -174,12 +189,50 @@ bool AWSOTA::download_json( const char *url, const char *root_ca )
 		status_code = ota_status_t::HTTP_FAILED;
 		return false;
 	}
-
+	
 	if ( ( http_status = http.GET()) == 200 )
-		deserialisation_status = deserializeJson( *json_ota_config, http.getString() );
+		deserialisation_status = deserializeJson( json_ota_config, http.getString() );
 
 	http.end();
 	return (( http_status == 200 ) && ( deserialisation_status == DeserializationError::Ok ));
+}
+
+const char *AWSOTA::OTA_message( ota_status_t code )
+{
+	switch ( code ) {
+
+		case ota_status_t::UPDATE_AVAILABLE:
+			return "An update is available but wasn't installed";
+
+		case ota_status_t::NO_UPDATE_PROFILE_FOUND:
+			return "No profile matches";
+
+		case ota_status_t::NO_UPDATE_AVAILABLE:
+			return "Profile matched, but update not applicable";
+
+		case ota_status_t::UPDATE_OK:
+			return "An update was done, but no reboot";
+
+		case ota_status_t::HTTP_FAILED:
+			return "HTTP GET failure";
+
+		case ota_status_t::WRITE_ERROR:
+			return "Write error";
+
+		case ota_status_t::JSON_PROBLEM:
+			return "Invalid JSON";
+
+		case ota_status_t::OTA_UPDATE_FAIL:
+			return "Update failure (no OTA partition?)";
+
+		case ota_status_t::CONFIG_ERROR:
+			return "OTA config has a problem";
+
+		case ota_status_t::UNKNOWN:
+			return "Undefined status";
+
+	}
+	return "Unhandled OTA status code";
 }
 
 void AWSOTA::save_firmware_sha256( const char *sha256 )

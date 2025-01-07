@@ -27,7 +27,7 @@
 #include "config_manager.h"
 #include "AstroWeatherStation.h"
 
-extern HardwareSerial Serial1;
+extern HardwareSerial Serial1;	// NOSONAR
 
 
 extern AstroWeatherStation station;

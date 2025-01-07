@@ -133,7 +133,7 @@ uint8_t I2C_SC16IS750::write( uint8_t b )
 
 uint8_t I2C_SC16IS750::write_byte( uint8_t b )
 {
-	while (( read_register( SC16IS750_LSR ) & LSR_OVERRUN_ERROR )) {
+	while ( read_register( SC16IS750_LSR ) & LSR_OVERRUN_ERROR ) {
 		// Flush before writing
 	}
 
