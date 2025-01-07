@@ -1,4 +1,6 @@
 <!doctype html>
+<!-- COPYRIGHT_BLOCK_START -->
+<!-- NOSONAR -->
 <!--
    index.html
 
@@ -17,7 +19,7 @@
 	You should have received a copy of the GNU General Public License along
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 -->
-
+<!-- COPYRIGHT_BLOCK_END -->
 <html lang="en">
 <head>
 	<title>
@@ -43,17 +45,17 @@
 			margin-right: 5px;
 		}
 		.top_menu {
-			display: flex;
-			flex-direction: row;
-		}
-		.top_menu {
 			margin-right: 2px;
 			border-top: 0px solid;
 			border-left: 0px solid;
 			border-right: 0px solid;
+			border-bottom: 0px solid;
 			border-radius: 10px 10px 0px 0px;
+			font-size: 11pt;
 			padding: 10px;
 			cursor: zoom-in;
+			display: flex;
+			flex-direction: row;
 		}
 		.unselected_top_menu {
 			background: #dbdbdb;
@@ -79,6 +81,8 @@
 			background: #f6f6f6;
 			font-weight: bold;
 			width: 80px;
+			text-decoration: none;
+			font-size: 9pt;
 			padding-top: 5px;
 			padding-bottom: 5px;
 			border: 3px solid #ff3030;
@@ -104,13 +108,13 @@
 <body onload="retrieve_data();">
 
 	<div id="banners" style="display:flex; flex-direction: row">
-		<div id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" role="button" tabIndex="0">General</div>
-		<div id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" role="button" tabIndex="0">Network</div>
-		<div id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" role="button" tabIndex="0">Sensors</div>
-		<div id="banner_devices"  class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" role="button" tabIndex="0">Devices</div>
-		<div id="banner_lookout" class="top_menu unselected_top_menu" onclick="toggle_panel('lookout');" role="button" tabIndex="0">Lookout</div>
-		<div id="banner_alpaca"  class="top_menu unselected_top_menu" onclick="toggle_panel('alpaca');" role="button" tabIndex="0">ALPACA</div>
-		<div id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" role="button" tabIndex="0">Dashboard</div>
+		<button id="banner_general" class="top_menu selected_top_menu" onclick="toggle_panel('general');" tabIndex="0">General</button>
+		<button id="banner_network" class="top_menu unselected_top_menu" onclick="toggle_panel('network');" tabIndex="0">Network</button>
+		<button id="banner_sensors" class="top_menu unselected_top_menu" onclick="toggle_panel('sensors');" tabIndex="0">Sensors</button>
+		<button id="banner_devices" class="top_menu unselected_top_menu" onclick="toggle_panel('devices');" tabIndex="0">Devices</button>
+		<button id="banner_lookout" class="top_menu unselected_top_menu" onclick="toggle_panel('lookout');" tabIndex="0">Lookout</button>
+		<button id="banner_alpaca"  class="top_menu unselected_top_menu" onclick="toggle_panel('alpaca');" tabIndex="0">ALPACA</button>
+		<button id="banner_dashboard" class="top_menu unselected_top_menu" onclick="toggle_panel('dashboard');" tabIndex="0">Dashboard</button>
 	</div> <!-- banners -->
 
 	<form method="post" action="" id="config"/>
@@ -162,7 +166,7 @@
 							<input id="Both" form="config" name="wifi_mode" value="2" type="radio" onchange="toggle_wifi_mode(2);"/> AP+Station
 						</td>
 					</tr>
-					<tr id="show_sta_ssid">
+					<tr id="show_wifi_sta_ssid">
 						<td>Station SSID</td>
 						<td><input form="config" id="wifi_sta_ssid" name="wifi_sta_ssid" type="text" value="" size="15"/></td>
 					</tr>
@@ -189,7 +193,7 @@
 						<td>Station DNS</td>
 						<td><input form="config" id="wifi_sta_dns" name="wifi_sta_dns" value="" type="text" size="15"></td>
 					</tr>
-					<tr id="show_ap_ssid">
+					<tr id="show_wifi_ap_ssid">
 						<td>AP SSID</td>
 						<td><input form="config" id="wifi_ap_ssid" name="wifi_ap_ssid" type="text" value="" size="15"/></td>
 					</tr>

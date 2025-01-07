@@ -229,6 +229,8 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 	if ( !safe || unsafe ) {
 
+		if ( is_safe )
+			station.send_alarm( "[LOOKOUT] Flipped from SAFE to UNSAFE", "[LOOKOUT] Flipped from SAFE to UNSAFE" );
 		is_safe = false;
 		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <NOT SATISFIED> OR unsafe conditions are <SATISFIED>: conditions are <UNSAFE>\n" );
 		dome->close_shutter();
@@ -237,6 +239,8 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 	if ( !unsafe && safe ) {
 
+		if ( !is_safe )
+			station.send_alarm( "[LOOKOUT] Flipped from UNSAFE to SAFE", "[LOOKOUT] Flipped from UNSAFE to SAFE" );
 		is_safe = true;
 		Serial.printf( "[LOOKOUT   ] [INFO ] Safe conditions are <SATISFIED> AND unsafe conditions are <NOT SATISFIED>: conditions are <SAFE>\n" );
 		dome->open_shutter();

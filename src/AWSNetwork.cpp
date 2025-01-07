@@ -115,6 +115,47 @@ bool AWSNetwork::connect_to_wifi()
 	return false;
 }
 
+IPAddress AWSNetwork::get_gw( aws_iface iface )
+{
+	switch( iface ) {
+		case aws_iface::wifi_ap:
+			return wifi_ap_gw;
+		case aws_iface::wifi_sta:
+			return wifi_sta_gw;
+		case aws_iface::eth:
+			return eth_gw;
+		default:
+			return IPAddress( 0, 0, 0, 0 );
+	}
+}
+
+IPAddress AWSNetwork::get_ip( aws_iface iface )
+{
+	switch( iface ) {
+		case aws_iface::wifi_ap:
+			return wifi_ap_ip;
+		case aws_iface::wifi_sta:
+			return wifi_sta_ip;
+		case aws_iface::eth:
+			return eth_ip;
+		default:
+			return IPAddress( 0, 0, 0, 0 );
+	}
+}
+
+IPAddress AWSNetwork::get_subnet( aws_iface iface )
+{
+	switch( iface ) {
+		case aws_iface::wifi_ap:
+			return wifi_ap_subnet;
+		case aws_iface::wifi_sta:
+			return wifi_sta_subnet;
+		case aws_iface::eth:
+			return eth_subnet;
+		default:
+			return IPAddress( 0, 0, 0, 0 );
+	}
+}
 uint8_t *AWSNetwork::get_wifi_mac( void )
 {
 	return wifi_mac;
@@ -125,7 +166,7 @@ bool AWSNetwork::initialise_ethernet( void )
 	char	*ip			= nullptr;
 	char	*cidr		= nullptr;
 	char	*dummy;
-	uint8_t	eth_mac[6] = { 0xFE, 0xED, 0xDE, 0xAD, 0xBE, 0xEF };	// NOSONAR
+	uint8_t	*eth_mac	= config->get_eth_mac();
 
 	pinMode( 4, OUTPUT );
 	digitalWrite( 4, HIGH );
@@ -192,7 +233,7 @@ bool AWSNetwork::initialise( AWSConfig *_config, bool _debug_mode )
 		default:
 			Serial.printf( "[NETWORK   ] [ERROR] Invalid preferred iface, falling back to WiFi.\n" );
 			initialise_wifi();
-			return false;
+
 	}
 	return false;
 }

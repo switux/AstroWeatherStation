@@ -55,6 +55,10 @@ class AWSNetwork {
 					AWSNetwork( void );
 		IPAddress	cidr_to_mask( byte cidr );
 		bool 		connect_to_wifi( void );
+		IPAddress	get_ip( aws_iface );
+		IPAddress	get_gw( aws_iface );
+		IPAddress 	get_subnet( aws_iface );
+
 		uint8_t		*get_wifi_mac( void );	
 		bool		initialise( AWSConfig *, bool );
 		bool		initialise_ethernet( void );

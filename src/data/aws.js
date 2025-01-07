@@ -35,9 +35,10 @@ const	DOME_SHUTTER_STATUS = [ 'Open', 'Closed', 'Opening', 'Closing', 'Error' ];
 const	PANELS = [ 'general', 'network', 'sensors', 'devices', 'lookout', 'alpaca', 'dashboard' ];
 const	DEVICES = [ 'dome', 'gps' ];
 const	SENSORS = [ 'bme', 'tsl', 'mlx', 'rain_sensor', 'ws', 'wv', 'gps' ];
-const	WIFI_PARAMETERS = [ 'wifi_mode', 'sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
+const	WIFI_PARAMETERS = [ 'wifi_mode', 'wifi_sta_ssid', 'wifi_sta_password', 'wifi_sta_ip_mode', 'wifi_sta_ip', 'wifi_sta_gw', 'wifi_sta_dns', 'wifi_ap_ssid', 'wifi_ap_password', 'wifi_ap_ip', 'wifi_ap_gw', 'wifi_ap_dns' ];
 const	ETH_PARAMETERS = [ 'eth_ip_mode', 'eth_ip', 'eth_gw', 'eth_dns' ];
 const	CLOUD_COVERAGE = [ 'Clear', 'Cloudy', 'Overcast' ];
+const	WIFI_MODE = [ 'Client', 'AP', 'Both' ];
 
 let sleepSetTimeout_ctrl;
 
@@ -100,14 +101,14 @@ function config_section_active( section_name, yes_no )
 
 function dome_closing()
 {
-	document.getElementById('open_dome_shutter_button').disabled = false;
-	document.getElementById('close_dome_shutter_button').disabled = true;
+//	document.getElementById('open_dome_shutter_button').disabled = false;
+//	document.getElementById('close_dome_shutter_button').disabled = true;
 }
 
 function dome_opening()
 {
-	document.getElementById('open_dome_shutter_button').disabled = true;
-	document.getElementById('close_dome_shutter_button').disabled = false;
+//	document.getElementById('open_dome_shutter_button').disabled = true;
+//	document.getElementById('close_dome_shutter_button').disabled = false;
 }
 
 function fill_device_values( values )
@@ -132,6 +133,9 @@ function fill_lookout_value( parameter, from_list, sensor_available, values )
 function fill_lookout_values( values )
 {
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
+	
+	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
+	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
 
 	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
 	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
@@ -150,7 +154,7 @@ function fill_lookout_values( values )
 
 function fill_network_values( values )
 {
-	switch( values['wifi_mode'] ) {
+	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
 		case 'AP':
 			document.getElementById("AP").checked = true;
 			break;
@@ -161,10 +165,15 @@ function fill_network_values( values )
 			document.getElementById("Both").checked = true;
 			break;
 	}
-	let parameters = [ "wifi_ap_ssid", "eth_dns", "eth_gw", "eth_ip" ,"remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
+	let parameters = [ "wifi_ap_ssid", "remote_server", "wifi_sta_ssid", "url_path", "wifi_ap_dns", "wifi_ap_gw", "wifi_ap_ip", "wifi_ap_password", "wifi_sta_dns", "wifi_sta_gw", "wifi_sta_ip", "wifi_sta_password" ];
 	parameters.forEach(( parameter ) => {
 		document.getElementById( parameter ).value = values[ parameter ];
 	});
+
+	show_wifi();
+	let x = document.getElementById("wifi");
+	if ( x !== null )
+		x.checked = true;
 
 	if ( values['has_ethernet'] === true )
 		document.getElementById("iface_option").style.display = "table-row";
@@ -188,14 +197,14 @@ function fill_network_values( values )
 	}
 
 	toggle_sta_ipgw(  values['show_wifi_sta_ip_mode'] );
-	switch( values['wifi_mode'] ) {
-		case 0:
+	switch( WIFI_MODE[ values['wifi_mode'] ] ) {
+		case 'AP':
 			document.getElementById("AP").checked = true;
 			break;
-		case 1:
+		case 'Client':
 			document.getElementById("Client").checked = true;
 			break;
-		case 2:
+		case 'Both':
 			document.getElementById("Both").checked = true;
 			break;
 	}

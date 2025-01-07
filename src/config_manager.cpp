@@ -67,6 +67,11 @@ etl::string_view AWSConfig::get_anemometer_model_str( void )
 	return etl::string_view( Anemometer::ANEMOMETER_MODEL[ get_parameter<int>( "anemometer_model" ) ].c_str() );
 }
 
+uint8_t *AWSConfig::get_eth_mac( void )
+{
+	return eth_mac;
+}
+
 uint32_t AWSConfig::get_fs_free_space( void )
 {
 	return fs_free_space;
@@ -281,6 +286,8 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		nvs.end();
 		return false;
 	}
+
+#if 0
 	if ( ( x = nvs.getChar( "has_sc16is750", 127 )) == 127 ) {
 
 		Serial.printf( "[CONFIGMNGR] [PANIC] Could not get SC16IS750 presence from NVS. Please contact support.\n" );
@@ -288,6 +295,7 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::SC16IS750_DEVICE;
+#endif
 
 	if ( ( x = nvs.getChar( "has_ethernet", 127 )) == 127 ) {
 
@@ -296,6 +304,9 @@ bool AWSConfig::read_hw_info_from_nvs( void )
 		return false;
 	}
 	devices |= ( x == 0 ) ? aws_device_t::NO_SENSOR : aws_device_t::ETHERNET_DEVICE;
+	if ( x )
+		nvs.getBytes( "eth_mac", eth_mac, 6 );
+
 	nvs.end();
 
 	return true;
@@ -419,6 +430,9 @@ void AWSConfig::set_missing_network_parameters_to_default_values( void )
 
 	if ( !json_config->containsKey( "eth_dns" ))
 		(*json_config)["eth_dns"] = DEFAULT_ETH_DNS;
+
+	if ( !json_config->containsKey( "eth_gw" ))
+		(*json_config)["eth_gw"] = DEFAULT_ETH_GW;
 
 	if ( !json_config->containsKey( "eth_ip_mode" ))
 		(*json_config)["eth_ip_mode"] = static_cast<int>( DEFAULT_ETH_IP_MODE );
@@ -609,6 +623,9 @@ void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
 
 	if ( !json_config->containsKey( "lookout_enabled" ))
 		(*json_config)["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
+
+	if ( !json_config->containsKey( "cloud_coverage_formula" ))
+		(*json_config)["cloud_coverage_formula"] = DEFAULT_CC_FORMULA_AWS ? 0 : 1;
 
 	set_missing_lookout_safe_parameters_to_default_values();
 	set_missing_lookout_unsafe_parameters_to_default_values();

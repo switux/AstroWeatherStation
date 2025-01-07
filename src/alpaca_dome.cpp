@@ -34,12 +34,7 @@ extern AstroWeatherStation station;
 alpaca_dome::alpaca_dome( void ) : alpaca_device( DOME_INTERFACE_VERSION )
 {
 }
-/*
-void alpaca_dome::attach_device( Dome &dome )
-{
-	
-}
-*/
+
 bool alpaca_dome::abortslew( AsyncWebServerRequest *request, const char *transaction_details )
 {
 	if ( request->method() == HTTP_GET )

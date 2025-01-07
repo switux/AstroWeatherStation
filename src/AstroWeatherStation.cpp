@@ -176,7 +176,9 @@ void AstroWeatherStation::display_banner()
 	uint8_t	*wifi_mac = network.get_wifi_mac();
 	int		i;
 	bool	gpioext = config.get_has_device( aws_device_t::SC16IS750_DEVICE );
-	
+	bool	eth = config.get_has_device( aws_device_t::ETHERNET_DEVICE );
+	uint8_t	*eth_mac = config.get_eth_mac();
+
 	Serial.printf( "\n#############################################################################################\n" );
 	Serial.printf( "# AstroWeatherStation                                                                       #\n" );
 	Serial.printf( "#  (c) lesage@loads.ch                                                                      #\n" );
@@ -187,7 +189,9 @@ void AstroWeatherStation::display_banner()
 	print_config_string( "# Board              : %s", ota_setup.board.data() );
 	print_config_string( "# Model              : %s", ota_setup.config.data() );
 	print_config_string( "# WIFI Mac           : %s", ota_setup.device.data() );
-	print_config_string( "# Ethernet present   : %s", config.get_has_device( aws_device_t::ETHERNET_DEVICE ) ? "Yes" : "No" );
+	print_config_string( "# Ethernet present   : %s",  eth ? "Yes" : "No" );
+	if ( eth )
+		print_config_string( "# ETH Mac            : %02x:%02x:%02x:%02x:%02x:%02x", eth_mac[0], eth_mac[1], eth_mac[2], eth_mac[3], eth_mac[4], eth_mac[5] );
 	print_config_string( "# GPIO ext. present  : %s", gpioext ? "Yes" : "No" );
 	print_config_string( "# Firmware           : %s", ota_setup.version.data() );
 
@@ -276,7 +280,7 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 	DynamicJsonDocument	json_data(870);
 	sensor_data_t		*sensor_data = sensor_manager.get_sensor_data();
 	int					l;
-	
+
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
 	json_data["timestamp"] = sensor_data->timestamp;
@@ -391,7 +395,7 @@ time_t AstroWeatherStation::get_timestamp( void )
 
 	if ( ntp_synced || ( config.get_has_device( aws_device_t::GPS_SENSOR ) && station_data.gps.fix ))
 		time( &now );
-	
+
 	return now;
 }
 
@@ -438,7 +442,7 @@ void AstroWeatherStation::handle_event( aws_event_t event )
 			break;
 
 		default:
-			break; 
+			break;
 	}
 }
 
@@ -480,9 +484,9 @@ bool AstroWeatherStation::initialise( void )
 		snprintf( h, 3, "%02x", _byte );
 		station_data.firmware_sha56 += h;
     }
-	
+
 	Serial.printf( "\n\n[STATION   ] [INFO ] Firmware checksum = [%s]\n", station_data.firmware_sha56.data() );
-	Serial.printf( "[STATION   ] [INFO ] AstroWeatherStation [REV %s, BUILD %s] is booting...\n", REV.data(), BUILD_ID );
+	Serial.printf( "[STATION   ] [INFO ] AstroWeatherStation [REV %s, BUILD %s, BASE %s] is booting...\n", REV.data(), BUILD_ID, GITHASH );
 
 	station_data.reset_reason = esp_reset_reason();
 
@@ -497,7 +501,7 @@ bool AstroWeatherStation::initialise( void )
 
 	station_data.health.fs_free_space = config.get_fs_free_space();
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
-	
+
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 	if ( solar_panel )
 		setCpuFrequencyMhz( 80 );
@@ -595,7 +599,7 @@ bool AstroWeatherStation::initialise( void )
 		initialise_GPS();
 
 	if ( !sensor_manager.initialise( &station_devices.sc16is750, &config, false )) {
-		
+
 		set_led_status( station_status_t::SENSOR_INIT_ERROR );
 		return false;
 	}
@@ -819,7 +823,7 @@ const char *AstroWeatherStation::OTA_message( ota_status_t code )
 
 		case ota_status_t::UNKNOWN:
 			return "Undefined status";
-		
+
 	}
 	return "Unhandled OTA status code";
 }
@@ -834,7 +838,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 	int				data_push_timer				= config.get_parameter<int>( "push_freq" );
 	uint16_t		rain_event_guard_time		= config.get_parameter<int>( "rain_event_guard_time" );
 	bool			auto_ota_updates			= config.get_parameter<bool>( "automatic_updates" );
-	
+
 	if ( !config.get_parameter<bool>( "data_push" ))
 		data_push_timer = 0;
 
@@ -845,14 +849,14 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 			station_data.health.current_heap_size =	xPortGetFreeHeapSize();
 			station_data.health.largest_free_heap_block = heap_caps_get_largest_free_block( MALLOC_CAP_8BIT );
 			sync_time( false );
-			sync_time_millis = millis();			
+			sync_time_millis = millis();
 		}
 
 		if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
 
 			force_ota_update = false;
 			check_ota_updates( true );
-			ota_millis = millis();			
+			ota_millis = millis();
 		}
 
 		if ( config.get_has_device( aws_device_t::RAIN_SENSOR ))
@@ -898,17 +902,57 @@ void AstroWeatherStation::print_config_string( const char *fmt, Args... args )
 void AstroWeatherStation::print_runtime_config( void )
 {
  	std::array<char,97>	string;
-	const char			*root_ca = config.get_root_ca().data();
-	int					ca_pos = 0;
+	const char			*root_ca	= config.get_root_ca().data();
+	int					ca_pos		= 0;
+	IPAddress			ipv4;
+	char				*ip			= nullptr;
+	char				*cidr		= nullptr;
+	char				*dummy;
+	uint8_t				_cidr;
+	etl::string<32>		buf;
+
+	strlcpy( buf.data(), config.get_parameter<const char *>( "eth_ip" ), buf.capacity() );
+	ip = strtok_r( buf.data(), "/", &dummy );
+	if ( ip ) {
+		cidr = strtok_r( nullptr, "/", &dummy );
+		ipv4.fromString( ip );
+	}
+	if (( ipv4 == network.get_ip( aws_iface::eth ) ) && ( atoi( cidr ) == WiFiGenericClass::calculateSubnetCIDR( network.get_subnet( aws_iface::eth ) )))
+		print_config_string( "# ETH IP       : %s", config.get_parameter<const char *>( "eth_ip" ));
+	else
+		print_config_string( "# ETH IP       : %s/%d", network.get_ip( aws_iface::eth ).toString(), WiFiGenericClass::calculateSubnetCIDR( network.get_subnet( aws_iface::eth ) ) );
+
+	ipv4.fromString( config.get_parameter<const char *>( "eth_gw" ) );
+	if ( ipv4 == network.get_gw( aws_iface::eth ) )
+		print_config_string( "# ETH Gateway  : %s", config.get_parameter<const char *>( "eth_gw" ));
+	else
+		print_config_string( "# ETH Gateway  : %s", network.get_gw( aws_iface::eth ).toString() );
 
 	print_config_string( "# AP SSID      : %s", config.get_parameter<const char *>( "wifi_ap_ssid" ));
 	print_config_string( "# AP PASSWORD  : %s", config.get_parameter<const char *>( "wifi_ap_password" ));
+
 	print_config_string( "# AP IP        : %s", config.get_parameter<const char *>( "wifi_ap_ip" ));
 	print_config_string( "# AP Gateway   : %s", config.get_parameter<const char *>( "wifi_ap_gw" ));
 	print_config_string( "# STA SSID     : %s", config.get_parameter<const char *>( "wifi_sta_ssid" ));
 	print_config_string( "# STA PASSWORD : %s", config.get_parameter<const char *>( "wifi_sta_password" ));
-	print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
-	print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
+
+	strlcpy( buf.data(), config.get_parameter<const char *>( "wifi_sta_ip" ), buf.capacity() );
+	ip = strtok_r( buf.data(), "/", &dummy );
+	if ( ip ) {
+		cidr = strtok_r( nullptr, "/", &dummy );
+		ipv4.fromString( ip );
+	}
+	if (( ipv4 == network.get_ip( aws_iface::wifi_sta ) ) && ( atoi( cidr ) == WiFiGenericClass::calculateSubnetCIDR( network.get_subnet( aws_iface::wifi_sta ) )))
+		print_config_string( "# STA IP       : %s", config.get_parameter<const char *>( "wifi_sta_ip" ));
+	else
+		print_config_string( "# STA IP       : %s/%d", network.get_ip( aws_iface::wifi_sta ).toString(), WiFiGenericClass::calculateSubnetCIDR( network.get_subnet( aws_iface::wifi_sta ) ) );
+
+	ipv4.fromString( config.get_parameter<const char *>( "wifi_sta_gw" ) );
+	if ( ipv4 == network.get_gw( aws_iface::wifi_sta ) )
+		print_config_string( "# STA Gateway  : %s", config.get_parameter<const char *>( "wifi_sta_gw" ));
+	else
+		print_config_string( "# STA Gateway  : %s", network.get_gw( aws_iface::wifi_sta ).toString() );
+
 	print_config_string( "# SERVER       : %s", config.get_parameter<const char *>( "remote_server" ));
 	print_config_string( "# URL PATH     : /%s", config.get_parameter<const char *>( "url_path" ));
 	print_config_string( "# TZNAME       : %s", config.get_parameter<const char *>( "tzname" ));
@@ -1086,7 +1130,7 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 
 bool AstroWeatherStation::resume_lookout( void )
 {
-	return lookout.resume();	
+	return lookout.resume();
 }
 
 void AstroWeatherStation::send_alarm( const char *subject, const char *message )
@@ -1118,7 +1162,7 @@ void AstroWeatherStation::send_backlog_data( void )
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog file.\n" );
 		return;
-		
+
 	}
 	// flawfinder: ignore
 	File backlog = LittleFS.open( "/unsent.txt", FILE_READ );
@@ -1254,6 +1298,7 @@ bool AstroWeatherStation::startup_sanity_check( void )
 
 		case aws_iface::wifi_ap:
 			return true;
+
 	}
 	return false;
 }
@@ -1289,7 +1334,7 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 
 bool AstroWeatherStation::suspend_lookout( void )
 {
-	return lookout.suspend();	
+	return lookout.suspend();
 }
 
 bool AstroWeatherStation::sync_time( bool verbose )
