@@ -185,6 +185,7 @@ class AstroWeatherStation {
 		uint16_t			get_config_port( void );
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
+		etl::string_view	get_json_string_run_config( void );
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( float *, float * );
 		etl::string_view	get_lookout_rules_state_json_string( void );

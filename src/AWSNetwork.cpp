@@ -106,6 +106,9 @@ bool AWSNetwork::connect_to_wifi()
 		wifi_sta_subnet = WiFi.subnetMask();
 		wifi_sta_gw = WiFi.gatewayIP();
 		wifi_sta_dns = WiFi.dnsIP();
+		config->set_parameter( "run_wifi_sta_ip", wifi_sta_ip.toString().c_str() );
+		config->set_parameter( "run_wifi_sta_subnet", wifi_sta_subnet.toString().c_str() );
+		config->set_parameter( "run_wifi_sta_gw", wifi_sta_gw.toString().c_str() );
 		Serial.printf( " OK. Using IP [%s]\n", WiFi.localIP().toString().c_str() );
 		return true;
 	}
@@ -211,6 +214,10 @@ bool AWSNetwork::initialise_ethernet( void )
 	eth_subnet = ETH.subnetMask();
 	eth_dns = ETH.dnsIP();
 
+	config->set_parameter( "run_eth_ip", eth_ip.toString().c_str() );
+	config->set_parameter( "run_eth_subnet", eth_subnet.toString().c_str() );
+	config->set_parameter( "run_eth_gw", eth_gw.toString().c_str() );
+		
 	return true;
 }
 

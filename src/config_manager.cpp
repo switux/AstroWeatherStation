@@ -665,6 +665,11 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 }
 
+void AWSConfig::set_parameter( const char *key, const char *val )
+{
+	(*json_config)[ key ] = strdup( val );
+}
+
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
 {
 	if ( _json_config.containsKey( "root_ca" )) {
