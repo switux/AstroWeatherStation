@@ -27,11 +27,11 @@
 
 const alpaca_interface_version_t	DOME_INTERFACE_VERSION	= 2;
 
-typedef struct alpaca_dome_t {
+using alpaca_dome_t = struct {
 
 	dome_shutter_status_t	shutterstatus;
 
-} alpaca_dome_t;
+};
 
 class alpaca_dome : public alpaca_device
 {
@@ -43,13 +43,13 @@ class alpaca_dome : public alpaca_device
 	public:
 
 		explicit	alpaca_dome( void );
-		bool		abortslew( AsyncWebServerRequest *, const char * );
-		bool		cansetshutter( AsyncWebServerRequest *, const char * );
-		bool		closeshutter( AsyncWebServerRequest *, const char * );
-		bool		openshutter( AsyncWebServerRequest *, const char * );
-		void		set_connected( AsyncWebServerRequest *, const char * );
-		void		slaved( AsyncWebServerRequest *, const char * );
-		bool		shutterstatus( AsyncWebServerRequest *, const char * );
+		bool		abortslew( AsyncWebServerRequest *, etl::string<128> & );
+		bool		cansetshutter( AsyncWebServerRequest *, etl::string<128> & );
+		bool		closeshutter( AsyncWebServerRequest *, etl::string<128> & );
+		bool		openshutter( AsyncWebServerRequest *, etl::string<128> & );
+		void		set_connected( AsyncWebServerRequest *, etl::string<128> & );
+		void		slaved( AsyncWebServerRequest *, etl::string<128> & );
+		bool		shutterstatus( AsyncWebServerRequest *, etl::string<128> & );
 };
 
 #endif

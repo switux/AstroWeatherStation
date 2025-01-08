@@ -79,13 +79,13 @@ bool AWSLookout::check_unsafe_rule( const char *name, lookout_rule_t<T> &rule, b
 		safe_rule.ts = 0;
 		return ( rule.satisfied = true );
 	}
-	
+
 	if ( value < rule.max )
 		return ( rule.satisfied = false );
 
 	if ( !rule.ts )
 		rule.ts = value_ts;
-	
+
 	if (( now - rule.ts ) >= rule.delay ) {
 
 		if ( std::is_same<T, float>::value )
@@ -114,7 +114,7 @@ void AWSLookout::check_rules( void )
 	etl::string<140>	str;
 	bool				tmp_is_safe			= true;
 	bool				tmp_is_unsafe		= false;
-	
+
 	if ( rain_event ) {
 
 		Serial.printf( "[LOOKOUT   ] [INFO ] Rain event\n" );
@@ -129,7 +129,7 @@ void AWSLookout::check_rules( void )
 		rain_event = false;
 
 	} else {
-	
+
 		unsafe_rain_event.satisfied = false;
 
 		tmp_is_unsafe |= ( b = AWSLookout::check_unsafe_rule<float>( "Wind speed #1",
@@ -252,9 +252,9 @@ bool AWSLookout::decide_is_safe( bool unsafe, bool safe )
 
 etl::string_view AWSLookout::get_rules_state( void )
 {
-	DynamicJsonDocument	rules_state_json(140);
-	int					i;
-	
+	JsonDocument	rules_state_json;
+	int				i;
+
 	rules_state_json["unsafe_rain_event"] = unsafe_rain_event.satisfied;
 	rules_state_json["unsafe_wind_speed_1"] = unsafe_wind_speed_1.satisfied;
 	rules_state_json["unsafe_wind_speed_2"] = unsafe_wind_speed_2.satisfied;
@@ -324,13 +324,13 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_rain_event.check_available = true;
 	unsafe_rain_event.ts = 0;
 	unsafe_rain_event.satisfied = false;
-	
+
 	unsafe_wind_speed_1.active = _config->get_parameter<bool>( "unsafe_wind_speed_1_active" ) && _config->get_has_device( aws_device_t::ANEMOMETER_SENSOR );
 	unsafe_wind_speed_1.max = _config->get_parameter<float>( "unsafe_wind_speed_1_max" );
 	unsafe_wind_speed_1.delay = _config->get_parameter<int>( "unsafe_wind_speed_1_delay" );
 	unsafe_wind_speed_1.check_available = _config->get_parameter<int>( "unsafe_wind_speed_1_missing" );
 	unsafe_wind_speed_1.ts = 0;
-	
+
 	unsafe_wind_speed_2.active = _config->get_parameter<bool>( "unsafe_wind_speed_2_active" ) && _config->get_has_device( aws_device_t::ANEMOMETER_SENSOR );
 	unsafe_wind_speed_2.max =  _config->get_parameter<float>( "unsafe_wind_speed_2_max" );
 	unsafe_wind_speed_2.delay =  _config->get_parameter<int>( "unsafe_wind_speed_2_delay" );
@@ -342,7 +342,7 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	unsafe_cloud_coverage_1.delay = _config->get_parameter<int>( "unsafe_cloud_coverage_1_delay" );
 	unsafe_cloud_coverage_1.check_available = _config->get_parameter<int>( "unsafe_cloud_coverage_1_missing" );
 	unsafe_cloud_coverage_1.ts = 0;
-	
+
 	unsafe_cloud_coverage_2.active = _config->get_parameter<bool>( "unsafe_cloud_coverage_2_active" ) && _config->get_has_device( aws_device_t::MLX_SENSOR );
 	unsafe_cloud_coverage_2.max = _config->get_parameter<int>( "unsafe_cloud_coverage_2_max" );
 	unsafe_cloud_coverage_2.delay = _config->get_parameter<int>( "unsafe_cloud_coverage_2_delay" );
@@ -366,7 +366,7 @@ void AWSLookout::initialise_rules( AWSConfig *_config )
 	safe_cloud_coverage_1.delay = _config->get_parameter<int>( "safe_cloud_coverage_1_delay" );
 	safe_cloud_coverage_1.check_available = false;
 	safe_cloud_coverage_1.ts = 0;
-	
+
 	safe_cloud_coverage_2.active = _config->get_parameter<bool>( "safe_cloud_coverage_2_active" ) && _config->get_has_device( aws_device_t::MLX_SENSOR );
 	safe_cloud_coverage_2.max = _config->get_parameter<int>( "safe_cloud_coverage_2_max" );
 	safe_cloud_coverage_2.delay = _config->get_parameter<int>( "safe_cloud_coverage_2_delay" );

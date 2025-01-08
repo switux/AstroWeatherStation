@@ -1,6 +1,6 @@
-/*	
+/*
   	alpaca_device.cpp
-  	
+
 	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -37,132 +37,132 @@ bool alpaca_device::get_is_connected( void )
 	return is_connected;
 }
 
-void alpaca_device::send_connected( AsyncWebServerRequest *request, const char *transaction_details )
+void alpaca_device::send_connected( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", is_connected?"true":"false", transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", is_connected?"true":"false", transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-void alpaca_device::not_implemented( AsyncWebServerRequest *request, const char *transaction_details, const char *msg )
+void alpaca_device::not_implemented( AsyncWebServerRequest *request, etl::string<128> &transaction_details, const char *msg )
 {
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
+	snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details.data(), msg?msg:"" );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-void alpaca_device::device_error( AsyncWebServerRequest *request, const char *transaction_details, ascom_driver_error error, char *msg )
-{
-	etl::string<256>	message_str;
-	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"%s","Value":false,%s})json", 0x500 + static_cast<byte>( error ), msg, transaction_details );
-	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
-
-	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-}
-
-void alpaca_device::send_value( AsyncWebServerRequest *request, const char *transaction_details, bool truefalse )
+void alpaca_device::device_error( AsyncWebServerRequest *request, etl::string<128> &transaction_details, ascom_driver_error error, char *msg )
 {
 	etl::string<256>	message_str;
 	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", truefalse?"true":"false", transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"%s","Value":false,%s})json", 0x500 + static_cast<byte>( error ), msg, transaction_details.data() );
 	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-
 }
 
-void alpaca_device::send_value( AsyncWebServerRequest *request, const char *transaction_details, float value )
+void alpaca_device::send_value( AsyncWebServerRequest *request, etl::string<128> &transaction_details, bool truefalse )
 {
 	etl::string<256>	message_str;
 	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", value, transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", truefalse?"true":"false", transaction_details.data() );
 	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 
 }
 
-void alpaca_device::send_value( AsyncWebServerRequest *request, const char *transaction_details, byte value )
+void alpaca_device::send_value( AsyncWebServerRequest *request, etl::string<128> &transaction_details, float value )
 {
 	etl::string<256>	message_str;
 	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", value, transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%f,%s})json", value, transaction_details.data() );
 	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 
 }
 
-bool alpaca_device::send_description( AsyncWebServerRequest *request, const char *transaction_details )
+void alpaca_device::send_value( AsyncWebServerRequest *request, etl::string<128> &transaction_details, byte value )
+{
+	etl::string<256>	message_str;
+	if ( is_connected )
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", value, transaction_details.data() );
+	else
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
+
+	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+
+}
+
+bool alpaca_device::send_description( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", description, transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", description, transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;
 }
 
-bool alpaca_device::send_driverinfo( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_driverinfo( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverinfo, transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverinfo, transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;
 }
 
-bool alpaca_device::send_driverversion( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_driverversion( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverversion, transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", driverversion, transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;
 }
 
-bool alpaca_device::send_interfaceversion( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_interfaceversion( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", interfaceversion, transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%d,%s})json", interfaceversion, transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;
 }
 
-bool alpaca_device::send_name( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_name( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", name, transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", name, transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 	return true;
 }
 
-bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, const char *transaction_details )
+bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->method() != HTTP_GET )
 		return false;
 
 	etl::string<256>	message_str;
 	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", supportedactions, transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", supportedactions, transaction_details.data() );
 	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
 	request->send( 200, "application/json", static_cast<const char*>( message_str.data() ));
 	return true;

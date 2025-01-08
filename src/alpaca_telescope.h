@@ -40,18 +40,18 @@ class alpaca_telescope : public alpaca_device
 	public:
 
 		explicit alpaca_telescope( void );
-		void set_connected( AsyncWebServerRequest *, const char * );
-		void siderealtime( AsyncWebServerRequest *, const char * );
-		void siteelevation( AsyncWebServerRequest *, const char * );
-		void set_siteelevation( AsyncWebServerRequest *, const char * );
-		void sitelatitude( AsyncWebServerRequest *, const char * );
-		void set_sitelatitude( AsyncWebServerRequest *, const char * );
-		void sitelongitude( AsyncWebServerRequest *, const char * );
-		void set_sitelongitude( AsyncWebServerRequest *, const char * );
-		void trackingrates( AsyncWebServerRequest *, const char * );
-		void utcdate( AsyncWebServerRequest *, const char * );
-		void set_utcdate( AsyncWebServerRequest *, const char * );
-		void axisrates( AsyncWebServerRequest *, const char * );
+		void set_connected( AsyncWebServerRequest *, etl::string<128> & );
+		void siderealtime( AsyncWebServerRequest *, etl::string<128> & );
+		void siteelevation( AsyncWebServerRequest *, etl::string<128> & );
+		void set_siteelevation( AsyncWebServerRequest *, etl::string<128> & );
+		void sitelatitude( AsyncWebServerRequest *, etl::string<128> & );
+		void set_sitelatitude( AsyncWebServerRequest *, etl::string<128> & );
+		void sitelongitude( AsyncWebServerRequest *, etl::string<128> & );
+		void set_sitelongitude( AsyncWebServerRequest *, etl::string<128> & );
+		void trackingrates( AsyncWebServerRequest *, etl::string<128> & );
+		void utcdate( AsyncWebServerRequest *, etl::string<128> & );
+		void set_utcdate( AsyncWebServerRequest *, etl::string<128> & );
+		void axisrates( AsyncWebServerRequest *, etl::string<128> & );
 };
 
 #endif

@@ -63,7 +63,7 @@ class AWSLookout
 		bool check_safe_rule( const char *, lookout_rule_t<T> &, T, time_t, time_t, lookout_rule_t<T> & );
 		bool decide_is_safe( bool, bool );
 		void initialise_rules( AWSConfig * );
-		
+
 	public:
 
 							AWSLookout( void ) = default;
