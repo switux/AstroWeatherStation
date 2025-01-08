@@ -40,8 +40,7 @@ using configured_device_t = struct {
 	etl::string<32>	DeviceName;
 	etl::string<32>	DeviceType;
 	uint32_t		DeviceNumber;
-	etl::string<36>	UniqueID[36];
-
+	etl::string<36>	UniqueID;
 };
 
 enum struct ascom_error_t : byte
