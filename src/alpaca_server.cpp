@@ -49,16 +49,16 @@
 
 extern AstroWeatherStation station;
 
-const configured_device_t configured_devices[ CONFIGURED_DEVICES ] = {
+const std::array<configured_device_t,CONFIGURED_DEVICES> configured_devices = {
 
-	{ "Rain sensor", "Safetymonitor", 0, SAFETYMONITOR_UUID },
-	{ "Dome", "Dome", 0, DOME_UUID },
-	{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID },
-	{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
+	configured_device_t{ "Rain sensor", "Safetymonitor", 0, SAFETYMONITOR_UUID },
+	configured_device_t{ "Dome", "Dome", 0, DOME_UUID },
+	configured_device_t{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID },
+	configured_device_t{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
 };
 
 // flawfinder: ignore
-const char *ascom_error_message[8] = {
+constexpr std::array<const char *,8> ascom_error_message = {
 	"Property or method not implemented",
 	"Invalid value",
 	"Value not set",
@@ -71,7 +71,7 @@ const char *ascom_error_message[8] = {
 
 alpaca_server::alpaca_server( void )
 {
-	memset( transaction_details, 0, 128 );
+	transaction_details.clear();
 }
 
 void alpaca_server::alpaca_getapiversions( AsyncWebServerRequest *request )
@@ -82,13 +82,13 @@ void alpaca_server::alpaca_getapiversions( AsyncWebServerRequest *request )
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		snprintf( static_cast<char *>( str.data() ), str.capacity(), "{\"Value\":[1],%s}", transaction_details );
+		snprintf( static_cast<char *>( str.data() ), str.capacity(), "{\"Value\":[1],%s}", transaction_details.data() );
 		request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	} else {
 
 		if ( bad_request )
-			request->send( 400, "text/plain", transaction_details );
+			request->send( 400, "text/plain", static_cast<const char *>( transaction_details.data() ) );
 		else
 			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
@@ -106,7 +106,7 @@ void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request 
 		if ( get_configured_devices( str.data(), 960 )) {
 
 			etl::string<2048> str2;
-			snprintf( str2.data(), str2.capacity(), "{\"Value\":%s,%s}", str.data(), transaction_details );
+			snprintf( str2.data(), str2.capacity(), "{\"Value\":%s,%s}", str.data(), transaction_details.data() );
 			request->send( 200, "application/json", static_cast<const char *>( str2.data() ) );
 
 		} else
@@ -116,7 +116,7 @@ void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request 
 	} else {
 
 		if ( bad_request )
-			request->send( 400, "text/plain", transaction_details );
+			request->send( 400, "text/plain", static_cast<const char *>( transaction_details.data() ) );
 		else
 			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 	}
@@ -237,7 +237,7 @@ void alpaca_server::dispatch_request( AsyncWebServerRequest *request )
 {
 	if ( !extract_transaction_details( request, ( request->method() != HTTP_GET ) )) {
 
-		request->send( 400, "text/plain", transaction_details );
+		request->send( 400, "text/plain", static_cast<const char *>( transaction_details.data() ) );
 		return;
 	}
 
@@ -894,7 +894,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 				if ( ( client_id = atoi( request->getParam(i)->value().c_str() )) <= 0 ) {
 
 					bad_request = true;
-					snprintf( transaction_details, 127, "Missing or invalid ClientID" );
+					snprintf( transaction_details.data(), 127, "Missing or invalid ClientID" );
 					client_id = 0;
 					break;
 				}
@@ -906,7 +906,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 				if ( ( client_transaction_id = atoi( request->getParam(i)->value().c_str() )) <= 0 ) {
 
 					bad_request = true;
-					snprintf( transaction_details, 127, "Missing or invalid ClientTransactionID" );
+					snprintf( transaction_details.data(), 127, "Missing or invalid ClientTransactionID" );
 					client_transaction_id = 0;
 					break;
 				}
@@ -925,7 +925,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 		return false;
 
 	server_transaction_id++;
-	snprintf( transaction_details, 127, R"json("ClientID":%d,"ClientTransactionID":%d,"ServerTransactionID":%d)json", client_id, client_transaction_id, server_transaction_id );
+	snprintf( transaction_details.data(), 127, R"json("ClientID":%d,"ClientTransactionID":%d,"ServerTransactionID":%d)json", client_id, client_transaction_id, server_transaction_id );
 	return true;
 }
 
@@ -933,19 +933,19 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 {
 	etl::string<256> str;
 	server_transaction_id++;
-	
+
 	if ( debug_mode )
 		Serial.printf( "\n[ALPACASERV] [DEBUG] Not implemented endpoint: %s\n", request->url().c_str());
 
 	if ( extract_transaction_details( request, false ) ) {
 
-		snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details, msg?msg:"" );
+		snprintf( static_cast<char *>( str.data() ), str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"%s"})json", transaction_details.data(), msg?msg:"" );
 		request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
 	} else {
 
 		if ( bad_request )
-			request->send( 400, "text/plain", transaction_details );
+			request->send( 400, "text/plain", static_cast<const char *>( transaction_details.data() ) );
 		else
 			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
 
@@ -957,22 +957,22 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 	if ( packet.length() ) {
 
 		// flawfinder: ignore
-		int len = packet.read( reinterpret_cast<uint8_t *>( buf ), 255 );
+		int len = packet.read( reinterpret_cast<uint8_t *>( buf.data() ), 255 );
 		if ( len > 0 )
-			buf[ len ] = 0;
+			buf.data()[ len ] = 0;
 		if ( len < 16 ) {
 			if ( debug_mode )
-				Serial.printf( "[ALPACASERV] [INFO ] Discovery: short packet [%s] from %s:%d\n" , buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
+				Serial.printf( "[ALPACASERV] [INFO ] Discovery: short packet [%s] from %s:%d\n" , buf.data(), packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
-		if ( strncmp( "alpacadiscovery1", buf, 16 ) != 0 ) {
+		if ( buf != "alpacadiscovery1" ) {
 			if ( debug_mode )
 				Serial.printf( "[ALPACASERV] [INFO ] Discovery: bad header [%s] from %s:%d\n",  buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
-		int l = snprintf( buf, 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
+		int l = snprintf( buf.data(), 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
 		if ( l > 0 )
-			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );
+			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf.data() ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );
 		else
 			Serial.printf( "[ALPACASERV] [ERROR] Could not build discovery answer. Please contact support.\n" );
 	}
@@ -992,7 +992,7 @@ void alpaca_server::send_file( AsyncWebServerRequest *request )
 	request->send( LittleFS, request->url().c_str() );
 	delay( 500 );
 }
-	
+
 bool alpaca_server::start( IPAddress address, bool _debug_mode )
 {
 	debug_mode = _debug_mode;
@@ -1001,7 +1001,7 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 	telescope.set_debug_mode( debug_mode );
 	observing_conditions.set_debug_mode( debug_mode );
 	safety_monitor.set_debug_mode( debug_mode );
-	
+
 	if ( !server_up ) {
 
 		server = new AsyncWebServer( ALPACA_SERVER_PORT );
@@ -1014,15 +1014,15 @@ bool alpaca_server::start( IPAddress address, bool _debug_mode )
 	if ( !ascom_discovery.listen( 32227 ))
 
 		Serial.printf( "[ALPACASERV] [ERROR] Could not start ALPACA discovery service.\n" );
-		
-	else {	
+
+	else {
 
 		if ( debug_mode )
 			Serial.printf( "[ALPACASERV] [INFO ] ALPACA discovery server started on %s:%d\n", address.toString().c_str(), 32227 );
 
 		ascom_discovery.onPacket( std::bind( &alpaca_server::on_packet, this, std::placeholders::_1 ));
 	}
-	
+
 	server->on( "/get_config", HTTP_GET, std::bind( &alpaca_server::get_config, this, std::placeholders::_1 ));
 
 	server->on( "/setup", HTTP_GET, std::bind( &alpaca_server::alpaca_getsetup, this, std::placeholders::_1 ));

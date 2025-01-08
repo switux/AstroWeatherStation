@@ -1,6 +1,6 @@
-/*	
+/*
   	alpaca_safetymonitor.cpp
-  	
+
 	(c) 2023-2024 F.Lesage
 
 	This program is free software: you can redistribute it and/or modify it
@@ -34,28 +34,28 @@ alpaca_safetymonitor::alpaca_safetymonitor( void ): alpaca_device( SAFETYMONITOR
 {
 }
 
-void alpaca_safetymonitor::issafe( AsyncWebServerRequest *request, const char *transaction_details )
+void alpaca_safetymonitor::issafe( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
-	snprintf( message_str.data(), message_str.capacity(), "{\"Value\":%s,%s}", station.issafe()?"true":"false", transaction_details );
+	snprintf( message_str.data(), message_str.capacity(), "{\"Value\":%s,%s}", station.issafe()?"true":"false", transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, const char *transaction_details )
+void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( request->hasParam( "Connected", true ) ) {
 
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" ) || !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" ) ) {
 
 			set_is_connected( true );
-			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details );
+			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details.data() );
 
 		} else
 
-			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details, request->getParam( "Connected", true )->value().c_str() );
+			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details.data(), request->getParam( "Connected", true )->value().c_str() );
 
 		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 		return;
-		
+
 	}
 	request->send( 400, "text/plain", "Missing Connected parameter" );
 }

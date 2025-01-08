@@ -29,23 +29,20 @@
 
 const	uint16_t	ALPACA_SERVER_PORT	= 8080;
 
-#define	CONFIGURED_DEVICES	4
-#define	AWS_UUID			"ed0f1194-7cff-11ee-adf4-43fdf91ce20d"
-#define	SAFETYMONITOR_UUID	"be358e98-7cff-11ee-8804-93595b17357e"
-#define	DOME_UUID			"e3a90ace-7cff-11ee-b0f6-73db65e0b158"
-#define	TELESCOPE_UUID		"17e70650-8733-11ee-aa35-8f2796da5b48"
+const uint8_t			CONFIGURED_DEVICES	= 4;
+const etl::string<36>	AWS_UUID			= "ed0f1194-7cff-11ee-adf4-43fdf91ce20d";
+const etl::string<36>	SAFETYMONITOR_UUID	= "be358e98-7cff-11ee-8804-93595b17357e";
+const etl::string<36>	DOME_UUID			= "e3a90ace-7cff-11ee-b0f6-73db65e0b158";
+const etl::string<36>	TELESCOPE_UUID		= "17e70650-8733-11ee-aa35-8f2796da5b48";
 
-typedef struct configured_device_t {
+using configured_device_t = struct {
 
-	// flawfinder: ignore
-	char	DeviceName[32];
-	// flawfinder: ignore
-	char	DeviceType[20];
-	uint32_t DeviceNumber;
-	// flawfinder: ignore
-	char	UniqueID[37];
+	etl::string<32>	DeviceName;
+	etl::string<32>	DeviceType;
+	uint32_t		DeviceNumber;
+	etl::string<36>	UniqueID[36];
 
-} configured_device_t;
+};
 
 enum struct ascom_error_t : byte
 {
@@ -72,7 +69,7 @@ class alpaca_server {
 		AsyncUDP		*get_discovery( void );
 		void			loop( void );
 		bool			start( IPAddress, bool );
-		
+
 	private:
 
 		bool			bad_request		= false;
@@ -89,10 +86,9 @@ class alpaca_server {
 
 		ascom_error		transaction_status	= ascom_error_t::NotConnected;
 
-		// flawfinder: ignore
-		char			buf[ 255 ] = {0};
+		etl::string<255>	buf;
 		// Issue #149
-		char			transaction_details[ 128 ];
+		etl::string<128>	transaction_details;
 
 		int				client_id = 0;
 		int				client_transaction_id = 0;

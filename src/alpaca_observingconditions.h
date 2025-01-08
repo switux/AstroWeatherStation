@@ -43,30 +43,30 @@ class alpaca_observingconditions : public alpaca_device
 	private:
 			etl::string<256>		message_str;
 
-		void build_property_description_answer( char *, const char *, const char * );
-		void build_timesincelastupdate_answer( char *, const char *, const char * );
+		void build_property_description_answer( char *, const char *, etl::string<128> & );
+		void build_timesincelastupdate_answer( char *, const char *, etl::string<128> & );
 
 	public:
 
 			explicit alpaca_observingconditions( void );
-		void set_connected( AsyncWebServerRequest *request, const char * );
-		void get_averageperiod( AsyncWebServerRequest *request, const char * );
-		void set_averageperiod( AsyncWebServerRequest *request, const char * );
-		void cloudcover( AsyncWebServerRequest *request, const char * );
-		void dewpoint( AsyncWebServerRequest *request, const char * );
-		void humidity( AsyncWebServerRequest *request, const char * );
-		void pressure( AsyncWebServerRequest *request, const char * );
-		void rainrate( AsyncWebServerRequest *request, const char * );
-		void skybrightness( AsyncWebServerRequest *request, const char * );
-		void skyquality( AsyncWebServerRequest *request, const char * );
-		void skytemperature( AsyncWebServerRequest *request, const char * );
-		void temperature( AsyncWebServerRequest *request, const char * );
-		void winddirection( AsyncWebServerRequest *request, const char * );
-		void windgust( AsyncWebServerRequest *request, const char * );
-		void windspeed( AsyncWebServerRequest *request, const char * );
-		void refresh( AsyncWebServerRequest *request, const char * );
-		void sensordescription( AsyncWebServerRequest *request, const char * );
-		void timesincelastupdate( AsyncWebServerRequest *request, const char * );
+		void set_connected( AsyncWebServerRequest *request, etl::string<128> & );
+		void get_averageperiod( AsyncWebServerRequest *request, etl::string<128> & );
+		void set_averageperiod( AsyncWebServerRequest *request, etl::string<128> & );
+		void cloudcover( AsyncWebServerRequest *request, etl::string<128> & );
+		void dewpoint( AsyncWebServerRequest *request, etl::string<128> & );
+		void humidity( AsyncWebServerRequest *request, etl::string<128> & );
+		void pressure( AsyncWebServerRequest *request, etl::string<128> & );
+		void rainrate( AsyncWebServerRequest *request, etl::string<128> & );
+		void skybrightness( AsyncWebServerRequest *request, etl::string<128> & );
+		void skyquality( AsyncWebServerRequest *request, etl::string<128> & );
+		void skytemperature( AsyncWebServerRequest *request, etl::string<128> & );
+		void temperature( AsyncWebServerRequest *request, etl::string<128> & );
+		void winddirection( AsyncWebServerRequest *request, etl::string<128> & );
+		void windgust( AsyncWebServerRequest *request, etl::string<128> & );
+		void windspeed( AsyncWebServerRequest *request, etl::string<128> & );
+		void refresh( AsyncWebServerRequest *request, etl::string<128> & );
+		void sensordescription( AsyncWebServerRequest *request, etl::string<128> & );
+		void timesincelastupdate( AsyncWebServerRequest *request, etl::string<128> & );
 
 };
 #endif

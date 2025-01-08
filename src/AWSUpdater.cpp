@@ -36,7 +36,7 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 	HTTPClient 			http;
 	uint8_t				http_code;
 	etl::string<64>		local_filename;
-	
+
 	end_point = "https://";
 	end_point += server;
 	end_point += "/";
@@ -54,10 +54,10 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 	Serial.printf( "[UPDATER   ] [INFO ] Downloading file [%s] from update package [%s].\n", filename, package );
 
 	if ( !http.begin( end_point.data(), root_ca )) {
-	
+
        	Serial.printf( "[UPDATER   ] [ERROR] Cannot connect to file packager server, aborting.\n" );
 		return false;
-		
+
 	}
 
 	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
@@ -65,7 +65,7 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 	http_code = http.GET();
 	esp_task_wdt_reset();
 	if ( http_code != 200 ) {
-		
+
        	Serial.printf( "[UPDATER   ] [ERROR] Cannot download file from server (error code: %d), aborting.\n", http_code );
 		http.end();
 		return false;
@@ -77,7 +77,7 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 		http.end();
 		return false;
 	}
-	
+
 	esp_task_wdt_reset();
 	file = LittleFS.open( local_filename.data(), FILE_WRITE );
 	if ( file ) {
@@ -97,7 +97,7 @@ int AWSUpdater::download_file( const char *root_ca, const char *server, const ch
 
 		}
 		Serial.printf( "[UPDATER   ] [ERROR] New version of file [%s] could not be installed.\n", filename );
-		LittleFS.remove( local_filename.data() );	
+		LittleFS.remove( local_filename.data() );
 		return false;
 
 	}
@@ -114,9 +114,9 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 	uint8_t								http_code;
 	HTTPClient 							http;
 	ArduinoJson::DeserializationError 	ret;
-	DynamicJsonDocument					json( 1000 );
+	JsonDocument						json;
 	etl::string<128>					end_point;
-	
+
 	end_point = "https://";
 	end_point += server;
 	end_point += "/";
@@ -127,16 +127,16 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 	Serial.printf( "[UPDATER   ] [INFO ] Checking availability of file package update.\n" );
 
 	if ( !http.begin( end_point.data(), root_ca )) {
-	
+
        	Serial.printf( "[UPDATER   ] [ERROR] Cannot connect to file package server, aborting.\n" );
 		return false;
-		
+
 	}
 
 	http.setFollowRedirects( HTTPC_FORCE_FOLLOW_REDIRECTS );
 	http_code = http.GET();
 	if ( http_code != 200 ) {
-		
+
        	Serial.printf( "[UPDATER   ] [ERROR] Could not retrive file package manifest (error code: %d), aborting.\n", http_code );
 		http.end();
 		return false;
@@ -161,7 +161,7 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 
 	JsonArray packages = json["packages"];
 	for( JsonObject package : packages ) {
-		
+
 		const char *mv = package["min_version"];
 		if ( strcmp( current_version, mv ) < 0 ) {
 

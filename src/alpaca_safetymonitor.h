@@ -34,8 +34,8 @@ class alpaca_safetymonitor : public alpaca_device
 
 		explicit alpaca_safetymonitor( void );
 
-		void issafe( AsyncWebServerRequest *, const char * );
-		void set_connected( AsyncWebServerRequest *, const char * );
+		void issafe( AsyncWebServerRequest *, etl::string<128> & );
+		void set_connected( AsyncWebServerRequest *, etl::string<128> & );
 };
 
 #endif
