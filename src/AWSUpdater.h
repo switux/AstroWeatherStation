@@ -22,16 +22,17 @@
 #define	_AWSUpdater_h
 
 class AWSUpdater {
-	
+
 	private:
 
 		bool	debug_mode		= true;
 
 		int			download_file( const char *, const char *, const char *, const char *, const char *, const char * );
+		void		download_package( const char *, const char *, const char *, const char *, JsonArray );
 		uint32_t	fs_free_space( void );
-		
+
 	public:
-	
+
 			AWSUpdater( void ) = default;
 		bool check_for_new_files( const char *, const char *, const char *, const char * );
 };
