@@ -86,7 +86,7 @@ enum struct station_status :uint8_t
 using station_status_t = station_status;
 
 struct ota_setup_t {
-	
+
 	etl::string<24>	board;
 	etl::string<32>	config;
 	etl::string<18>	device;
@@ -135,10 +135,8 @@ class AstroWeatherStation {
 		station_data_t				station_data;
 		station_devices_t			station_devices;
 		AWSUpdater					updater;
-		
+
 		void			check_rain_event_guard_time( uint16_t );
-		IPAddress		cidr_to_mask( byte );
-		bool			connect_to_wifi( void );
 		void			compute_uptime( void );
 		void 			determine_boot_mode( void );
 		void			display_banner( void );
@@ -147,15 +145,10 @@ class AstroWeatherStation {
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
 		void 			initialise_dome( void );
-		bool			initialise_ethernet( void );
 		void			initialise_GPS( void );
-		bool			initialise_network( void );
-		bool			initialise_wifi( void );
 		void			led_task( void * );
-		byte			mask_to_cidr( uint32_t );
 		const char		*OTA_message( ota_status_t );
 		void			periodic_tasks( void * );
-		bool			post_content( const char *, const char * );
 		template<typename... Args>
 		void			print_config_string( const char *, Args... );
 		void			print_runtime_config( void );
@@ -167,7 +160,6 @@ class AstroWeatherStation {
 		void			set_led_status( station_status );
 		void			start_alpaca_server( void );
 		bool			start_config_server( void );
-		bool			start_hotspot( void );
 		bool			startup_sanity_check( void );
 		bool			store_unsent_data( etl::string_view );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
@@ -178,14 +170,13 @@ class AstroWeatherStation {
 		void				check_ota_updates( bool );
 		void				close_dome_shutter( void );
 		etl::string_view	get_anemometer_sensorname( void );
-		bool				get_debug_mode( void );
 		Dome				*get_dome( void );
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
+		bool				get_debug_mode( void );
 		etl::string_view	get_json_sensor_data( void );
 		etl::string_view	get_json_string_config( void );
-		etl::string_view	get_json_string_run_config( void );
 		etl::string_view	get_location( void );
 		bool				get_location_coordinates( float *, float * );
 		etl::string_view	get_lookout_rules_state_json_string( void );
@@ -198,9 +189,9 @@ class AstroWeatherStation {
 		bool				has_device( aws_device_t );
 		bool				initialise( void );
 		void				initialise_sensors( void );
-		bool				is_sensor_initialised( aws_device_t );
 		bool				is_rain_event( void );
 		bool				is_ready( void );
+		bool				is_sensor_initialised( aws_device_t );
 		bool				issafe( void );
 		bool				is_ntp_synced( void );
 		bool				on_solar_panel();

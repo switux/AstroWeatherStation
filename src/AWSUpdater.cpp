@@ -165,12 +165,9 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 		const char *mv = package["min_version"];
 		if ( strcmp( current_version, mv ) < 0 ) {
 
-			const char *id = package["id"];
-			Serial.printf( "[UPDATER   ] [INFO ] Found applicable file package [%s]\n", id );
-			JsonArray files = package["files"];
-			for( JsonObject file_item : files )
-				for( JsonPair file : file_item )
-					download_file( root_ca, server, path, id, file.key().c_str(), file.value().as<const char *>() );
+//			const char *id = package["id"];
+			Serial.printf( "[UPDATER   ] [INFO ] Found applicable file package [%s]\n", package["id"] );
+			download_package( root_ca, server, path, package["id"], package["files"] );
 			return true;
 
 		}
@@ -178,6 +175,14 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 
 	Serial.printf( "[UPDATER   ] [INFO ] No applicable file package found.\n" );
 	return true;
+}
+
+void AWSUpdater::download_package( const char *root_ca, const char *server, const char *path, const char *id, JsonArray files )
+{
+	for( JsonObject file_item : files )
+		for( JsonPair file : file_item )
+			download_file( root_ca, server, path, id, file.key().c_str(), file.value().as<const char *>() );
+
 }
 
 uint32_t AWSUpdater::fs_free_space( void )
