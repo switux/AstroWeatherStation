@@ -72,15 +72,12 @@ void setup()
 
 			if ( catch_rain_event ) {
 
-				if ( station.get_debug_mode() )
-					Serial.printf( "[CORE      ] [DEBUG] Monitoring rain sensor.\n" );
+				Serial.printf( "[CORE      ] [INFO ] Monitoring rain sensor.\n" );
 				esp_sleep_enable_ext0_wakeup( GPIO_RAIN_SENSOR_RAIN, LOW );
 
-			 } else {
+			 } else
 
-				if ( station.get_debug_mode() )
-					Serial.printf( "[CORE      ] [DEBUG] Not monitoring rain sensor.\n" );
-			 }
+				Serial.printf( "[CORE      ] [INFO ] Not monitoring rain sensor.\n" );
 		}
 		Serial.printf( "[CORE      ] [INFO ] Entering sleep mode.\n" );
 		esp_deep_sleep_start();

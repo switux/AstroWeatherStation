@@ -225,8 +225,11 @@ void AstroWeatherStation::display_banner()
 	Serial.printf( "#############################################################################################\n" );
 }
 
-void AstroWeatherStation::enter_config_mode( void )
+void AstroWeatherStation::try_enter_config_mode( aws_boot_mode_t boot_mode )
 {
+	if ( boot_mode != aws_boot_mode_t::MAINTENANCE )
+		return;
+		
 	if ( debug_mode )
 		Serial.printf( "[STATION   ] [INFO ] Entering config mode...\n ");
 
@@ -236,8 +239,11 @@ void AstroWeatherStation::enter_config_mode( void )
 		while( true );
 }
 
-void AstroWeatherStation::factory_reset( void )
+void AstroWeatherStation::check_factory_reset( aws_boot_mode_t boot_mode )
 {
+	if ( boot_mode != aws_boot_mode_t::FACTORY_RESET )
+		return;
+
 	Serial.printf( "[STATION   ] [INFO ] Performing factory reset.\n ");
 	config.factory_reset();
 	reboot();
@@ -263,17 +269,12 @@ uint16_t AstroWeatherStation::get_config_port( void )
 	return config.get_parameter<int>( "config_port" );
 }
 
-bool AstroWeatherStation::get_debug_mode( void )
-{
-	return debug_mode;
-}
-
 Dome *AstroWeatherStation::get_dome( void )
 {
 	return &station_devices.dome;
 }
 
-etl::string_view AstroWeatherStation::get_json_sensor_data( void )
+etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 {
 	JsonDocument	json_data;
 	sensor_data_t	*sensor_data = sensor_manager.get_sensor_data();
@@ -339,9 +340,9 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( void )
 		return etl::string_view( "" );
 
 	}
-	json_sensor_data_len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	*len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 	if ( debug_mode )
-		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", json_sensor_data_len, json_sensor_data.capacity() );
+		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", *len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
 }
@@ -466,6 +467,7 @@ bool AstroWeatherStation::initialise( void )
 
 	pinMode( GPIO_LED_GREEN, OUTPUT );
 	pinMode( GPIO_LED_BLUE, OUTPUT );
+	
 	std::function<void(void *)> _led_task = std::bind( &AstroWeatherStation::led_task, this, std::placeholders::_1 );
 	xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
@@ -488,8 +490,7 @@ bool AstroWeatherStation::initialise( void )
 
 	station_data.reset_reason = esp_reset_reason();
 
-	if ( boot_mode == aws_boot_mode_t::FACTORY_RESET )
-		factory_reset();
+	check_factory_reset( boot_mode );
 
 	if ( !config.load( debug_mode ) ) {
 
@@ -501,14 +502,11 @@ bool AstroWeatherStation::initialise( void )
 	Serial.printf( "[STATION   ] [INFO ] Free space on config partition: %d bytes\n", station_data.health.fs_free_space );
 
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
-	if ( solar_panel )
-		setCpuFrequencyMhz( 80 );
 
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( debug_mode );
 
-	if ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel )
-		boot_timestamp = 0;
+	boot_timestamp *= ( 1 - ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel ));
 
 	ota_setup.board = "AWS_";
 	ota_setup.board += ESP.getChipModel();
@@ -553,12 +551,13 @@ bool AstroWeatherStation::initialise( void )
 
 	if ( solar_panel ) {
 
+		setCpuFrequencyMhz( 80 );
+
 		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
 
-		if ( boot_mode == aws_boot_mode_t::MAINTENANCE )
-			enter_config_mode();
+		try_enter_config_mode( boot_mode );
 
 	} else
 
@@ -694,7 +693,7 @@ bool AstroWeatherStation::is_sensor_initialised( aws_device_t sensor_id )
 	return (( sensor_manager.get_available_sensors() & sensor_id ) == sensor_id );
 }
 
-void AstroWeatherStation::led_task( void *dummy )
+void AstroWeatherStation::led_task( void *dummy )	// NOSONAR
 {
 	while( true ) {
 
@@ -1221,6 +1220,8 @@ void AstroWeatherStation::send_backlog_data( void )
 
 void AstroWeatherStation::send_data( void )
 {
+	size_t	len;
+	
 	if ( !solar_panel ) {
 
 		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
@@ -1230,7 +1231,7 @@ void AstroWeatherStation::send_data( void )
 
 	}
 
-	get_json_sensor_data();
+	get_json_sensor_data( &len );
 
 	if ( debug_mode )
     	Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
@@ -1238,7 +1239,7 @@ void AstroWeatherStation::send_data( void )
 	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() ))
 		send_backlog_data();
 	else
-		store_unsent_data( json_sensor_data );
+		store_unsent_data( json_sensor_data, len );
 
 	if ( !solar_panel )
 		xSemaphoreGive( sensors_read_mutex );
@@ -1301,7 +1302,7 @@ bool AstroWeatherStation::startup_sanity_check( void )
 	return false;
 }
 
-bool AstroWeatherStation::store_unsent_data( etl::string_view data )
+bool AstroWeatherStation::store_unsent_data( etl::string_view data, size_t len )
 {
 	bool ok;
 
@@ -1317,7 +1318,7 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data )
 		return false;
 	}
 
-	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + json_sensor_data_len )) )) {
+	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + len )) )) {
 
 		if ( debug_mode )
 			Serial.printf( "[STATION   ] [DEBUG] Ok, data secured for when server is available. data=%s\n", data.data() );

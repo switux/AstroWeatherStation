@@ -435,4 +435,5 @@ bool AWSNetwork::start_hotspot( void )
 void AWSNetwork::webhook( const char *json_msg )
 {
 	// Placeholder for #155
+	Serial.printf( "[STATION   ] [INFO ] Calling webhook [%s]\n", json_msg );
 }
