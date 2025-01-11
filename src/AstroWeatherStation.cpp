@@ -387,7 +387,8 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 
 	}
 	*len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
-	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
+
+  if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", *len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
