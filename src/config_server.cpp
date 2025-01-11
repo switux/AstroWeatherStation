@@ -83,7 +83,8 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 		if ( debug_mode )
 			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
 
-	request->send( 200, "application/json", station.get_json_sensor_data().data() );
+	size_t x;
+	request->send( 200, "application/json", station.get_json_sensor_data( &x ).data() );
 	xSemaphoreGive( sensors_read_mutex );
 }
 

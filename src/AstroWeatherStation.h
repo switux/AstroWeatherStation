@@ -140,8 +140,7 @@ class AstroWeatherStation {
 		void			compute_uptime( void );
 		void 			determine_boot_mode( void );
 		void			display_banner( void );
-		void			enter_config_mode( void );
-		void			factory_reset( void );
+		void			check_factory_reset( aws_boot_mode_t );
 		template<typename... Args>
 		etl::string<96>	format_helper( const char *, Args... );
 		void 			initialise_dome( void );
@@ -161,7 +160,8 @@ class AstroWeatherStation {
 		void			start_alpaca_server( void );
 		bool			start_config_server( void );
 		bool			startup_sanity_check( void );
-		bool			store_unsent_data( etl::string_view );
+		bool			store_unsent_data( etl::string_view, size_t );
+		void			try_enter_config_mode( aws_boot_mode_t );
 		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:
@@ -174,8 +174,7 @@ class AstroWeatherStation {
 		sensor_data_t		*get_sensor_data( void );
 		station_data_t		*get_station_data( void );
 		uint16_t			get_config_port( void );
-		bool				get_debug_mode( void );
-		etl::string_view	get_json_sensor_data( void );
+		etl::string_view	get_json_sensor_data( size_t * );
 		etl::string_view	get_json_string_config( void );
 		etl::string_view	get_json_string_run_config( void );
 		etl::string_view	get_location( void );
