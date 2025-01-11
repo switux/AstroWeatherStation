@@ -69,6 +69,46 @@ RTC_DATA_ATTR bool		catch_rain_event = false;		// NOSONAR
 RTC_DATA_ATTR uint16_t 	low_battery_event_count = 0;	// NOSONAR
 RTC_NOINIT_ATTR bool	ota_update_ongoing = false;		// NOSONAR
 
+aws_operation_info_t operator&( aws_operation_info_t a, aws_operation_info_t b )
+{
+	return static_cast<aws_operation_info_t>( static_cast<unsigned int>(a) & static_cast<unsigned int>(b) );
+}
+
+bool operator!=( unsigned int a, aws_operation_info_t b )
+{
+	return a != static_cast<unsigned int>(b);
+}
+
+aws_operation_info_t operator&( unsigned int a, aws_operation_info_t b )
+{
+	return static_cast<aws_operation_info_t>( a & static_cast<unsigned int>(b) );
+}
+
+aws_operation_info_t operator~( aws_operation_info_t b )
+{
+	return static_cast<aws_operation_info_t>( ~static_cast<unsigned int>(b) );
+}
+
+aws_operation_info_t operator|( aws_operation_info_t a, aws_operation_info_t b )
+{
+	return static_cast<aws_operation_info_t>( static_cast<unsigned int>(a) | static_cast<unsigned int>(b) );
+}
+
+aws_operation_info_t operator*( aws_operation_info_t a, int b )
+{
+	return static_cast<aws_operation_info_t>( static_cast<unsigned int>(a) * b );
+}
+
+aws_operation_info_t& operator|=( aws_operation_info_t& a, aws_operation_info_t b )
+{
+	return a = static_cast<aws_operation_info_t>( static_cast<unsigned int>(a) | static_cast<unsigned int>(b) );
+}
+
+aws_operation_info_t& operator&=( aws_operation_info_t& a, aws_operation_info_t b )
+{
+	return a = static_cast<aws_operation_info_t>( static_cast<unsigned int>(a) & static_cast<unsigned int>(b) );
+}
+
 AstroWeatherStation::AstroWeatherStation( void )
 {
 	station_data.health.init_heap_size = xPortGetFreeHeapSize();
@@ -107,7 +147,7 @@ void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
 	if ( ( now - rain_event_timestamp ) <= guard_time )
 		return;
 
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "\n[STATION   ] [DEBUG] Rain event guard time elapsed.\n" );
 
 	pinMode( GPIO_RAIN_SENSOR_RAIN, INPUT );
@@ -143,14 +183,19 @@ void AstroWeatherStation::compute_uptime( void )
 	}
 }
 
-void AstroWeatherStation::determine_boot_mode( void )
+aws_boot_mode_t AstroWeatherStation::determine_boot_mode( void )
 {
- 	unsigned long start					= micros();
-	unsigned long button_pressed_secs	= 0;
-
+ 	unsigned long 	start					= micros();
+	unsigned long 	button_pressed_secs		= 0;
+	aws_boot_mode_t boot_mode				= aws_boot_mode_t::NORMAL;
+	
 	pinMode( GPIO_DEBUG, INPUT );
 
-	debug_mode = static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE;
+	if ( static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE )
+		operation_info  |= aws_operation_info_t::DEBUG;
+	else
+		operation_info  &= ~aws_operation_info_t::DEBUG;
+	
 	while ( !( gpio_get_level( GPIO_DEBUG ))) {
 
 		if (( micros() - start ) >= FACTORY_RESET_GUARD	) {
@@ -164,11 +209,12 @@ void AstroWeatherStation::determine_boot_mode( void )
 		delay( 100 );
 		button_pressed_secs = micros() - start;
 	}
+	return boot_mode;
 }
 
 void AstroWeatherStation::display_banner()
 {
-	if ( !debug_mode )
+	if ( ! (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ))
 		return;
 
 	uint8_t					*wifi_mac = network.get_wifi_mac();
@@ -230,7 +276,7 @@ void AstroWeatherStation::try_enter_config_mode( aws_boot_mode_t boot_mode )
 	if ( boot_mode != aws_boot_mode_t::MAINTENANCE )
 		return;
 		
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [INFO ] Entering config mode...\n ");
 
 	if ( !start_config_server() )
@@ -341,7 +387,8 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 
 	}
 	*len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
-	if ( debug_mode )
+
+  if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", *len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
@@ -392,7 +439,7 @@ time_t AstroWeatherStation::get_timestamp( void )
 {
 	time_t now = 0;
 
-	if ( ntp_synced || ( config.get_has_device( aws_device_t::GPS_SENSOR ) && station_data.gps.fix ))
+	if ( (( operation_info & aws_operation_info_t::NTP_SYNCED ) == aws_operation_info_t::NTP_SYNCED ) || ( config.get_has_device( aws_device_t::GPS_SENSOR ) && station_data.gps.fix ))
 		time( &now );
 
 	return now;
@@ -459,11 +506,10 @@ bool AstroWeatherStation::has_device( aws_device_t device )
 
 bool AstroWeatherStation::initialise( void )
 {
+	aws_boot_mode_t			boot_mode	= determine_boot_mode();
 	std::array<uint8_t,6>	mac;
-	byte					offset = 0;
+	byte					offset		= 0;
 	std::array<uint8_t,32>	sha_256;
-
-	determine_boot_mode();
 
 	pinMode( GPIO_LED_GREEN, OUTPUT );
 	pinMode( GPIO_LED_BLUE, OUTPUT );
@@ -492,7 +538,7 @@ bool AstroWeatherStation::initialise( void )
 
 	check_factory_reset( boot_mode );
 
-	if ( !config.load( debug_mode ) ) {
+	if ( !config.load( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) )) {
 
 		set_led_status( station_status_t::CONFIG_ERROR );
 		return false;
@@ -504,7 +550,7 @@ bool AstroWeatherStation::initialise( void )
 	solar_panel = ( static_cast<aws_pwr_src>( config.get_pwr_mode()) == aws_pwr_src::panel );
 
 	sensor_manager.set_solar_panel( solar_panel );
-	sensor_manager.set_debug_mode( debug_mode );
+	sensor_manager.set_debug_mode( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 
 	boot_timestamp *= ( 1 - ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel ));
 
@@ -527,7 +573,7 @@ bool AstroWeatherStation::initialise( void )
 	set_led_status( station_status_t::NETWORK_INIT );
 
 	// The idea is that if we did something stupid with the config and the previous setup was correct, we can restore it, otherwise, move on ...
-	if ( !network.initialise( &config, debug_mode )) {
+	if ( !network.initialise( &config, (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ))) {
 
 		if ( !config.rollback() ) {
 
@@ -555,7 +601,8 @@ bool AstroWeatherStation::initialise( void )
 
 		// Issue #143
 		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-		rain_event = ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason );
+		if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason )
+			operation_info |= aws_operation_info_t::RAIN;
 
 		try_enter_config_mode( boot_mode );
 
@@ -585,9 +632,9 @@ bool AstroWeatherStation::initialise( void )
 			check_rain_event_guard_time( config.get_parameter<int>( "rain_event_guard_time" ) );
 	}
 
-	if ( rain_event ) {
+	if (( operation_info & aws_operation_info_t::RAIN ) == aws_operation_info_t::RAIN ) {
 
-		sensor_manager.initialise( &station_devices.sc16is750, &config, rain_event );
+		sensor_manager.initialise( &station_devices.sc16is750, &config, (( operation_info & aws_operation_info_t::RAIN )== aws_operation_info_t::RAIN ) );
 		handle_event( aws_event_t::RAIN );
 		return true;
 	}
@@ -614,7 +661,7 @@ bool AstroWeatherStation::initialise( void )
 	}
 
 	if ( config.get_parameter<bool>( "lookout_enabled" ))
-		lookout.initialise( &config, &sensor_manager, &station_devices.dome, debug_mode );
+		lookout.initialise( &config, &sensor_manager, &station_devices.dome, (( operation_info & aws_operation_info_t::DEBUG )== aws_operation_info_t::DEBUG ) );
 	else
 		if ( config.get_has_device( aws_device_t::DOME_DEVICE ))
 			station_devices.dome.close_shutter();	// Issue #144
@@ -627,7 +674,7 @@ bool AstroWeatherStation::initialise( void )
 		}, "AWSCoreTask", 6000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 );
 
 
-	ready = true;
+	operation_info |= aws_operation_info_t::READY;
 	set_led_status( station_status_t::READY );
 	return true;
 }
@@ -637,15 +684,15 @@ void AstroWeatherStation::initialise_dome( void )
 	if ( config.get_has_device( aws_device_t::DOME_DEVICE ) ) {
 
 		if ( config.get_has_device( aws_device_t::SC16IS750_DEVICE ) )
-			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, debug_mode );
+			station_devices.dome.initialise( &station_devices.sc16is750, sensor_manager.get_i2c_mutex(), &station_data.dome_data, (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ));
 		else
-			station_devices.dome.initialise( &station_data.dome_data, debug_mode );
+			station_devices.dome.initialise( &station_data.dome_data, (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ));
 	}
 }
 
 void AstroWeatherStation::initialise_GPS( void )
 {
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] Initialising GPS.\n" );
 
 	if ( ( config.get_has_device( aws_device_t::SC16IS750_DEVICE ) && !station_devices.gps.initialise( &station_data.gps, &station_devices.sc16is750, sensor_manager.get_i2c_mutex() )) || !station_devices.gps.initialise( &station_data.gps )) {
@@ -664,17 +711,17 @@ void AstroWeatherStation::initialise_sensors( void )
 
 bool AstroWeatherStation::is_ntp_synced( void )
 {
-	return ntp_synced;
+	return (( operation_info & aws_operation_info_t::NTP_SYNCED ) == aws_operation_info_t::NTP_SYNCED );
 }
 
 bool AstroWeatherStation::is_rain_event( void )
 {
-	return rain_event;
+	return (( operation_info & aws_operation_info_t::RAIN ) == aws_operation_info_t::RAIN );
 }
 
 bool AstroWeatherStation::is_ready( void )
 {
-	return ready;
+	return (( operation_info & aws_operation_info_t::READY ) == aws_operation_info_t::READY );
 }
 
 bool AstroWeatherStation::issafe( void )
@@ -849,9 +896,9 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 			sync_time_millis = millis();
 		}
 
-		if ( force_ota_update || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
+		if ( (( operation_info & aws_operation_info_t::FORCE_OTA_UPDATE ) == aws_operation_info_t::FORCE_OTA_UPDATE ) || ( auto_ota_updates && (( millis() - ota_millis ) > ota_timer ))) {
 
-			force_ota_update = false;
+			operation_info &= ~aws_operation_info_t::FORCE_OTA_UPDATE;
 			check_ota_updates( true );
 			ota_millis = millis();
 		}
@@ -993,7 +1040,7 @@ void AstroWeatherStation::read_battery_level( void )
 
 	WiFi.mode ( WIFI_OFF );
 
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.print( "[STATION   ] [DEBUG] Battery level: " );
 
 	digitalWrite( GPIO_BAT_ADC_EN, HIGH );
@@ -1006,7 +1053,7 @@ void AstroWeatherStation::read_battery_level( void )
 	adc_value = adc_value / 5;
 	station_data.health.battery_level = ( adc_value >= ADC_V_MIN ) ? map( adc_value, ADC_V_MIN, ADC_V_MAX, 0, 100 ) : 0;
 
-	if ( debug_mode ) {
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) {
 
 		float adc_v_in = adc_value * VCC / ADC_V_MAX;
 		float bat_v = adc_v_in * ( V_DIV_R1 + V_DIV_R2 ) / V_DIV_R2;
@@ -1020,7 +1067,7 @@ void AstroWeatherStation::read_GPS( void )
 {
 	if ( station_data.gps.fix ) {
 
-		if ( debug_mode ) {
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) {
 
 			// flawfinder: ignore
 			etl::string<32> buf;
@@ -1031,7 +1078,7 @@ void AstroWeatherStation::read_GPS( void )
 
 	} else
 
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION] [DEBUG] NO GPS FIX.\n" );
 }
 
@@ -1086,7 +1133,7 @@ void AstroWeatherStation::read_sensors( void )
 			send_alarm( "Low battery", string.data() );
 
 		low_battery_event_count++;
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[CORE      ] [DEBUG] %s", string.data() );
 	}
 }
@@ -1113,7 +1160,7 @@ void AstroWeatherStation::report_unavailable_sensors( void )
 		k >>= 1;
 	}
 
-	if ( debug_mode ) {
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) {
 
 		Serial.printf( "[STATION   ] [DEBUG] %s", unavailable_sensors.data() );
 
@@ -1156,7 +1203,7 @@ void AstroWeatherStation::send_backlog_data( void )
 
 	if ( !LittleFS.exists( "/unsent.txt" )) {
 
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog file.\n" );
 		return;
 
@@ -1166,7 +1213,7 @@ void AstroWeatherStation::send_backlog_data( void )
 
 	if ( !backlog ) {
 
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
 		return;
 	}
@@ -1175,7 +1222,7 @@ void AstroWeatherStation::send_backlog_data( void )
 
 		backlog.close();
 
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] No backlog data to send.\n" );
 		return;
 	}
@@ -1206,14 +1253,14 @@ void AstroWeatherStation::send_backlog_data( void )
 
 		LittleFS.remove( "/unsent.txt" );
 		LittleFS.rename( "/unsent.new", "/unsent.txt" );
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] Data backlog is not empty.\n" );
 
 	} else {
 
 		LittleFS.remove( "/unsent.txt" );
 		LittleFS.remove( "/unsent.new" );
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] Data backlog is empty.\n");
 	}
 }
@@ -1226,14 +1273,14 @@ void AstroWeatherStation::send_data( void )
 
 		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
 
-			if ( debug_mode )
+			if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 				Serial.printf( "[STATION   ] [DEBUG] Waiting for sensor data update to complete.\n" );
 
 	}
 
 	get_json_sensor_data( &len );
 
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
     	Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
 
 	if ( network.post_content( "newData.php", strlen( "newData.php" ), json_sensor_data.data() ))
@@ -1256,7 +1303,7 @@ void AstroWeatherStation::send_rain_event_alarm( const char *str )
 void AstroWeatherStation::set_led_status( station_status_t x )
 {
 	led_status = x;
-	if ( debug_mode )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] LED STATUS=%d\n",static_cast<int>(x) );
 }
 
@@ -1265,15 +1312,15 @@ void AstroWeatherStation::start_alpaca_server( void )
 	switch ( static_cast<aws_iface>( config.get_parameter<int>( "alpaca_iface" ))) {
 
 		case aws_iface::wifi_sta:
-			alpaca.start( WiFi.localIP(), debug_mode );
+			alpaca.start( WiFi.localIP(), (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 			break;
 
 		case aws_iface::wifi_ap:
-			alpaca.start( WiFi.softAPIP(), debug_mode );
+			alpaca.start( WiFi.softAPIP(), (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 			break;
 
 		case aws_iface::eth:
-			alpaca.start( Ethernet.localIP(), debug_mode );
+			alpaca.start( Ethernet.localIP(), (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 			break;
 
 	}
@@ -1281,7 +1328,7 @@ void AstroWeatherStation::start_alpaca_server( void )
 
 bool AstroWeatherStation::start_config_server( void )
 {
-	server.initialise( debug_mode );
+	server.initialise( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 	return true;
 }
 
@@ -1320,7 +1367,7 @@ bool AstroWeatherStation::store_unsent_data( etl::string_view data, size_t len )
 
 	if (( ok = ( backlog.printf( "%s\n", data.data()) == ( 1 + len )) )) {
 
-		if ( debug_mode )
+		if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 			Serial.printf( "[STATION   ] [DEBUG] Ok, data secured for when server is available. data=%s\n", data.data() );
 
 	} else
@@ -1341,34 +1388,41 @@ bool AstroWeatherStation::sync_time( bool verbose )
 	const char	*ntp_server = "pool.ntp.org";
 	uint8_t		ntp_retries = 5;
    	struct 		tm timeinfo;
-
+	bool		b;
+	
 	if ( config.get_has_device( aws_device_t::GPS_SENSOR ) && station_data.gps.fix ) {
 
 		time( &sensor_manager.get_sensor_data()->timestamp );
  		return true;
 	}
 
-	if ( debug_mode && verbose )
+	if ( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) && verbose )
 		Serial.printf( "[STATION   ] [DEBUG] Connecting to NTP server " );
 
 	configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
 
-	while ( !( ntp_synced = getLocalTime( &timeinfo )) && ( --ntp_retries > 0 ) ) {	// NOSONAR
+	if ( ( b = getLocalTime( &timeinfo )))
+		operation_info |= aws_operation_info_t::NTP_SYNCED;
 
-		if ( debug_mode && verbose )
+	while ( !b && ( --ntp_retries > 0 ) ) {	// NOSONAR
+
+		if ( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) && verbose )
 			Serial.printf( "." );
 		delay( 1000 );
 		configTzTime( config.get_parameter<const char *>( "tzname" ), ntp_server );
+		if ( ( b = getLocalTime( &timeinfo )))
+			operation_info |= aws_operation_info_t::NTP_SYNCED;
 	}
-	if ( debug_mode && verbose ) {
 
-		Serial.printf( "\n[STATION   ] [DEBUG] %sNTP Synchronised. ", ntp_synced ? "" : "NOT " );
+	if ( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) && verbose ) {
+
+		Serial.printf( "\n[STATION   ] [DEBUG] %sNTP Synchronised. ", (( operation_info & aws_operation_info_t::NTP_SYNCED ) == aws_operation_info_t::NTP_SYNCED ) ? "" : "NOT " );
 		Serial.print( "Time and date: " );
 		Serial.print( &timeinfo, "%Y-%m-%d %H:%M:%S\n" );
 		Serial.printf( "\n" );
 	}
 
-	if ( ntp_synced ) {
+	if (( operation_info & aws_operation_info_t::NTP_SYNCED ) == aws_operation_info_t::NTP_SYNCED ) {
 
 		time( &sensor_manager.get_sensor_data()->timestamp );
 		station_data.ntp_time.tv_sec = sensor_manager.get_sensor_data()->timestamp;
@@ -1383,12 +1437,12 @@ bool AstroWeatherStation::sync_time( bool verbose )
 		sensor_manager.get_sensor_data()->timestamp =  last_ntp_time + ( US_SLEEP / 1000000 ) * ntp_time_misses;
 
 	}
-	return ntp_synced;
+	return (( operation_info & aws_operation_info_t::NTP_SYNCED ) == aws_operation_info_t::NTP_SYNCED );
 }
 
 void AstroWeatherStation::trigger_ota_update( void )
 {
-	force_ota_update = true;
+	operation_info |= aws_operation_info_t::FORCE_OTA_UPDATE;
 }
 
 bool AstroWeatherStation::update_config( JsonVariant &proposed_config )

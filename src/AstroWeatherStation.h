@@ -104,6 +104,16 @@ struct station_devices_t {
 
 };
 
+enum class aws_operation_info_t : unsigned int {
+	NONE				= 0x0000,
+	FORCE_OTA_UPDATE	= 0x0001,
+	NTP_SYNCED			= 0x0002,
+	RAIN				= 0x0004,
+	REQ_DOME_OPEN		= 0x0008,
+	DEBUG				= 0x4000,
+	READY				= 0x8000
+};
+
 void OTA_callback( int, int );
 
 class AstroWeatherStation {
@@ -113,22 +123,15 @@ class AstroWeatherStation {
 		alpaca_server				alpaca;
 		TaskHandle_t				aws_led_task_handle;
 		TaskHandle_t				aws_periodic_task_handle;
-		bool						force_ota_update			= false;
-		aws_boot_mode_t				boot_mode					= aws_boot_mode_t::NORMAL;
 		AWSConfig					config;
-		bool						debug_mode					= false;
+		aws_operation_info_t		operation_info				= aws_operation_info_t::NONE;
 		etl::string<1116>			json_sensor_data;
-		size_t						json_sensor_data_len;
 		station_status_t			led_status					= station_status_t::BOOTING;
 		etl::string<128>			location;
 		AWSLookout					lookout;
 		AWSNetwork					network;
-		bool						ntp_synced					= false;
 		AWSOTA						ota;
 		ota_setup_t					ota_setup;
-		bool						rain_event					= false;
-		bool						ready						= false;
-		bool						request_dome_shutter_open	= false;
 		AWSSensorManager 			sensor_manager;
 		AWSWebServer 				server;
 		bool						solar_panel;
@@ -138,7 +141,7 @@ class AstroWeatherStation {
 
 		void			check_rain_event_guard_time( uint16_t );
 		void			compute_uptime( void );
-		void 			determine_boot_mode( void );
+		aws_boot_mode_t	determine_boot_mode( void );
 		void			display_banner( void );
 		void			check_factory_reset( aws_boot_mode_t );
 		template<typename... Args>
