@@ -139,7 +139,7 @@ class AWSConfig {
 		bool					can_rollback( void );
 		void					factory_reset( void );
 		etl::string_view		get_anemometer_model_str( void );
-		uint8_t					*get_eth_mac( void );
+		std::array<uint8_t,6>	get_eth_mac( void );
 		uint32_t				get_fs_free_space( void );
 		template <typename T>
 		T 						get_lookout_safe_parameter( const char * );
@@ -161,20 +161,22 @@ class AWSConfig {
 
 	private:
 
-		const size_t		MAX_CONFIG_FILE_SIZE	= 2048;
-		bool				debug_mode				= false;
-		aws_device_t		devices					= aws_device_t::NO_SENSOR;
-		uint32_t			fs_free_space			= 0;
-		bool				initialised				= false;
-		JsonDocument		json_config;
-		etl::string<64>		ota_sha256;
-		etl::string<8>		pcb_version;
-		aws_pwr_src			pwr_mode				= aws_pwr_src::dc12v;
-		etl::string<4096>	root_ca;
-		uint8_t				eth_mac[6]				= { 0 };
+		const size_t			MAX_CONFIG_FILE_SIZE	= 2048;
+		bool					debug_mode				= false;
+		aws_device_t			devices					= aws_device_t::NO_SENSOR;
+		std::array<uint8_t,6>	eth_mac;
+		uint32_t				fs_free_space			= 0;
+		bool					initialised				= false;
+		JsonDocument			json_config;
+		etl::string<64>			ota_sha256;
+		etl::string<8>			pcb_version;
+		aws_pwr_src				pwr_mode				= aws_pwr_src::dc12v;
+		etl::string<4096>		root_ca;
 
 		template <typename T>
 		T 		get_aag_parameter( const char * );
+		template <typename T>
+		T		get_network_parameter( const char * );
 		void	list_files( void );
 		bool	read_config( void );
 		bool	read_file( const char * );
@@ -215,6 +217,8 @@ T AWSConfig::get_lookout_safe_parameter( const char *key )
 		case str2int( "safe_wind_speed_delay" ):
 		case str2int( "safe_wind_speed_max" ):
 			return json_config[key].as<T>();
+		default:
+			break;
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
@@ -246,6 +250,8 @@ T AWSConfig::get_lookout_unsafe_parameter( const char *key )
 		case str2int( "unsafe_wind_speed_1_missing" ):
 		case str2int( "unsafe_wind_speed_2_missing" ):
 			return json_config[key].as<T>();
+		default:
+			break;
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
@@ -267,6 +273,36 @@ T AWSConfig::get_aag_parameter( const char *key )
 		case str2int( "cc_aag_cloudy" ):
 		case str2int( "cc_aag_overcast" ):
 			return json_config[key].as<T>();
+		default:
+			break;
+	}
+	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
+	return 0;
+}
+
+template <typename T>
+T AWSConfig::get_network_parameter( const char *key )
+{
+	switch( str2int( key )) {
+		case str2int( "eth_dns" ):
+		case str2int( "eth_gw" ):
+		case str2int( "eth_ip" ):
+		case str2int( "eth_ip_mode" ):
+		case str2int( "wifi_ap_dns" ):
+		case str2int( "wifi_ap_gw" ):
+		case str2int( "wifi_ap_ip" ):
+		case str2int( "wifi_ap_password" ):
+		case str2int( "wifi_ap_ssid" ):
+		case str2int( "wifi_mode" ):
+		case str2int( "wifi_sta_dns" ):
+		case str2int( "wifi_sta_gw" ):
+		case str2int( "wifi_sta_ip" ):
+		case str2int( "wifi_sta_ip_mode" ):
+		case str2int( "wifi_sta_password" ):
+		case str2int( "wifi_sta_ssid" ):
+			return json_config[key].as<T>();
+		default:
+			break;
 	}
 	Serial.printf( "[CONFIGMNGR] [ERROR]: Unknown parameter [%s]\n", key );
 	return 0;
@@ -281,6 +317,9 @@ T AWSConfig::get_parameter( const char *key )
 	if ( !strncmp( key, "safe_", 5 ))
 		return get_lookout_safe_parameter<T>( key );
 
+	if ( !strncmp( key, "wifi_", 5 ) || !strncmp( key, "eth_", 4 ))
+		return get_network_parameter<T>( key );
+
 	if (( *key == 'k' ) || ( !strncmp( key, "cc_", 3  )))
 		return get_aag_parameter<T>( key );
 
@@ -292,16 +331,12 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
 		case str2int( "wind_vane_model" ):
-			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );
+			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );	// NOSONAR
 
 		case str2int( "automatic_updates" ):
 		case str2int( "data_push" ):
 		case str2int( "discord_enabled" ):
 		case str2int( "discord_wh" ):
-		case str2int( "eth_dns" ):
-		case str2int( "eth_gw" ):
-		case str2int( "eth_ip" ):
-		case str2int( "eth_ip_mode" ):
 		case str2int( "lookout_enabled" ):
 		case str2int( "msas_calibration_offset" ):
 		case str2int( "ota_url" ):
@@ -311,18 +346,6 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "remote_server" ):
 		case str2int( "tzname" ):
 		case str2int( "url_path" ):
-		case str2int( "wifi_ap_dns" ):
-		case str2int( "wifi_ap_gw" ):
-		case str2int( "wifi_ap_ip" ):
-		case str2int( "wifi_ap_password" ):
-		case str2int( "wifi_ap_ssid" ):
-		case str2int( "wifi_mode" ):
-		case str2int( "wifi_sta_dns" ):
-		case str2int( "wifi_sta_gw" ):
-		case str2int( "wifi_sta_ip" ):
-		case str2int( "wifi_sta_ip_mode" ):
-		case str2int( "wifi_sta_password" ):
-		case str2int( "wifi_sta_ssid" ):
 			return json_config[key].as<T>();
 
 		default:

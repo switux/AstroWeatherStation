@@ -171,11 +171,11 @@ void AstroWeatherStation::display_banner()
 	if ( !debug_mode )
 		return;
 
-	uint8_t	*wifi_mac = network.get_wifi_mac();
-	int		i;
-	bool	gpioext = config.get_has_device( aws_device_t::SC16IS750_DEVICE );
-	bool	eth = config.get_has_device( aws_device_t::ETHERNET_DEVICE );
-	uint8_t	*eth_mac = config.get_eth_mac();
+	uint8_t					*wifi_mac = network.get_wifi_mac();
+	int						i;
+	bool					gpioext = config.get_has_device( aws_device_t::SC16IS750_DEVICE );
+	bool					eth = config.get_has_device( aws_device_t::ETHERNET_DEVICE );
+	std::array<uint8_t,6>	eth_mac = config.get_eth_mac();
 
 	Serial.printf( "\n#############################################################################################\n" );
 	Serial.printf( "# AstroWeatherStation                                                                       #\n" );

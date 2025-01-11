@@ -166,10 +166,10 @@ uint8_t *AWSNetwork::get_wifi_mac( void )
 
 bool AWSNetwork::initialise_ethernet( void )
 {
-	char	*ip			= nullptr;
-	char	*cidr		= nullptr;
-	char	*dummy;
-	uint8_t	*eth_mac	= config->get_eth_mac();
+	char					*ip		= nullptr;
+	char					*cidr	= nullptr;
+	char					*dummy;
+	std::array<uint8_t,6>	eth_mac	= config->get_eth_mac();
 
 	pinMode( 4, OUTPUT );
 	digitalWrite( 4, HIGH );
@@ -183,7 +183,7 @@ bool AWSNetwork::initialise_ethernet( void )
 
 	// You will have to change esp_w5500.cpp ETH.begin() to make it accept eth_mac even if a mac already exists,
 	// honestly I do not understand why you would silently override the eth_mac parameter
-	if ( !ETH.begin( GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_SCK, GPIO_SPI_CS_ETH, GPIO_SPI_INT, SPI_CLOCK_MHZ, SPI3_HOST, eth_mac )) {
+	if ( !ETH.begin( GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_SCK, GPIO_SPI_CS_ETH, GPIO_SPI_INT, SPI_CLOCK_MHZ, SPI3_HOST, eth_mac.data() )) {
 
 		Serial.printf( "[NETWORK   ] [ERROR] Could not initialise ethernet!\n" );
 		return false;

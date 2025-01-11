@@ -71,7 +71,6 @@ bool alpaca_dome::closeshutter( AsyncWebServerRequest *request, etl::string<128>
 	if ( get_is_connected() ) {
 
 		station.get_dome()->close_shutter();
-		// dome_shutter_status = dome_shutter_status_t::Closing;
 
 		snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details.data() );
 		if ( get_debug_mode() )

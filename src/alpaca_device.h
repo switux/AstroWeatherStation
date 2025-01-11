@@ -46,7 +46,6 @@ class alpaca_device {
 
 		bool						debug_mode			= false;
 		bool						is_connected		= false;
-//		std::shared_ptr<Device>		device;
 		alpaca_device_description_t	description;
 		alpaca_driver_info_t		driverinfo;
 		alpaca_driver_version_t		driverversion;
@@ -57,7 +56,6 @@ class alpaca_device {
 	public:
 
 		explicit 	alpaca_device( alpaca_interface_version_t );
-//		void		attach_device( std::shared_ptr<Device> _device );
 		void		device_error( AsyncWebServerRequest *, etl::string<128> &, ascom_driver_error_t , char * );
 		bool		get_debug_mode( void );
 		bool		get_is_connected( void );
