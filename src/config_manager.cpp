@@ -662,7 +662,8 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 
 void AWSConfig::set_parameter( const char *key, const char *val )
 {
-	json_config[ key ] = strdup( val );
+	etl::string<15>	tmp = val;			// Limit to 15 as it is only used for IP addresses
+	json_config[ key ] = tmp.data();
 }
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
@@ -800,4 +801,3 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	return true;
 }
-
