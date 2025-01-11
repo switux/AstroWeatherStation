@@ -165,7 +165,6 @@ bool AWSUpdater::check_for_new_files( const char *current_version, const char *r
 		const char *mv = package["min_version"];
 		if ( strcmp( current_version, mv ) < 0 ) {
 
-//			const char *id = package["id"];
 			Serial.printf( "[UPDATER   ] [INFO ] Found applicable file package [%s]\n", package["id"] );
 			download_package( root_ca, server, path, package["id"], package["files"] );
 			return true;

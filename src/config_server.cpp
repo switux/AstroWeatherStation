@@ -17,7 +17,7 @@
 	with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define DYNAMIC_JSON_DOCUMENT_SIZE  4096
+#define DYNAMIC_JSON_DOCUMENT_SIZE  4096	// NOSONAR
 
 #include <Arduino.h>
 #include <esp_task_wdt.h>
