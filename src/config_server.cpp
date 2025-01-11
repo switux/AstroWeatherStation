@@ -37,7 +37,7 @@
 #include "config_server.h"
 #include "AstroWeatherStation.h"
 
-extern HardwareSerial Serial1;
+extern HardwareSerial Serial1;					// NOSONAR
 extern AstroWeatherStation station;
 extern SemaphoreHandle_t sensors_read_mutex;	// Issue #7
 
