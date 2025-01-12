@@ -388,7 +388,7 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 	}
 	*len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
 
-  if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
+	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", *len, json_sensor_data.capacity() );
 
 	return etl::string_view( json_sensor_data );
@@ -639,8 +639,7 @@ bool AstroWeatherStation::initialise( void )
 		return true;
 	}
 
-	if ( config.get_has_device( aws_device_t::GPS_SENSOR ) )
-		initialise_GPS();
+	initialise_GPS();
 
 	if ( !sensor_manager.initialise( &station_devices.sc16is750, &config, false )) {
 
@@ -692,6 +691,9 @@ void AstroWeatherStation::initialise_dome( void )
 
 void AstroWeatherStation::initialise_GPS( void )
 {
+	if ( !config.get_has_device( aws_device_t::GPS_SENSOR ) )
+		return;
+
 	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] Initialising GPS.\n" );
 
@@ -1208,6 +1210,7 @@ void AstroWeatherStation::send_backlog_data( void )
 		return;
 
 	}
+
 	// flawfinder: ignore
 	File backlog = LittleFS.open( "/unsent.txt", FILE_READ );
 
@@ -1233,6 +1236,7 @@ void AstroWeatherStation::send_backlog_data( void )
 	while ( backlog.available() ) {
 
 		int	i = backlog.readBytesUntil( '\n', line.data(), line.capacity() - 1 );
+		esp_task_wdt_reset();
 		if ( !i )
 			break;
 		line[i] = '\0';
@@ -1247,6 +1251,7 @@ void AstroWeatherStation::send_backlog_data( void )
 	}
 
 	new_backlog.close();
+
 	backlog.close();
 
 	if ( !empty ) {
@@ -1271,14 +1276,19 @@ void AstroWeatherStation::send_data( void )
 	
 	if ( !solar_panel ) {
 
-		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE )
+		while ( xSemaphoreTake( sensors_read_mutex, 5000 /  portTICK_PERIOD_MS ) != pdTRUE ) {
 
 			if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 				Serial.printf( "[STATION   ] [DEBUG] Waiting for sensor data update to complete.\n" );
 
+			esp_task_wdt_reset();
+
+		}
 	}
 
 	get_json_sensor_data( &len );
+
+	esp_task_wdt_reset();
 
 	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
     	Serial.printf( "[STATION   ] [DEBUG] Sensor data: %s\n", json_sensor_data.data() );
