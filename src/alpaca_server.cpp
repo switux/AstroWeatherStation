@@ -503,124 +503,25 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 {
 	switch( str2int( request->pathArg(1).c_str() )) {
 
+		case str2int( "abortslew" ):
 		case str2int( "athome" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "atpark" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canfindhome" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
+		case str2int( "canmoveaxis" ):
 		case str2int( "canpark" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canpulseguide" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansetdeclinationrate" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-
 		case str2int( "cansetguiderates" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansetpark" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansetpierside" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansetrightascensionrate" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansettracking" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canslew" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canslewaltaz" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canslewaltazasync" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canslewasync" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansync" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "cansyncaltaz" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, false );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "canunpark" ):
 			if ( request->method() == HTTP_GET )
 				telescope.send_value( request, transaction_details, false );
@@ -629,6 +530,7 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "declination" ):
+		case str2int( "rightascension" ):
 			if ( request->method() == HTTP_GET )
 				telescope.send_value( request, transaction_details, (float)0.0 );
 			else
@@ -643,19 +545,6 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 			break;
 
 		case str2int( "declinationrate" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, (float)0.0 );
-			else
-				not_implemented( request, "This is a fake telescope" );
-			break;
-
-		case str2int( "rightascension" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request, transaction_details, (float)0.0 );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "rightascensionrate" ):
 			if ( request->method() == HTTP_GET )
 				telescope.send_value( request, transaction_details, (float)0.0 );
@@ -719,23 +608,9 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 				telescope.set_utcdate( request , transaction_details);
 			break;
 
-		case str2int( "abortslew" ):
-			if ( request->method() != HTTP_GET )
-				telescope.send_value( request , transaction_details, true );
-			else
-				does_not_exist( request );
-			break;
-
 		case str2int( "axisrates" ):
 			if ( request->method() == HTTP_GET )
 				telescope.axisrates( request , transaction_details);
-			else
-				does_not_exist( request );
-			break;
-
-		case str2int( "canmoveaxis" ):
-			if ( request->method() == HTTP_GET )
-				telescope.send_value( request , transaction_details, false );
 			else
 				does_not_exist( request );
 			break;
