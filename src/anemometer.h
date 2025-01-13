@@ -24,10 +24,9 @@
 #include <SoftwareSerial.h>
 #include <vector>
 
-#define SEND	HIGH
-#define RECV	LOW
+#include "rs485_device.h"
 
-class Anemometer : public Device {
+class Anemometer : public RS485Device {
 
 	public:
 
@@ -35,20 +34,16 @@ class Anemometer : public Device {
 		static const std::array<std::string, 3> ANEMOMETER_DESCRIPTION;
 		static const std::array<uint64_t,3>		ANEMOMETER_CMD;
 		static const std::array<uint16_t,3>		ANEMOMETER_SPEED;
-		
-				Anemometer( void );
+
+				Anemometer( void ) = default;
 		bool			initialise( SoftwareSerial *, uint32_t, byte, bool );
 		float			get_wind_gust( void );
 		float			get_wind_speed( bool );
 
 	private:
 
-		std::array<uint8_t,7>	answer;
-   		uint16_t				bps					= 0;
-		std::array<uint8_t,8>	cmd;
 	   	byte					model;
 		uint32_t				polling_ms_interval	= 0;
-		SoftwareSerial			*sensor_bus			= nullptr;
 	   	byte					wind_speed_index	= 0;
    		byte					wind_speeds_size	= 0;
   	 	float					wind_gust			= 0.F;

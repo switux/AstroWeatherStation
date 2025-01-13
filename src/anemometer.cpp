@@ -30,16 +30,9 @@ const std::array<std::string, 3>	Anemometer::ANEMOMETER_DESCRIPTION	= { "Mechani
 const std::array<uint64_t,3>		Anemometer::ANEMOMETER_CMD			= { 0x010300000001840a, 0x010300000001840a, 0x010300000002c40b };
 const std::array<uint16_t,3>		Anemometer::ANEMOMETER_SPEED		= { 4800, 9600, 4800 };
 
-Anemometer::Anemometer( void )
-{
-	pinMode( GPIO_WIND_SENSOR_CTRL, OUTPUT );
-	set_driver_version( "1.0" );
-}
-
 bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model, bool _debug_mode )
 {
 	model = _model;
-	sensor_bus = bus;
 	set_debug_mode( _debug_mode );
 
 	wind_speeds_size = 2*60*1000 / interval;
@@ -47,95 +40,36 @@ bool Anemometer::initialise( SoftwareSerial *bus, uint32_t interval, byte _model
 
 	set_name( ANEMOMETER_DESCRIPTION[ model ].c_str() );
 	set_description( ANEMOMETER_DESCRIPTION[ model ].c_str() );
-	
-	uint64_t_to_uint8_t_array( ANEMOMETER_CMD[ model ], cmd );
+	set_driver_version( "1.0" );
 
-	if ( !bps )
-
-		bps = ANEMOMETER_SPEED[ model ];
-
-	else {
-
-		if ( bps != ANEMOMETER_SPEED[ model ] ) {
-
-			bps = ANEMOMETER_SPEED[ model ];
-			sensor_bus->end();
-
-		} else
-
-			return set_initialised ( get_wind_speed( true ) >= 0 );
-	}
-
-	sensor_bus->begin( bps, EspSoftwareSerial::SWSERIAL_8N1, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX );
-	return set_initialised ( get_wind_speed( true ) >= 0 );
+	return RS485Device::initialise( "ANEMOMETER", bus, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX, GPIO_WIND_SENSOR_CTRL, ANEMOMETER_CMD[ model ], ANEMOMETER_SPEED[ model ] );
 }
 
 float Anemometer::get_wind_speed( bool verbose )
 {
-	byte	i = 0;
-	byte	j;
+	if ( interrogate( verbose ) ) {
 
-	answer.fill( 0 );
+		if ( model == 2 )
+			wind_speed = static_cast<float>(get_answer()[4]) / 100.F;
+		else
+			wind_speed = static_cast<float>(get_answer()[4]) / 10.F;
 
-	if ( get_debug_mode() ) {
+		if ( get_debug_mode() && verbose )
+			Serial.printf( "\n[ANEMOMETER] [DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
 
-		if ( verbose ) {
+		if ( wind_speed_index == wind_speeds_size )
+			wind_speed_index = 0;
+		wind_speeds[ wind_speed_index++ ] = wind_speed;
 
-			etl::string<8> str( cmd.begin(), cmd.end() );
-			Serial.printf( "[ANEMOMETER] [DEBUG] Sending command: %s\n", str.data() );
+		return wind_speed;
 
-		} else
-
-			Serial.printf( "[ANEMOMETER] [DEBUG] Probing.\n" );
-	}
-
-	while ( answer[1] != 0x03 ) {
-
-		digitalWrite( GPIO_WIND_SENSOR_CTRL, SEND );
-		sensor_bus->write( cmd.data(), cmd.max_size() );
-		sensor_bus->flush();
-
-		digitalWrite( GPIO_WIND_SENSOR_CTRL, RECV );
-		sensor_bus->readBytes( answer.data(), answer.max_size() );
-
-		if ( get_debug_mode() && verbose ) {
-
-			etl::string<7> str( answer.begin(), answer.end() );
-			Serial.printf( "[ANEMOMETER] [DEBUG] Answer: %s", str.data() );
-
-		}
-
-		if ( answer[1] == 0x03 ) {
-
-			if ( model == 2 )
-				wind_speed = static_cast<float>(answer[4]) / 100.F;
-			else
-				wind_speed = static_cast<float>(answer[4]) / 10.F;
-
-			if ( get_debug_mode() && verbose )
-				Serial.printf( "\n[ANEMOMETER] [DEBUG] Wind speed: %02.2f m/s\n", wind_speed );
-
-		} else {
-
-			if ( get_debug_mode() && verbose )
-				Serial.printf( "(Error).\n" );
-			delay( 500 );
-		}
-
-		if ( ++i == 3 ) {
-
-			if ( wind_speed_index == wind_speeds_size )
-				wind_speed_index = 0;
-			wind_speeds[ wind_speed_index++ ] = 0;
-			return ( wind_speed = -1.F );
-		}
 	}
 
 	if ( wind_speed_index == wind_speeds_size )
 		wind_speed_index = 0;
-	wind_speeds[ wind_speed_index++ ] = wind_speed;
+	wind_speeds[ wind_speed_index++ ] = 0;
 
-	return wind_speed;
+	return ( wind_speed = -1.F );
 }
 
 float Anemometer::get_wind_gust( void )

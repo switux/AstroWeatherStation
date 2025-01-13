@@ -22,11 +22,12 @@
 #define	_wind_vane_H
 
 #include <SoftwareSerial.h>
+#include "rs485_device.h"
 
 #define SEND	HIGH
 #define RECV	LOW
 
-class Wind_vane : public Device {
+class Wind_vane : public RS485Device {
 
 	public:
 
@@ -34,17 +35,13 @@ class Wind_vane : public Device {
 		static const std::array<std::string, 3> WIND_VANE_DESCRIPTION;
 		static const std::array<uint64_t,3>		WIND_VANE_CMD;
 		static const std::array<uint16_t,3>		WIND_VANE_SPEED;
-		
-				Wind_vane( void );
+
+						Wind_vane( void ) = default;
 		bool			initialise( SoftwareSerial *, byte, bool );
 		int16_t			get_wind_direction( bool );
 
 	private:
 
-		std::array<uint8_t,7>	answer;
-   		uint16_t				bps				= 0;
-		std::array<uint8_t,8>	cmd;
-		SoftwareSerial			*sensor_bus		= nullptr;
    		int16_t					wind_direction	= 0;
 };
 

@@ -27,6 +27,7 @@
 class Device {
 
 	public:
+
 							Device( void ) = default;
 		etl::string_view 	get_description( void );
 		etl::string_view	get_driver_info( void );
