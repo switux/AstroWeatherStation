@@ -125,12 +125,14 @@ bool AWSSensorManager::initialise( I2C_SC16IS750 *sc16is750, AWSConfig *_config,
 
 		sensors_read_mutex = xSemaphoreCreateMutex();
 		std::function<void(void *)> _poll_sensors_task = std::bind( &AWSSensorManager::poll_sensors_task, this, std::placeholders::_1 );
-		xTaskCreatePinnedToCore(
+		if ( xTaskCreatePinnedToCore(
 			[](void *param) {	// NOSONAR
         	    std::function<void(void*)>* poll_proxy = static_cast<std::function<void(void*)>*>( param );
         	    (*poll_proxy)( NULL );
-			}, "SensorManagerTask", 10000, &_poll_sensors_task, 5, &sensors_task_handle, 1 );
+			}, "PollSensorsTask", 10000, &_poll_sensors_task, 5, &sensors_task_handle, 1 ) != pdPASS )
+			Serial.printf( "[SENSORMNGR] [ERROR] Could not start task [SensorManagerTask]\n" );
 	}
+
 	k[0] = config->get_parameter<int>( "k1" );
 	k[1] = config->get_parameter<int>( "k2" );
 	k[2] = config->get_parameter<int>( "k3" );

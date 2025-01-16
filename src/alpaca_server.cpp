@@ -331,10 +331,7 @@ void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest 
 	switch( str2int( request->pathArg(1).c_str() )) {
 
 		case str2int( "averageperiod" ):
-			if ( request->method() == HTTP_GET )
-				observing_conditions.get_averageperiod( request, transaction_details );
-			else
-				observing_conditions.set_averageperiod( request, transaction_details );
+			observing_conditions.averageperiod( request, transaction_details );
 			break;
 
 		case str2int( "cloudcover" ):

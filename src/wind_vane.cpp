@@ -36,7 +36,7 @@ bool Wind_vane::initialise( SoftwareSerial *bus, byte model, bool _debug_mode )
 	set_description( WIND_VANE_DESCRIPTION[ model ].c_str() );
 	set_driver_version( "1.0");
 
-	return RS485Device::initialise( "WINDVANE ", bus, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX, GPIO_WIND_SENSOR_CTRL, WIND_VANE_CMD[ model ], WIND_VANE_SPEED[ model ] );
+	return RS485Device::initialise( "WINDVANE  ", bus, GPIO_WIND_SENSOR_RX, GPIO_WIND_SENSOR_TX, GPIO_WIND_SENSOR_CTRL, WIND_VANE_CMD[ model ], WIND_VANE_SPEED[ model ] );
 }
 
 int16_t Wind_vane::get_wind_direction( bool verbose )

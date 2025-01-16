@@ -139,6 +139,9 @@ void AstroWeatherStation::check_ota_updates( bool force_update = false )
 
 void AstroWeatherStation::check_rain_event_guard_time( uint16_t guard_time )
 {
+	if ( !config.get_has_device( aws_device_t::RAIN_SENSOR ))
+		return;
+
 	time_t now = get_timestamp();
 
 	if ( catch_rain_event )
@@ -188,14 +191,14 @@ aws_boot_mode_t AstroWeatherStation::determine_boot_mode( void )
  	unsigned long 	start					= micros();
 	unsigned long 	button_pressed_secs		= 0;
 	aws_boot_mode_t boot_mode				= aws_boot_mode_t::NORMAL;
-	
+
 	pinMode( GPIO_DEBUG, INPUT );
 
 	if ( static_cast<bool>( 1 - gpio_get_level( GPIO_DEBUG )) || DEBUG_MODE )
 		operation_info  |= aws_operation_info_t::DEBUG;
 	else
 		operation_info  &= ~aws_operation_info_t::DEBUG;
-	
+
 	while ( !( gpio_get_level( GPIO_DEBUG ))) {
 
 		if (( micros() - start ) >= FACTORY_RESET_GUARD	) {
@@ -209,6 +212,13 @@ aws_boot_mode_t AstroWeatherStation::determine_boot_mode( void )
 		delay( 100 );
 		button_pressed_secs = micros() - start;
 	}
+
+	esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+	if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason )
+		operation_info |= aws_operation_info_t::RAIN;
+
+	boot_timestamp *= ( 1 - ( ( wakeup_reason == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel ));
+
 	return boot_mode;
 }
 
@@ -275,7 +285,7 @@ void AstroWeatherStation::try_enter_config_mode( aws_boot_mode_t boot_mode )
 {
 	if ( boot_mode != aws_boot_mode_t::MAINTENANCE )
 		return;
-		
+	
 	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [INFO ] Entering config mode...\n ");
 
@@ -325,6 +335,8 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 	JsonDocument	json_data;
 	sensor_data_t	*sensor_data = sensor_manager.get_sensor_data();
 	int				l;
+
+	esp_task_wdt_reset();
 
 	json_data["available_sensors"] = static_cast<unsigned long>( sensor_data->available_sensors );
 	json_data["battery_level"] = station_data.health.battery_level;
@@ -377,19 +389,28 @@ etl::string_view AstroWeatherStation::get_json_sensor_data( size_t *len )
 	json_data["shutter_close"] = station_data.dome_data.close_command;
 	json_data["lookout_active"] = lookout.is_active();
 
+	esp_task_wdt_reset();
+
 	if ( ( l = measureJson( json_data )) > json_sensor_data.capacity() ) {
 
 		etl::string<64> tmp;
 		snprintf( tmp.data(), tmp.capacity(), "sensor_data json is too small ( %d > %d )", l, json_sensor_data.capacity() );
+		esp_task_wdt_reset();
 		send_alarm( "[STATION] BUG", tmp.data() );
+		esp_task_wdt_reset();
 		Serial.printf( "[STATION   ] [BUG  ] sensor_data json is too small ( %d > %d ). Please report to support!\n", l, json_sensor_data.capacity() );
+		esp_task_wdt_reset();
 		return etl::string_view( "" );
 
 	}
+
 	*len = serializeJson( json_data, json_sensor_data.data(), json_sensor_data.capacity() );
+	esp_task_wdt_reset();
 
 	if (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG )
 		Serial.printf( "[STATION   ] [DEBUG] sensor_data is %d bytes long, max size is %d bytes.\n", *len, json_sensor_data.capacity() );
+
+	esp_task_wdt_reset();
 
 	return etl::string_view( json_sensor_data );
 }
@@ -513,13 +534,16 @@ bool AstroWeatherStation::initialise( void )
 
 	pinMode( GPIO_LED_GREEN, OUTPUT );
 	pinMode( GPIO_LED_BLUE, OUTPUT );
-	
+
 	std::function<void(void *)> _led_task = std::bind( &AstroWeatherStation::led_task, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore(
+	if ( xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* led_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*led_task_proxy)( NULL );
-		}, "AWSLedTask", 2000, &_led_task, 10, &aws_led_task_handle, 1 );
+		}, "AWSLedTask", 2000, &_led_task, 1, &aws_led_task_handle, 1 ) != pdPASS ) {
+
+		Serial.printf( "[STATION   ] [ERROR] Could not start background task [LEDTask]\n" );
+	}
 
 	set_led_status( station_status_t::BOOTING );
 
@@ -552,7 +576,6 @@ bool AstroWeatherStation::initialise( void )
 	sensor_manager.set_solar_panel( solar_panel );
 	sensor_manager.set_debug_mode( (( operation_info & aws_operation_info_t::DEBUG ) == aws_operation_info_t::DEBUG ) );
 
-	boot_timestamp *= ( 1 - ( ( esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED ) && solar_panel ));
 
 	ota_setup.board = "AWS_";
 	ota_setup.board += ESP.getChipModel();
@@ -598,12 +621,6 @@ bool AstroWeatherStation::initialise( void )
 	if ( solar_panel ) {
 
 		setCpuFrequencyMhz( 80 );
-
-		// Issue #143
-		esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-		if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason )
-			operation_info |= aws_operation_info_t::RAIN;
-
 		try_enter_config_mode( boot_mode );
 
 	} else
@@ -625,12 +642,8 @@ bool AstroWeatherStation::initialise( void )
 	// Do not enable earlier as some HW configs rely on SC16IS750 to pilot the dome.
 	initialise_dome();
 
-	if ( solar_panel ) {
-
+	if ( solar_panel )
 		sync_time( true );
-		if ( config.get_has_device( aws_device_t::RAIN_SENSOR ))
-			check_rain_event_guard_time( config.get_parameter<int>( "rain_event_guard_time" ) );
-	}
 
 	if (( operation_info & aws_operation_info_t::RAIN ) == aws_operation_info_t::RAIN ) {
 
@@ -666,11 +679,12 @@ bool AstroWeatherStation::initialise( void )
 			station_devices.dome.close_shutter();	// Issue #144
 
 	std::function<void(void *)> _periodic_tasks = std::bind( &AstroWeatherStation::periodic_tasks, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore(
+	if ( xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
-		}, "AWSCoreTask", 6000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 );
+		}, "AWSCoreTask", 6000, &_periodic_tasks, 1, &aws_periodic_task_handle, 1 ) != pdPASS )
+		Serial.printf( "[STATION   ] [ERROR] Could not start task [CoreTask]\n" );
 
 
 	operation_info |= aws_operation_info_t::READY;
@@ -905,8 +919,7 @@ void AstroWeatherStation::periodic_tasks( void *dummy )	// NOSONAR
 			ota_millis = millis();
 		}
 
-		if ( config.get_has_device( aws_device_t::RAIN_SENSOR ))
-			check_rain_event_guard_time( rain_event_guard_time );
+		check_rain_event_guard_time( rain_event_guard_time );
 
 		if ( data_push_timer && (( millis() - data_push_millis ) > 1000*data_push_timer )) {
 

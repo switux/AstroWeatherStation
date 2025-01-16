@@ -43,7 +43,7 @@ bool AWSConfig::can_rollback( void )
 void AWSConfig::factory_reset( void )
 {
 	bool x;
-	
+
 	if ( !LittleFS.begin( true )) {
 
 		Serial.printf( "[CONFIGMNGR] [ERROR] Could not access flash filesystem, bailing out!\n" );
@@ -162,14 +162,14 @@ bool AWSConfig::read_config( void )
 		Serial.printf( "[CONFIGMNGR] [INFO ] Using minimal/factory config file.\n" );
 	}
 
-	devices |= aws_device_t::DOME_DEVICE * ( json_config.containsKey( "has_dome" ) ? json_config["has_dome"].as<int>() : DEFAULT_HAS_DOME );
-	devices |= aws_device_t::BME_SENSOR * ( json_config.containsKey( "has_bme" ) ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
-	devices |= aws_device_t::GPS_SENSOR * ( json_config.containsKey( "has_gps" ) ? json_config["has_gps"].as<int>() : DEFAULT_HAS_GPS );
-	devices |= aws_device_t::MLX_SENSOR * ( json_config.containsKey( "has_mlx" ) ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
-	devices |= aws_device_t::RAIN_SENSOR * ( json_config.containsKey( "has_rain_sensor" ) ? json_config["has_rain_sensor"].as<int>() : DEFAULT_HAS_RAIN_SENSOR );
-	devices |= aws_device_t::TSL_SENSOR * ( json_config.containsKey( "has_tsl" ) ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
-	devices |= aws_device_t::ANEMOMETER_SENSOR * ( json_config.containsKey( "has_ws" ) ? json_config["has_ws"].as<int>() : DEFAULT_HAS_WS );
-	devices |= aws_device_t::WIND_VANE_SENSOR * ( json_config.containsKey( "has_wv" ) ? json_config["has_wv"].as<int>() : DEFAULT_HAS_WV );
+	devices |= aws_device_t::DOME_DEVICE * ( json_config["has_dome"].is<int>() ? json_config["has_dome"].as<int>() : DEFAULT_HAS_DOME );
+	devices |= aws_device_t::BME_SENSOR * ( json_config["has_bme"].is<int>() ? json_config["has_bme"].as<int>() : DEFAULT_HAS_BME );
+	devices |= aws_device_t::GPS_SENSOR * ( json_config["has_gps"].is<int>() ? json_config["has_gps"].as<int>() : DEFAULT_HAS_GPS );
+	devices |= aws_device_t::MLX_SENSOR * ( json_config["has_mlx"].is<int>() ? json_config["has_mlx"].as<int>() : DEFAULT_HAS_MLX );
+	devices |= aws_device_t::RAIN_SENSOR * ( json_config["has_rain_sensor"].is<int>() ? json_config["has_rain_sensor"].as<int>() : DEFAULT_HAS_RAIN_SENSOR );
+	devices |= aws_device_t::TSL_SENSOR * ( json_config["has_tsl"].is<int>() ? json_config["has_tsl"].as<int>() : DEFAULT_HAS_TSL );
+	devices |= aws_device_t::ANEMOMETER_SENSOR * ( json_config["has_ws"].is<int>() ? json_config["has_ws"].as<int>() : DEFAULT_HAS_WS );
+	devices |= aws_device_t::WIND_VANE_SENSOR * ( json_config["has_wv"].is<int>() ? json_config["has_wv"].as<int>() : DEFAULT_HAS_WV );
 
 	set_missing_parameters_to_default_values();
 
@@ -414,212 +414,212 @@ bool AWSConfig::save_runtime_configuration( JsonVariant &_json_config )
 
 void AWSConfig::set_missing_network_parameters_to_default_values( void )
 {
-	if ( !json_config.containsKey( "wifi_ap_ssid" ))
+	if ( !json_config["wifi_ap_ssid"].is<JsonVariant>() )
 		json_config["wifi_ap_ssid"] = DEFAULT_WIFI_AP_SSID;
 
-	if ( !json_config.containsKey( "config_port" ))
+	if ( !json_config["config_port"].is<JsonVariant>() )
 		json_config["config_port"] = DEFAULT_CONFIG_PORT;
 
-	if ( !json_config.containsKey( "eth_ip" ))
+	if ( !json_config["eth_ip"].is<JsonVariant>() )
 		json_config["eth_ip"] = DEFAULT_ETH_IP;
 
-	if ( !json_config.containsKey( "eth_dns" ))
+	if ( !json_config["eth_dns"].is<JsonVariant>() )
 		json_config["eth_dns"] = DEFAULT_ETH_DNS;
 
-	if ( !json_config.containsKey( "eth_gw" ))
+	if ( !json_config["eth_gw"].is<JsonVariant>() )
 		json_config["eth_gw"] = DEFAULT_ETH_GW;
 
-	if ( !json_config.containsKey( "eth_ip_mode" ))
+	if ( !json_config["eth_ip_mode"].is<JsonVariant>() )
 		json_config["eth_ip_mode"] = static_cast<int>( DEFAULT_ETH_IP_MODE );
 
-	if ( !json_config.containsKey( "pref_iface" ))
+	if ( !json_config["pref_iface"].is<JsonVariant>() )
 		json_config["pref_iface"] = static_cast<int>( aws_iface::wifi_ap );
 
-	if ( !json_config.containsKey( "remote_server" ))
+	if ( !json_config["remote_server"].is<JsonVariant>() )
 		json_config["remote_server"] = DEFAULT_SERVER;
 
-	if ( !json_config.containsKey( "wifi_sta_ssid" ))
+	if ( !json_config["wifi_sta_ssid"].is<JsonVariant>() )
 		json_config["wifi_sta_ssid"] = DEFAULT_WIFI_STA_SSID;
 
-	if ( !json_config.containsKey( "url_path" ))
+	if ( !json_config["url_path"].is<JsonVariant>() )
 		json_config["url_path"] = DEFAULT_URL_PATH;
 
-	if ( !json_config.containsKey( "wifi_ap_dns" ))
+	if ( !json_config["wifi_ap_dns"].is<JsonVariant>() )
 		json_config["wifi_ap_dns"] = DEFAULT_WIFI_AP_DNS;
 
-	if ( !json_config.containsKey( "wifi_ap_gw" ))
+	if ( !json_config["wifi_ap_gw"].is<JsonVariant>() )
 		json_config["wifi_ap_gw"] = DEFAULT_WIFI_AP_GW;
 
-	if ( !json_config.containsKey( "wifi_ap_ip" ))
+	if ( !json_config["wifi_ap_ip"].is<JsonVariant>() )
 		json_config["wifi_ap_ip"] = DEFAULT_WIFI_AP_IP;
 
-	if ( !json_config.containsKey( "wifi_ap_password" ))
+	if ( !json_config["wifi_ap_password"].is<JsonVariant>() )
 		json_config["wifi_ap_password"] = DEFAULT_WIFI_AP_PASSWORD;
 
-	if ( !json_config.containsKey( "wifi_mode" ))
+	if ( !json_config["wifi_mode"].is<JsonVariant>() )
 		json_config["wifi_mode"] = static_cast<int>( DEFAULT_WIFI_MODE );
 
-	if ( !json_config.containsKey( "wifi_sta_dns" ))
+	if ( !json_config["wifi_sta_dns"].is<JsonVariant>() )
 		json_config["wifi_sta_dns"] = DEFAULT_WIFI_STA_DNS;
 
-	if ( !json_config.containsKey( "wifi_sta_gw" ))
+	if ( !json_config["wifi_sta_gw"].is<JsonVariant>() )
 		json_config["wifi_sta_gw"] = DEFAULT_WIFI_STA_GW;
 
-	if ( !json_config.containsKey( "wifi_sta_ip" ))
+	if ( !json_config["wifi_sta_ip"].is<JsonVariant>() )
 		json_config["wifi_sta_ip"] = DEFAULT_WIFI_STA_IP;
 
-	if ( !json_config.containsKey( "wifi_sta_ip_mode" ))
+	if ( !json_config["wifi_sta_ip_mode"].is<JsonVariant>() )
 		json_config["wifi_sta_ip_mode"] = static_cast<int>( DEFAULT_WIFI_STA_IP_MODE );
 
-	if ( !json_config.containsKey( "wifi_sta_password" ))
+	if ( !json_config["wifi_sta_password"].is<JsonVariant>() )
 		json_config["wifi_sta_password"] = DEFAULT_WIFI_STA_PASSWORD;
 }
 
 void AWSConfig::set_missing_lookout_safe_parameters_to_default_values( void )
 {
-	if ( !json_config.containsKey( "safe_cloud_coverage_1_active" ))
+	if ( !json_config["safe_cloud_coverage_1_active"].is<JsonVariant>())
 		json_config["safe_cloud_coverage_1_active"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_2_active" ))
+	if ( !json_config["safe_cloud_coverage_2_active"].is<JsonVariant>() )
 		json_config["safe_cloud_coverage_2_active"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_1_delay" ))
+	if ( !json_config["safe_cloud_coverage_1_delay"].is<JsonVariant>() )
 		json_config["safe_cloud_coverage_1_delay"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_DELAY;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_2_delay" ))
+	if ( !json_config["safe_cloud_coverage_2_delay"].is<JsonVariant>() )
 		json_config["safe_cloud_coverage_2_delay"] = DEFAULT_SAFE_CLOUD_COVERAGE_2_DELAY;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_1_max" ))
+	if ( !json_config["safe_cloud_coverage_1_max"].is<JsonVariant>() )
 		json_config["safe_cloud_coverage_1_max"] = DEFAULT_SAFE_CLOUD_COVERAGE_1_MAX;
 
-	if ( !json_config.containsKey( "safe_cloud_coverage_2_max" ))
+	if ( !json_config["safe_cloud_coverage_2_max"].is<JsonVariant>() )
 		json_config["safe_cloud_coverage_2_max"] = DEFAULT_SAFE_CLOUD_COVERAGE_2_MAX;
 
-	if ( !json_config.containsKey( "safe_rain_intensity_active" ))
+	if ( !json_config["safe_rain_intensity_active"].is<JsonVariant>() )
 		json_config["safe_rain_intensity_active"] = DEFAULT_SAFE_RAIN_INTENSITY_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_rain_intensity_delay" ))
+	if ( !json_config["safe_rain_intensity_delay"].is<JsonVariant>() )
 		json_config["safe_rain_intensity_delay"] = DEFAULT_SAFE_RAIN_INTENSITY_DELAY;
 
-	if ( !json_config.containsKey( "safe_rain_intensity_max" ))
+	if ( !json_config["safe_rain_intensity_max"].is<JsonVariant>() )
 		json_config["safe_rain_intensity_max"] = DEFAULT_SAFE_RAIN_INTENSITY_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_active" ))
+	if ( !json_config["safe_wind_speed_active"].is<JsonVariant>() )
 		json_config["safe_wind_speed_active"] = DEFAULT_SAFE_WIND_SPEED_ACTIVE;
 
-	if ( !json_config.containsKey( "safe_wind_speed_max" ))
+	if ( !json_config["safe_wind_speed_max"].is<JsonVariant>() )
 		json_config["safe_wind_speed_max"] = DEFAULT_SAFE_WIND_SPEED_MAX;
 
-	if ( !json_config.containsKey( "safe_wind_speed_delay" ))
+	if ( !json_config["safe_wind_speed_delay"].is<JsonVariant>() )
 		json_config["safe_wind_speed_delay"] = DEFAULT_SAFE_WIND_SPEED_DELAY;
 }
 
 void AWSConfig::set_missing_lookout_unsafe_parameters_to_default_values( void )
 {
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_active" ))
+	if ( !json_config["unsafe_cloud_coverage_1_active"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_1_active"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_active" ))
+	if ( !json_config["unsafe_cloud_coverage_2_active"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_2_active"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_delay" ))
+	if ( !json_config["unsafe_cloud_coverage_1_delay"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_1_delay"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_DELAY;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_delay" ))
+	if ( !json_config["unsafe_cloud_coverage_2_delay"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_2_delay"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_DELAY;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_max" ))
+	if ( !json_config["unsafe_cloud_coverage_1_max"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_1_max"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MAX;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_max" ))
+	if ( !json_config["unsafe_cloud_coverage_2_max"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_2_max"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MAX;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_1_missing" ))
+	if ( !json_config["unsafe_cloud_coverage_1_missing"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_1_missing"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_1_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_cloud_coverage_2_missing" ))
+	if ( !json_config["unsafe_cloud_coverage_2_missing"].is<JsonVariant>() )
 		json_config["unsafe_cloud_coverage_2_missing"] = DEFAULT_UNSAFE_CLOUD_COVERAGE_2_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_rain_event_active" ))
+	if ( !json_config["unsafe_rain_event_active"].is<JsonVariant>() )
 		json_config["unsafe_rain_event_active"] = DEFAULT_UNSAFE_RAIN_EVENT_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_rain_event_missing" ))
+	if ( !json_config["unsafe_rain_event_missing"].is<JsonVariant>() )
 		json_config["unsafe_rain_event_missing"] = DEFAULT_UNSAFE_RAIN_EVENT_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_rain_intensity_active" ))
+	if ( !json_config["unsafe_rain_intensity_active"].is<JsonVariant>() )
 		json_config["unsafe_rain_intensity_active"] = DEFAULT_UNSAFE_RAIN_INTENSITY_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_rain_intensity_max" ))
+	if ( !json_config["unsafe_rain_intensity_max"].is<JsonVariant>() )
 		json_config["unsafe_rain_intensity_max"] = DEFAULT_UNSAFE_RAIN_INTENSITY_MAX;
 
-	if ( !json_config.containsKey( "unsafe_rain_intensity_missing" ))
+	if ( !json_config["unsafe_rain_intensity_missing"].is<JsonVariant>() )
 		json_config["unsafe_rain_intensity_missing"] = DEFAULT_UNSAFE_RAIN_INTENSITY_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_1_active" ))
+	if ( !json_config["unsafe_wind_speed_1_active"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_1_active"] = DEFAULT_UNSAFE_WIND_SPEED_1_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_2_active" ))
+	if ( !json_config["unsafe_wind_speed_2_active"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_2_active"] = DEFAULT_UNSAFE_WIND_SPEED_2_ACTIVE;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_1_max" ))
+	if ( !json_config["unsafe_wind_speed_1_max"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_1_max"] = DEFAULT_UNSAFE_WIND_SPEED_1_MAX;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_2_max" ))
+	if ( !json_config["unsafe_wind_speed_2_max"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_2_max"] = DEFAULT_UNSAFE_WIND_SPEED_2_MAX;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_1_missing" ))
+	if ( !json_config["unsafe_wind_speed_1_missing"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_1_missing"] = DEFAULT_UNSAFE_WIND_SPEED_1_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_2_missing" ))
+	if ( !json_config["unsafe_wind_speed_2_missing"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_2_missing"] = DEFAULT_UNSAFE_WIND_SPEED_2_MISSING;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_1_delay" ))
+	if ( !json_config["unsafe_wind_speed_1_delay"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_1_delay"] = DEFAULT_UNSAFE_WIND_SPEED_1_DELAY;
 
-	if ( !json_config.containsKey( "unsafe_wind_speed_2_delay" ))
+	if ( !json_config["unsafe_wind_speed_2_delay"].is<JsonVariant>() )
 		json_config["unsafe_wind_speed_2_delay"] = DEFAULT_UNSAFE_WIND_SPEED_2_DELAY;
 
 }
 
 void AWSConfig::set_missing_lookout_parameters_to_default_values( void )
 {
-	if ( !json_config.containsKey( "k1" ))
+	if ( !json_config["k1"].is<JsonVariant>() )
 		json_config["k1"] = DEFAULT_K1;
 
-	if ( !json_config.containsKey( "k2" ))
+	if ( !json_config["k2"].is<JsonVariant>() )
 		json_config["k2"] = DEFAULT_K3;
 
-	if ( !json_config.containsKey( "k3" ))
+	if ( !json_config["k3"].is<JsonVariant>() )
 		json_config["k3"] = DEFAULT_K3;
 
-	if ( !json_config.containsKey( "k4" ))
+	if ( !json_config["k4"].is<JsonVariant>() )
 		json_config["k4"] = DEFAULT_K4;
 
-	if ( !json_config.containsKey( "k5" ))
+	if ( !json_config["k5"].is<JsonVariant>() )
 		json_config["k5"] = DEFAULT_K5;
 
-	if ( !json_config.containsKey( "k6" ))
+	if ( !json_config["k6"].is<JsonVariant>() )
 		json_config["k6"] = DEFAULT_K6;
 
-	if ( !json_config.containsKey( "k7" ))
+	if ( !json_config["k7"].is<JsonVariant>() )
 		json_config["k7"] = DEFAULT_K7;
 
-	if ( !json_config.containsKey( "cc_aag_cloudy" ))
+	if ( !json_config["cc_aag_cloudy"].is<JsonVariant>() )
 		json_config["cc_aag_cloudy"] = DEFAULT_CC_AAG_CLOUDY;
 
-	if ( !json_config.containsKey( "cc_aag_overcast" ))
+	if ( !json_config["cc_aag_overcast"].is<JsonVariant>() )
 		json_config["cc_aag_overcast"] = DEFAULT_CC_AAG_OVERCAST;
 
-	if ( !json_config.containsKey( "cc_aws_cloudy" ))
+	if ( !json_config["cc_aws_cloudy"].is<JsonVariant>() )
 		json_config["cc_aws_cloudy"] = DEFAULT_CC_AWS_CLOUDY;
 
-	if ( !json_config.containsKey( "cc_aws_overcast" ))
+	if ( !json_config["cc_aws_overcast"].is<JsonVariant>() )
 		json_config["cc_aws_overcast"] = DEFAULT_CC_AWS_OVERCAST;
 
-	if ( !json_config.containsKey( "lookout_enabled" ))
+	if ( !json_config["lookout_enabled"].is<JsonVariant>() )
 		json_config["lookout_enabled"] = DEFAULT_LOOKOUT_ENABLED;
 
-	if ( !json_config.containsKey( "cloud_coverage_formula" ))
+	if ( !json_config["cloud_coverage_formula"].is<JsonVariant>() )
 		json_config["cloud_coverage_formula"] = DEFAULT_CC_FORMULA_AWS ? 0 : 1;
 
 	set_missing_lookout_safe_parameters_to_default_values();
@@ -631,31 +631,31 @@ void AWSConfig::set_missing_parameters_to_default_values( void )
 	set_missing_network_parameters_to_default_values();
 	set_missing_lookout_parameters_to_default_values();
 
-	if ( !json_config.containsKey( "msas_calibration_offset" ))
+	if ( !json_config["msas_calibration_offset"].is<JsonVariant>() )
 		json_config["msas_calibration_offset"] = DEFAULT_MSAS_CORRECTION;
 
-	if ( !json_config.containsKey( "rain_event_guard_time" ))
+	if ( !json_config["rain_event_guard_time"].is<JsonVariant>() )
 		json_config["rain_event_guard_time"] = DEFAULT_RAIN_EVENT_GUARD_TIME;
 
-	if ( !json_config.containsKey( "tzname" ))
+	if ( !json_config["tzname"].is<JsonVariant>() )
 		json_config["tzname"] = DEFAULT_TZNAME;
 
-	if ( !json_config.containsKey( "automatic_updates" ))
+	if ( !json_config["automatic_updates"].is<JsonVariant>() )
 		json_config["automatic_updates"] = DEFAULT_AUTOMATIC_UPDATES;
 
-	if ( !json_config.containsKey( "data_push" ))
+	if ( !json_config["data_push"].is<JsonVariant>() )
 		json_config["data_push"] = DEFAULT_DATA_PUSH;
 
-	if ( !json_config.containsKey( "push_freq" ))
+	if ( !json_config["push_freq"].is<JsonVariant>() )
 		json_config["push_freq"] = DEFAULT_PUSH_FREQ;
 
-	if ( !json_config.containsKey( "discord_enabled" ))
+	if ( !json_config["discord_enabled"].is<JsonVariant>() )
 		json_config["discord_enabled"] = DEFAULT_DISCORD_ENABLED;
 
-	if ( !json_config.containsKey( "discord_wh" ))
+	if ( !json_config["discord_wh"].is<JsonVariant>() )
 		json_config["discord_wh"] = DEFAULT_DISCORD_WEBHOOK;
 
-	if ( !json_config.containsKey( "ota_url" ))
+	if ( !json_config["ota_url"].is<JsonVariant>() )
 		json_config["ota_url"] = DEFAULT_OTA_URL;
 
 }
@@ -668,7 +668,7 @@ void AWSConfig::set_parameter( const char *key, const char *val )
 
 void AWSConfig::set_root_ca( JsonVariant &_json_config )
 {
-	if ( _json_config.containsKey( "root_ca" )) {
+	if ( _json_config["root_ca"].is<JsonVariant>() ) {
 
 		if ( strlen( _json_config["root_ca"] ) <= root_ca.capacity() ) {
 			root_ca.assign( _json_config["root_ca"].as<const char *>() );

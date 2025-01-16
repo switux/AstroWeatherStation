@@ -58,7 +58,7 @@ function checkbox_change( param )
 	}
 }
 
-function close_dome_shutter()
+function close_dome_shutter( event )
 {
 	event.preventDefault();
 	let req = new XMLHttpRequest();
@@ -66,7 +66,8 @@ function close_dome_shutter()
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
 				dome_closing();
-			} else if ( this.status == 503 ) {
+			} else if ( this.status == 500 ) {
+				console.log( "ERROR: cannot close dome shutter: "+this.statusText );
 			}
 		}
 	};
@@ -96,14 +97,14 @@ function config_section_active( section_name, yes_no )
 
 function dome_closing()
 {
-//	document.getElementById('open_dome_shutter_button').disabled = false;
-//	document.getElementById('close_dome_shutter_button').disabled = true;
+	document.getElementById('open_dome_shutter_button').disabled = false;
+	document.getElementById('close_dome_shutter_button').disabled = true;
 }
 
 function dome_opening()
 {
-//	document.getElementById('open_dome_shutter_button').disabled = true;
-//	document.getElementById('close_dome_shutter_button').disabled = false;
+	document.getElementById('open_dome_shutter_button').disabled = true;
+	document.getElementById('close_dome_shutter_button').disabled = false;
 }
 
 function fetch_station_data()
@@ -116,7 +117,7 @@ function fetch_station_data()
 				document.getElementById("status").textContent = "";
 				update_dashboard( values );
 			} else if ( this.status == 503 ) {
-				document.getElementById("status").textContent = "Station not ready";
+				document.getElementById("status").textContent = this.statusText;
 			}
 		}
 	};
@@ -156,7 +157,7 @@ function fill_lookout_value( parameter, from_list, sensor_available, values )
 function fill_lookout_values( values )
 {
 	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
-	
+
 	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
 	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
 
@@ -298,7 +299,7 @@ function makeRequest() {
 	});
 }
 
-function open_dome_shutter()
+function open_dome_shutter( event )
 {
 	event.preventDefault();
 	let req = new XMLHttpRequest();
@@ -306,7 +307,8 @@ function open_dome_shutter()
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
 				dome_opening();
-			} else if ( this.status == 503 ) {
+			} else if ( this.status == 500 ) {
+				console.log( "ERROR: cannot open dome shutter: "+this.statusText );
 			}
 		}
 	};
@@ -322,7 +324,7 @@ function reboot()
 	req.send();
 }
 
-function resume_lookout()
+function resume_lookout( event )
 {
 	event.preventDefault();
 	let req = new XMLHttpRequest();
@@ -330,7 +332,8 @@ function resume_lookout()
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
 				lookout_resumed();
-			} else if ( this.status == 503 ) {
+			} else if ( this.status == 500 ) {
+				console.log( "ERROR: cannot resume lookout: "+this.statusText );
 			}
 		}
 	};
@@ -400,7 +403,7 @@ function sleep(ms) {
     return new Promise(resolve => sleepSetTimeout_ctrl = setTimeout(resolve, ms));
 }
 
-function suspend_lookout()
+function suspend_lookout( event )
 {
 	event.preventDefault();
 	let req = new XMLHttpRequest();
@@ -408,7 +411,8 @@ function suspend_lookout()
 		if ( this.readyState == 4 ) {
 			if ( this.status == 200 ) {
 				lookout_suspended();
-			} else if ( this.status == 503 ) {
+			} else if ( this.status == 500 ) {
+				console.log( "ERROR: cannot suspend lookout: "+this.statusText );
 			}
 		}
 	};

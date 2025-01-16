@@ -216,11 +216,13 @@ void Dome::initialise( dome_data_t *_dome_data, bool _debug_mode )
 	attachInterrupt( GPIO_DOME_OPEN, _handle_dome_shutter_open_change, RISING );
 
 	std::function<void(void *)> _control = std::bind( &Dome::control_task, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore(
+	if ( xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
             std::function<void(void*)>* control_proxy = static_cast<std::function<void(void*)>*>( param );
             (*control_proxy)( NULL );
-		}, "DomeControl", 2000, &_control, configMAX_PRIORITIES - 2, &dome_task_handle, 1 );
+		}, "DomeControl", 2000, &_control, configMAX_PRIORITIES - 2, &dome_task_handle, 1 ) != pdPASS )
+		Serial.printf( "[DOME      ] [ERROR] Could not start task [DomeControlTask]\n" );
+
 
 	is_connected = true;
 }

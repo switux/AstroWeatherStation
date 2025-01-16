@@ -331,7 +331,7 @@ T AWSConfig::get_parameter( const char *key )
 		case str2int( "config_iface" ):
 		case str2int( "config_port" ):
 		case str2int( "wind_vane_model" ):
-			return ( json_config.containsKey( key ) ? json_config[key].as<T>() : 0 );	// NOSONAR
+			return ( json_config[key].is<JsonVariant>() ? json_config[key].as<T>() : 0 );	// NOSONAR
 
 		case str2int( "automatic_updates" ):
 		case str2int( "data_push" ):

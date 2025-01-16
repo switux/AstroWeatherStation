@@ -577,7 +577,7 @@
 						<tr><td>Dome is closed</td><td><span id="dome_shutter_closed"></span></td></tr>
 						<tr><td>Dome is open</td><td><span id="dome_shutter_open"></span></td></tr>
 						<tr><td>Trying to close</td><td><span id="dome_shutter_close"></span></td></tr>
-						<tr><td>Control</td><td><button id="close_dome_shutter_button" type="button" onclick="close_dome_shutter();">CLOSE</button> / <button id="open_dome_shutter_button" type="button" onclick="open_dome_shutter();">OPEN</button></td></tr>
+						<tr><td>Control</td><td><button id="close_dome_shutter_button" type="button" onclick="close_dome_shutter(event);">CLOSE</button> / <button id="open_dome_shutter_button" type="button" onclick="open_dome_shutter(event);">OPEN</button></td></tr>
 					</table>
 
 				</div> <!-- Dome -->
@@ -587,7 +587,7 @@
 					<table aria-describedby="Lookout" style="margin: 0 auto">
 						<tr><th colspan="2" style="border-bottom: 1px solid">Lookout</th></tr>
 						<tr><td>Status</td><td><span id="lookout_status"></span></td></tr>
-						<tr><td>Control</td><td><button id="suspend_lookout_button" type="button" onclick="suspend_lookout();">SUSPEND</button> / <button id="resume_lookout_button" type="button" onclick="resume_lookout();">RESUME</button></td></tr>
+						<tr><td>Control</td><td><button id="suspend_lookout_button" type="button" onclick="suspend_lookout(event);">SUSPEND</button> / <button id="resume_lookout_button" type="button" onclick="resume_lookout(event);">RESUME</button></td></tr>
 					</table>
 
 				</div> <!-- Lookout -->

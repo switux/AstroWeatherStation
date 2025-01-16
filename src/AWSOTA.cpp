@@ -73,16 +73,16 @@ bool AWSOTA::is_profile_match( const JsonObject &ota_config, const etl::string<2
 	etl::string<32>	config;
 	etl::string<32> version;
 
-    if ( ota_config.containsKey("Board") )
+    if ( ota_config["Board"].is<JsonVariant>() )
         board.assign( ota_config["Board"].as<const char *>() );
 
-    if ( ota_config.containsKey("Device") )
+    if ( ota_config["Device"].is<JsonVariant>() )
 		device.assign( ota_config["Device"].as<const char *>() );
 
-    if ( ota_config.containsKey("Config") )
+    if ( ota_config["Config"].is<JsonVariant>() )
 		config.assign( ota_config["Config"].as<const char *>() );
 
-    if ( ota_config.containsKey("Version") )
+    if ( ota_config["Version"].is<JsonVariant>() )
 		version.assign( ota_config["Version"].as<const char *>() );
 
     return ( !board.size() || (board == aws_board_id) ) &&
