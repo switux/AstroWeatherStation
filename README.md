@@ -2,6 +2,8 @@
 
 ESP32 based weather station with features to help operate an astronomical observatory.
 
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=switux_AstroWeatherStation)](https://sonarcloud.io/summary/new_code?id=switux_AstroWeatherStation)
+
 ## GOAL
 
 This project aims to provide all the instructions that are needed to build a weather station for remote astronomical observatories.
