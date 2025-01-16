@@ -140,7 +140,7 @@ void alpaca_server::dispatch_dome_request( AsyncWebServerRequest *request )
 {
 	bool exists = true;
 
-	switch( str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {	// NOSONAR
 
 		case str2int( "abortslew" ):
 			exists = dome.abortslew( request, transaction_details );
