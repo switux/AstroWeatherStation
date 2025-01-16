@@ -38,6 +38,46 @@ alpaca_observingconditions::alpaca_observingconditions( void ): alpaca_device( O
 {
 }
 
+void alpaca_observingconditions::averageperiod( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
+{
+	if ( request->method() == HTTP_GET ) {
+
+		if ( get_is_connected() )
+			snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":0.0,%s})json", transaction_details.data() );
+		else
+			snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"Sensor is not available",%s})json", transaction_details.data() );
+
+		request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+		return;
+	}
+
+	if ( get_is_connected() ) {
+
+		if ( !request->hasParam( "AveragePeriod", true ) ) {
+
+			request->send( 400, "text/plain", "Missing AveragePeriod parameter" );
+			return;
+		}
+
+		float x = atof( request->getParam( "AveragePeriod", true )->value().c_str() );
+		switch( sign<float>(x) ) {
+			case 0:
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"",%s})json", transaction_details.data() );
+				break;
+			case 1:
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"Only providing live data, please set to 0.",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details.data() );
+				break;
+			case -1:
+				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"Value must be positive or 0",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details.data() );
+				break;
+		}
+
+	} else
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Sensor is not connected",%s})json", transaction_details.data() );
+
+	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+}
+
 void alpaca_observingconditions::build_timesincelastupdate_answer( char *sensor_name, const char *orig_sensor_name, etl::string<128> &transaction_details )
 {
 	time_t now;
@@ -181,16 +221,6 @@ void alpaca_observingconditions::dewpoint( AsyncWebServerRequest *request, etl::
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-void alpaca_observingconditions::get_averageperiod( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
-{
-	if ( get_is_connected() )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":0.0,%s})json", transaction_details.data() );
-	else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"Sensor is not available",%s})json", transaction_details.data() );
-
-	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-}
-
 void alpaca_observingconditions::humidity( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( get_is_connected() && station.is_sensor_initialised( aws_device_t::BME_SENSOR ))
@@ -279,35 +309,6 @@ void alpaca_observingconditions::sensordescription( AsyncWebServerRequest *reque
 		}
 	} else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"ObservingConditions device is not connected",%s})json", transaction_details.data() );
-
-	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-}
-
-void alpaca_observingconditions::set_averageperiod( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
-{
-	if ( get_is_connected() ) {
-
-		if ( !request->hasParam( "AveragePeriod", true ) ) {
-
-			request->send( 400, "text/plain", "Missing AveragePeriod parameter" );
-			return;
-		}
-
-		float x = atof( request->getParam( "AveragePeriod", true )->value().c_str() );
-		switch( sign<float>(x) ) {
-			case 0:
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"",%s})json", transaction_details.data() );
-				break;
-			case 1:
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"Only providing live data, please set to 0.",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details.data() );
-				break;
-			case -1:
-				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":%d,"ErrorMessage":"Value must be positive or 0",%s})json", 1023 + static_cast<byte>( ascom_error::InvalidValue ), transaction_details.data() );
-				break;
-		}
-
-	} else
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Sensor is not connected",%s})json", transaction_details.data() );
 
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }

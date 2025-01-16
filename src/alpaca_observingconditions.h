@@ -50,8 +50,7 @@ class alpaca_observingconditions : public alpaca_device
 
 			explicit alpaca_observingconditions( void );
 		void set_connected( AsyncWebServerRequest *request, etl::string<128> & );
-		void get_averageperiod( AsyncWebServerRequest *request, etl::string<128> & );
-		void set_averageperiod( AsyncWebServerRequest *request, etl::string<128> & );
+		void averageperiod( AsyncWebServerRequest *request, etl::string<128> & );
 		void cloudcover( AsyncWebServerRequest *request, etl::string<128> & );
 		void dewpoint( AsyncWebServerRequest *request, etl::string<128> & );
 		void humidity( AsyncWebServerRequest *request, etl::string<128> & );

@@ -95,7 +95,9 @@ void loop()
 		}
 	}
 
-	while( true );
+	while( true ) {
+		delay( 100 );
+	}
 }
 
 void IRAM_ATTR _handle_dome_shutter_open_change( void )

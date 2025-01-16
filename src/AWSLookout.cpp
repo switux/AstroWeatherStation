@@ -305,11 +305,12 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 	initialise_rules( _config );
 
 	std::function<void(void *)> _loop = std::bind( &AWSLookout::loop, this, std::placeholders::_1 );
-	xTaskCreatePinnedToCore(
+	if ( xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
-		}, "AWSLookout Task", 10000, &_loop, 5, &watcher_task_handle, 1 );
+		}, "AWSLookout Task", 10000, &_loop, 5, &watcher_task_handle, 1 ) != pdPASS )
+		Serial.printf( "[LOOKOUT   ] [ERROR] Could not start task [LookoutTask]\n" );
 
 	initialised = true;
 	active = true;

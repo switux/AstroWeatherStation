@@ -79,13 +79,24 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 		return;
 	}
 
-	while ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE ) { esp_task_wdt_reset(); }
-		if ( debug_mode )
-			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
+	int i = 0;
+	while (( i < 4 ) && ( xSemaphoreTake( sensors_read_mutex, 200 /  portTICK_PERIOD_MS ) != pdTRUE )) {
 
-	size_t x;
-	request->send( 200, "application/json", station.get_json_sensor_data( &x ).data() );
-	xSemaphoreGive( sensors_read_mutex );
+		esp_task_wdt_reset();
+		i++;
+		if ( (i<2) && debug_mode )
+			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
+	}
+
+	if ( i < 4 ) {
+
+		size_t x;
+		request->send( 200, "application/json", station.get_json_sensor_data( &x ).data() );
+		xSemaphoreGive( sensors_read_mutex );
+
+	} else
+
+		request->send( 503, "text/plain", "Data being updated" );
 }
 
 void AWSWebServer::get_root_ca( AsyncWebServerRequest *request )
@@ -215,7 +226,6 @@ void AWSWebServer::rm_file( AsyncWebServerRequest *request )
 
 void AWSWebServer::set_configuration( AsyncWebServerRequest *request, JsonVariant &json )
 {
-Serial.printf("SET CONFIG\n");
 	if ( station.update_config( json ) ) {
 
 		request->send( 200, "text/plain", "OK\n" );

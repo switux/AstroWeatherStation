@@ -21,6 +21,7 @@
 */
 
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 
 #include "common.h"
 #include "device.h"
@@ -164,6 +165,8 @@ bool SQM::get_msas_nelm( float ambient_temp )
 
 	const std::array<uint16_t,4>	gain_factor			= { 1, 25, 428, 9876 };
 	const std::array<uint16_t,6>	integration_time	= { 100, 200, 300, 400, 500, 600 };
+
+	esp_task_wdt_reset();
 
 	gain_idx = tsl->getGain();
 	int_time_idx = tsl->getTiming();
