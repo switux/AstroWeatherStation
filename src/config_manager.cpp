@@ -694,7 +694,7 @@ bool AWSConfig::verify_entries( JsonVariant &proposed_config )
 
 	for( JsonPair item : config_items ) {
 
-		switch( str2int( item.key().c_str() )) {
+		switch( str2int( item.key().c_str() )) {	// NOSONAR
 
 			case str2int( "alpaca_iface" ):
 			case str2int( "anemometer_model" ):
