@@ -498,7 +498,7 @@ void alpaca_server::dispatch_observingconditions_request( AsyncWebServerRequest 
 
 void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 {
-	switch( str2int( request->pathArg(1).c_str() )) {
+	switch( str2int( request->pathArg(1).c_str() )) {	// NOSONAR
 
 		case str2int( "abortslew" ):
 		case str2int( "athome" ):
@@ -758,7 +758,9 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 	transaction_status = ascom_error::Ok;
 	bad_request = false;
 
-	for( int i = 0; i < request->params(); i++ ) {
+	bool invalid_param = false;
+	
+	for( int i = 0; ( i < request->params() ) && !invalid_param; i++ ) {
 
 		if ( !strcasecmp( request->getParam(i)->name().c_str(), "ClientID" )) {
 
@@ -768,7 +770,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 					bad_request = true;
 					snprintf( transaction_details.data(), 127, "Missing or invalid ClientID" );
 					client_id = 0;
-					break;
+					invalid_param = true;
 				}
 		}
 
@@ -780,7 +782,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 					bad_request = true;
 					snprintf( transaction_details.data(), 127, "Missing or invalid ClientTransactionID" );
 					client_transaction_id = 0;
-					break;
+					invalid_param = true;
 				}
 		}
 	}
@@ -828,8 +830,8 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 {
 	if ( packet.length() ) {
 
-		// flawfinder: ignore
-		int len = packet.read( reinterpret_cast<uint8_t *>( buf.data() ), 255 );
+		int len = packet.read( reinterpret_cast<uint8_t *>( buf.data() ), 255 );	// NOSONAR
+	
 		if ( len > 0 )
 			buf.data()[ len ] = 0;
 		if ( len < 16 ) {
@@ -844,7 +846,7 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 		}
 		int l = snprintf( buf.data(), 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );
 		if ( l > 0 )
-			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf.data() ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );
+			ascom_discovery.writeTo( reinterpret_cast<uint8_t *>( buf.data() ), l, packet.remoteIP(), packet.remotePort(), packet.interface() );	// NOSONAR
 		else
 			Serial.printf( "[ALPACASERV] [ERROR] Could not build discovery answer. Please contact support.\n" );
 	}
