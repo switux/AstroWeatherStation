@@ -44,11 +44,11 @@ const char *alpaca_device::has_parameter( AsyncWebServerRequest *request, char *
 
 	for( int i = 0; ( i < request->args() ) && !b; i++ ) {
 
-			if ( ( s = request->argName( i ).c_str() ) == nullptr )
-				break;
+		if ( ( s = request->argName( i ).c_str() ) == nullptr )
+			break;
 
-			if ( ! ( b = ( case_sensitive ? !strcmp( name, s ) : !strcasecmp( name, s ))) )
-				s = nullptr;
+		if ( ! ( b = ( case_sensitive ? !strcmp( name, s ) : !strcasecmp( name, s ))) )
+			s = nullptr;
 	}
 	return s;
 }

@@ -64,8 +64,6 @@ void alpaca_telescope::axisrates( AsyncWebServerRequest *request, etl::string<12
 			char	*e;
 			float	x = strtof( request->getParam( param, false )->value().c_str(), &e );
 
-		Serial.printf("x=[%f], e=[%s]\n", x, e );
-		
 			if ( *e != '\0' ) {
 
 				request->send( 400, "text/plain", "Bad parameter value" );
@@ -324,6 +322,7 @@ void alpaca_telescope::sitelongitude( AsyncWebServerRequest *request, etl::strin
 void alpaca_telescope::utcdate( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	time_t		now;
+
 	if ( get_is_connected() ) {
 
 		if ( !station.get_station_data()->gps.fix && !station.is_ntp_synced() ) {
@@ -434,10 +433,12 @@ void alpaca_telescope::set_connected( AsyncWebServerRequest *request, etl::strin
 void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 
-	if ( request->hasParam( "SiteElevation", true ) ) {
+	const char *param = has_parameter( request, "SiteElevation", false );
+
+	if ( param != nullptr ) {
 
 		char	*e;
-		float	x = strtof( request->getParam( "SiteElevation", true )->value().c_str(), &e );
+		float	x = strtof( request->getParam( param, true )->value().c_str(), &e );
 
 		if (( *e != '\0' ) || ( x >10000 ) || ( x < -300 )) {
 
@@ -465,11 +466,12 @@ void alpaca_telescope::set_siteelevation( AsyncWebServerRequest *request, etl::s
 
 void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
+	const char *param = has_parameter( request, "SiteLatitude", false );
 
-	if ( request->hasParam( "SiteLatitude", true ) ) {
+	if ( param != nullptr ) {
 
 		char	*e;
-		float	x = strtof( request->getParam( "SiteLatitude", true )->value().c_str(), &e );
+		float	x = strtof( request->getParam( param, true )->value().c_str(), &e );
 		if (( *e != '\0' ) || ( x > 90 ) || ( x < -90 )) {
 
 			if ( snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details.data(), request->getParam( "SiteLatitude", true )->value().c_str() ) < 0 ) {
@@ -496,10 +498,13 @@ void alpaca_telescope::set_sitelatitude( AsyncWebServerRequest *request, etl::st
 
 void alpaca_telescope::set_sitelongitude( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
-	if ( request->hasParam( "SiteLongitude", true ) ) {
+	const char *param = has_parameter( request, "SiteLongitude", false );
 
-		char *e;
-		float	x = strtof( request->getParam( "SiteLongitude", true )->value().c_str(), &e );
+	if ( param != nullptr ) {
+
+		char	*e;
+		float	x = strtof( request->getParam( param, true )->value().c_str(), &e );
+
 		if (( *e != '\0' ) || ( x > 180 ) || ( x < -180 )) {
 
 			if ( snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid value (%s)"})json", transaction_details.data(), request->getParam( "SiteLongitude", true )->value().c_str() ) < 0 ) {
@@ -529,9 +534,11 @@ void alpaca_telescope::set_utcdate( AsyncWebServerRequest *request, etl::string<
 	struct tm		utc_date;
 	struct timeval 	now;
 
-	if ( request->hasParam( "UTCDate", true ) ) {
+	const char *param = has_parameter( request, "UTCDate", false );
 
-		if ( !strptime( request->getParam( "UTCDate", true )->value().c_str(), "%FT%T.", &utc_date )) {
+	if ( param != nullptr ) {
+
+		if ( !strptime( request->getParam( param, true )->value().c_str(), "%FT%T.", &utc_date )) {
 
 			if ( snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1025,"ErrorMessage":"Invalid datetime (%s)"})json", transaction_details.data(), request->getParam( "UTCDate", true )->value().c_str() ) < 0 ) {
 

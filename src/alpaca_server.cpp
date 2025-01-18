@@ -51,7 +51,7 @@ extern AstroWeatherStation station;
 
 const std::array<configured_device_t,CONFIGURED_DEVICES> configured_devices = {
 
-	configured_device_t{ "Rain sensor", "Safetymonitor", 0, SAFETYMONITOR_UUID },
+	configured_device_t{ "AWS Lookout", "Safetymonitor", 0, SAFETYMONITOR_UUID },
 	configured_device_t{ "Dome", "Dome", 0, DOME_UUID },
 	configured_device_t{ "AstroWeatherstation", "ObservingConditions", 0, AWS_UUID },
 	configured_device_t{ "Fake telescope", "Telescope", 0, TELESCOPE_UUID }
@@ -796,7 +796,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 	if ( debug_mode ) {
 
-		Serial.printf( "[ALPACASERV] [DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
+		Serial.printf( "[ALPACASERV] [DEBUG] Device [%s] Method [%s] Client request parameters: [HTTP method:%02d] ", request->pathArg(0).c_str(), request->pathArg(1).c_str(), request->method() );
 		for( int i = 0; i < request->params(); i++ )
 			Serial.printf( "(%s=%s)", request->getParam(i)->name().c_str(),request->getParam(i)->value().c_str() );
 		Serial.printf( "\n" );
