@@ -358,7 +358,6 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, etl::string<128>
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
-
 void alpaca_telescope::trackingrates( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	if ( get_is_connected() ) {
