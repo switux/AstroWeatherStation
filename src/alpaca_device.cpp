@@ -180,6 +180,8 @@ bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, etl::
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
+	Serial.printf("ACTIONS: [%s] [%s]\n", message_str.data(), supportedactions.data() );
+	
 	request->send( 200, "application/json", static_cast<const char*>( message_str.data() ));
 	return true;
 }
