@@ -50,7 +50,7 @@ class alpaca_device {
 		alpaca_driver_info_t		driverinfo;
 		alpaca_driver_version_t		driverversion;
 		alpaca_device_name_t		name;
-		alpaca_supported_actions_t	supportedactions;
+		alpaca_supported_actions_t	supportedactions	= "[]";
 		alpaca_interface_version_t	interfaceversion	= 0;
 
 	public:
@@ -59,6 +59,7 @@ class alpaca_device {
 		void		device_error( AsyncWebServerRequest *, etl::string<128> &, ascom_driver_error_t , char * );
 		bool		get_debug_mode( void );
 		bool		get_is_connected( void );
+		const char	*has_parameter( AsyncWebServerRequest *, char *, bool );
 		void		not_implemented( AsyncWebServerRequest *, etl::string<128> &, const char * );
 		void		send_connected( AsyncWebServerRequest *, etl::string<128> & );
 		bool		send_description( AsyncWebServerRequest *, etl::string<128> & );

@@ -53,6 +53,84 @@ alpaca_telescope::alpaca_telescope( void ) : alpaca_device( TELESCOPE_INTERFACE_
 	astro_lib.begin();
 }
 
+void alpaca_telescope::axisrates( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
+{
+	if ( get_is_connected() ) {
+
+		const char *param = has_parameter( request, "Axis", false );
+
+		if ( param != nullptr ) {
+
+			char	*e;
+			float	x = strtof( request->getParam( param, false )->value().c_str(), &e );
+
+		Serial.printf("x=[%f], e=[%s]\n", x, e );
+		
+			if ( *e != '\0' ) {
+
+				request->send( 400, "text/plain", "Bad parameter value" );
+				return;
+			}
+		
+			if ( snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":"","Value":[{"Maximum":0.0,"Minimum":0.0}]})json", transaction_details.data() ) < 0 ) {
+
+					request->send( 500, "text/plain", "Failed to format answer" );
+					return;
+			}
+			
+		} else {
+
+			request->send( 400, "text/plain", "Missing parameter" );
+			return;
+		}
+
+	} else {
+
+		if ( snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details.data() ) < 0 ) {
+
+				request->send( 500, "text/plain", "Failed to format answer" );
+				return;
+		}
+	}
+	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
+}
+
+void alpaca_telescope::canmoveaxis( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
+{
+	if ( get_is_connected() ) {
+
+		const char *param = has_parameter( request, "Axis", false );
+
+		if ( param != nullptr ) {
+
+			char	*e;
+			float	x = strtof( request->getParam( param, false )->value().c_str(), &e );
+
+			if ( *e != '\0' ) {
+
+				request->send( 400, "text/plain", "Bad parameter value" );
+				return;
+			}
+		
+			send_value( request, transaction_details, false );
+			return;
+
+		} else {
+
+			request->send( 400, "text/plain", "Missing parameter" );
+			return;
+		}
+
+	} else {
+
+		if ( snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details.data() ) < 0 ) {
+
+				request->send( 500, "text/plain", "Failed to format answer" );
+				return;
+		}
+	}
+}
+
 void alpaca_telescope::siderealtime( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	float		longitude;
@@ -267,27 +345,6 @@ void alpaca_telescope::utcdate( AsyncWebServerRequest *request, etl::string<128>
 				request->send( 500, "text/plain", "Failed to format answer" );
 				return;
 			}
-		}
-
-	} else {
-
-		if ( snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Telescope is not connected",%s})json", transaction_details.data() ) < 0 ) {
-
-				request->send( 500, "text/plain", "Failed to format answer" );
-				return;
-		}
-	}
-	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
-}
-
-void alpaca_telescope::axisrates( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
-{
-	if ( get_is_connected() ) {
-
-		if ( snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":"","Value":[{"Maximum":0.0,"Minimum":0.0}]})json", transaction_details.data() ) < 0 ) {
-
-				request->send( 500, "text/plain", "Failed to format answer" );
-				return;
 		}
 
 	} else {

@@ -117,8 +117,9 @@ void alpaca_server::alpaca_getconfigureddevices( AsyncWebServerRequest *request 
 
 		if ( bad_request )
 			request->send( 400, "text/plain", static_cast<const char *>( transaction_details.data() ) );
-		else
+		else {
 			request->send( 200, "application/json", static_cast<const char *>( str.data() ) );
+		}
 	}
 }
 
@@ -504,7 +505,6 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 		case str2int( "athome" ):
 		case str2int( "atpark" ):
 		case str2int( "canfindhome" ):
-		case str2int( "canmoveaxis" ):
 		case str2int( "canpark" ):
 		case str2int( "canpulseguide" ):
 		case str2int( "cansetdeclinationrate" ):
@@ -522,6 +522,13 @@ void alpaca_server::dispatch_telescope_request( AsyncWebServerRequest *request )
 		case str2int( "canunpark" ):
 			if ( request->method() == HTTP_GET )
 				telescope.send_value( request, transaction_details, false );
+			else
+				does_not_exist( request );
+			break;
+
+		case str2int( "canmoveaxis" ):
+			if ( request->method() == HTTP_GET )
+				telescope.canmoveaxis( request, transaction_details );
 			else
 				does_not_exist( request );
 			break;
@@ -737,7 +744,7 @@ bool alpaca_server::get_configured_devices( char *json_string, size_t len )
 
 	for( uint8_t i = 0; i < CONFIGURED_DEVICES; i++ ) {
 
-		l += snprintf( buff.data(), buff.capacity(), R"json({"DeviceName":"%s","DeviceType":"%s","DeviceNumber":%d,"UniqueID":"%s"},)json", configured_devices[i].DeviceName, configured_devices[i].DeviceType, configured_devices[i].DeviceNumber, configured_devices[i].UniqueID );
+		l += snprintf( buff.data(), buff.capacity(), R"json({"DeviceName":"%s","DeviceType":"%s","DeviceNumber":%d,"UniqueID":"%s"},)json", configured_devices[i].DeviceName.data(), configured_devices[i].DeviceType.data(), configured_devices[i].DeviceNumber, configured_devices[i].UniqueID.data() );
 		if ( l <= len )
 			l2 = strlcat( json_string, buff.data(), len );
 		else {
@@ -789,7 +796,7 @@ bool alpaca_server::extract_transaction_details( AsyncWebServerRequest *request,
 
 	if ( debug_mode ) {
 
-		Serial.printf( "\n[ALPACASERV] [DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
+		Serial.printf( "[ALPACASERV] [DEBUG] Alpaca client request parameters: [Method:%02d] ", request->method() );
 		for( int i = 0; i < request->params(); i++ )
 			Serial.printf( "(%s=%s)", request->getParam(i)->name().c_str(),request->getParam(i)->value().c_str() );
 		Serial.printf( "\n" );
@@ -809,7 +816,7 @@ void alpaca_server::not_implemented( AsyncWebServerRequest *request, const char 
 	server_transaction_id++;
 
 	if ( debug_mode )
-		Serial.printf( "\n[ALPACASERV] [DEBUG] Not implemented endpoint: %s\n", request->url().c_str());
+		Serial.printf( "[ALPACASERV] [DEBUG] Not implemented endpoint: %s\n", request->url().c_str());
 
 	if ( extract_transaction_details( request, false ) ) {
 
@@ -831,7 +838,7 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 	if ( packet.length() ) {
 
 		int len = packet.read( reinterpret_cast<uint8_t *>( buf.data() ), 255 );	// NOSONAR
-	
+
 		if ( len > 0 )
 			buf.data()[ len ] = 0;
 		if ( len < 16 ) {
@@ -839,9 +846,9 @@ void alpaca_server::on_packet( AsyncUDPPacket packet )
 				Serial.printf( "[ALPACASERV] [INFO ] Discovery: short packet [%s] from %s:%d\n" , buf.data(), packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
-		if ( buf != "alpacadiscovery1" ) {
+		if ( strncmp( "alpacadiscovery1", buf.data(), 16 ) != 0 ) {
 			if ( debug_mode )
-				Serial.printf( "[ALPACASERV] [INFO ] Discovery: bad header [%s] from %s:%d\n",  buf, packet.remoteIP().toString().c_str(), packet.remotePort() );
+				Serial.printf( "[ALPACASERV] [INFO ] Discovery: bad header [%s] (%d bytes long) from %s:%d\n",  buf.data(), len, packet.remoteIP().toString().c_str(), packet.remotePort() );
 			return;
 		}
 		int l = snprintf( buf.data(), 255, "{\"AlpacaPort\":%d}", ALPACA_SERVER_PORT );

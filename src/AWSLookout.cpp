@@ -111,7 +111,7 @@ void AWSLookout::check_rules( void )
 	aws_device_t		available_sensors	= sensor_manager->get_available_sensors();
 	bool				b;
 	time_t				now					= station.get_timestamp();
-	etl::string<140>	str;
+	etl::string<150>	str;
 	bool				tmp_is_safe			= true;
 	bool				tmp_is_unsafe		= false;
 

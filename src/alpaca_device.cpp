@@ -37,10 +37,26 @@ bool alpaca_device::get_is_connected( void )
 	return is_connected;
 }
 
+const char *alpaca_device::has_parameter( AsyncWebServerRequest *request, char *name, bool case_sensitive )
+{
+	bool b = false;
+	const char *s;
+
+	for( int i = 0; ( i < request->args() ) && !b; i++ ) {
+
+			if ( ( s = request->argName( i ).c_str() ) == nullptr )
+				break;
+
+			if ( ! ( b = ( case_sensitive ? !strcmp( name, s ) : !strcasecmp( name, s ))) )
+				s = nullptr;
+	}
+	return s;
+}
+
 void alpaca_device::send_connected( AsyncWebServerRequest *request, etl::string<128> &transaction_details )
 {
 	etl::string<256>	message_str;
-	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":"%s",%s})json", is_connected?"true":"false", transaction_details.data() );
+	snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", is_connected?"true":"false", transaction_details.data() );
 	request->send( 200, "application/json", static_cast<const char *>( message_str.data() ) );
 }
 
@@ -160,10 +176,12 @@ bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, etl::
 
 	etl::string<256>	message_str;
 	if ( is_connected )
-		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", supportedactions, transaction_details.data() );
+		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":0,"ErrorMessage":"","Value":%s,%s})json", supportedactions.data(), transaction_details.data() );
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
+	Serial.printf("ACTIONS: [%s] [%s]\n", message_str.data(), supportedactions.data() );
+	
 	request->send( 200, "application/json", static_cast<const char*>( message_str.data() ));
 	return true;
 }
