@@ -44,9 +44,11 @@ void alpaca_safetymonitor::set_connected( AsyncWebServerRequest *request, etl::s
 {
 	if ( request->hasParam( "Connected", true ) ) {
 
+		bool b = ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" ) );
+		
 		if ( !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "true" ) || !strcasecmp( request->getParam( "Connected", true )->value().c_str(), "false" ) ) {
 
-			set_is_connected( true );
+			set_is_connected( b );
 			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":0,"ErrorMessage":""})json", transaction_details.data() );
 
 		} else

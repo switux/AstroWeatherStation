@@ -1472,21 +1472,3 @@ bool AstroWeatherStation::update_config( JsonVariant &proposed_config )
 {
 	return config.save_runtime_configuration( proposed_config );
 }
-
-void AstroWeatherStation::wakeup_reason_to_string( esp_sleep_wakeup_cause_t wakeup_reason, char *wakeup_string )
-{
-	switch ( wakeup_reason ) {
-
-		case ESP_SLEEP_WAKEUP_EXT0 :
-			snprintf( wakeup_string, 49, "Awakened by RTC IO: Rain event!" );
-			break;
-
-		case ESP_SLEEP_WAKEUP_TIMER :
-			snprintf( wakeup_string, 49, "Awakened by timer" );
-			break;
-
-		default :
-			snprintf( wakeup_string, 49, "Awakened by other: %d", wakeup_reason );
-			break;
-	}
-}

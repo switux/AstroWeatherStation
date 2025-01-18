@@ -80,11 +80,11 @@ void AWSWebServer::get_station_data( AsyncWebServerRequest *request )
 	}
 
 	int i = 0;
-	while (( i < 4 ) && ( xSemaphoreTake( sensors_read_mutex, 200 /  portTICK_PERIOD_MS ) != pdTRUE )) {
+	while (( i < 4 ) && ( xSemaphoreTake( sensors_read_mutex, 100 /  portTICK_PERIOD_MS ) != pdTRUE )) {
 
 		esp_task_wdt_reset();
 		i++;
-		if ( (i<2) && debug_mode )
+		if ( ( i < 2 ) && debug_mode )
 			Serial.printf( "[WEBSERVER ] [DEBUG] Waiting for sensor data update to complete.\n" );
 	}
 
@@ -113,17 +113,18 @@ void AWSWebServer::get_uptime( AsyncWebServerRequest *request )
 	int				seconds	= fmod( uptime, 60 );
 	etl::string<16>	str;
 
-	snprintf( str.data(), str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds );
-	request->send( 200, "text/plain", str.data() );
+	if ( snprintf( str.data(), str.capacity(), "%03dd:%02dh:%02dm:%02ds", days, hours, minutes, seconds ) < 0 )
+		request->send( 500, "text/plain", "Error formatting uptime" );
+	else
+		request->send( 200, "text/plain", str.data() );
 }
 
 void AWSWebServer::index( AsyncWebServerRequest *request )
 {
 	if ( !LittleFS.begin()) {
 
-		etl::string<64> msg;
+		etl::string<64> msg = "[ERROR] Cannot open filesystem to serve index.html";
 		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open filesystem to serve index.html." );
-		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open filesystem to serve index.html" );
 		request->send( 500, "text/html", msg.data() );
 		return;
 
@@ -170,7 +171,7 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 {
 	if ( !LittleFS.begin()) {
 
-		etl::string<64> msg;
+		etl::string<128> msg;
 		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open filesystem to serve [%s].", request->url().c_str() );
 		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open filesystem to serve [%s].", request->url().c_str() );
 		request->send( 500, "text/html", msg.data() );
@@ -179,7 +180,7 @@ void AWSWebServer::send_file( AsyncWebServerRequest *request )
 	}
 	if ( !LittleFS.exists( request->url().c_str() )) {
 
-		etl::string<64> msg;
+		etl::string<128> msg;
 		Serial.printf( "[WEBSERVER ] [ERROR] File [%s] not found.", request->url().c_str() );
 		snprintf( msg.data(), msg.capacity(), "[ERROR] File [%s] not found.", request->url().c_str() );
 		request->send( 500, "text/html", msg.data() );
@@ -202,17 +203,15 @@ void AWSWebServer::rm_file( AsyncWebServerRequest *request )
 {
 	if ( !LittleFS.begin()) {
 
-		etl::string<64> msg;
+		etl::string<64> msg = "[ERROR] Cannot open filesystem.";
 		Serial.printf( "[WEBSERVER ] [ERROR] Cannot open filesystem." );
-		snprintf( msg.data(), msg.capacity(), "[ERROR] Cannot open filesystem." );
 		request->send( 500, "text/html", msg.data() );
 		return;
 	}
 	if ( request->params() !=1 ) {
 
-		etl::string<64> msg;
+		etl::string<64> msg = "[ERROR] Wrong count of parameter.";
 		Serial.printf( "[WEBSERVER ] [INFO ] rm_file has wrong count of parameter." );
-		snprintf( msg.data(), msg.capacity(), "[ERROR] Wrong count of parameter." );
 		request->send( 400, "text/html", msg.data() );
 		return;
 	}

@@ -140,7 +140,7 @@ void alpaca_observingconditions::build_timesincelastupdate_answer( char *sensor_
 				snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1024,"ErrorMessage":"No sensor is available",%s})json", transaction_details.data() );
 			break;
 		case str2int("starfwhm"):
-			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber\":1024,"ErrorMessage":"No such sensor: %s"})json", transaction_details.data(), orig_sensor_name );
+			snprintf( message_str.data(), message_str.capacity(), R"json({%s,"ErrorNumber":1024,"ErrorMessage":"No such sensor: %s"})json", transaction_details.data(), orig_sensor_name );
 			break;
 		default:
 			snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1025,"ErrorMessage":"","Value":"No such sensor name: %s",%s})json", orig_sensor_name, transaction_details.data() );

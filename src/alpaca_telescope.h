@@ -40,6 +40,8 @@ class alpaca_telescope : public alpaca_device
 	public:
 
 		explicit alpaca_telescope( void );
+		void axisrates( AsyncWebServerRequest *, etl::string<128> & );
+		void canmoveaxis( AsyncWebServerRequest *, etl::string<128> & );
 		void set_connected( AsyncWebServerRequest *, etl::string<128> & );
 		void siderealtime( AsyncWebServerRequest *, etl::string<128> & );
 		void siteelevation( AsyncWebServerRequest *, etl::string<128> & );
@@ -51,7 +53,6 @@ class alpaca_telescope : public alpaca_device
 		void trackingrates( AsyncWebServerRequest *, etl::string<128> & );
 		void utcdate( AsyncWebServerRequest *, etl::string<128> & );
 		void set_utcdate( AsyncWebServerRequest *, etl::string<128> & );
-		void axisrates( AsyncWebServerRequest *, etl::string<128> & );
 };
 
 #endif

@@ -165,7 +165,6 @@ class AstroWeatherStation {
 		bool			startup_sanity_check( void );
 		bool			store_unsent_data( etl::string_view, size_t );
 		void			try_enter_config_mode( aws_boot_mode_t );
-		void			wakeup_reason_to_string( esp_sleep_wakeup_cause_t, char * );
 
 	public:
 
