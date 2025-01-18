@@ -44,11 +44,11 @@ const char *alpaca_device::has_parameter( AsyncWebServerRequest *request, char *
 
 	for( int i = 0; ( i < request->args() ) && !b; i++ ) {
 
-			if ( ( s = request->argName( i ).c_str() ) == nullptr )
-				break;
+		if ( ( s = request->argName( i ).c_str() ) == nullptr )
+			break;
 
-			if ( ! ( b = ( case_sensitive ? !strcmp( name, s ) : !strcasecmp( name, s ))) )
-				s = nullptr;
+		if ( ! ( b = ( case_sensitive ? !strcmp( name, s ) : !strcasecmp( name, s ))) )
+			s = nullptr;
 	}
 	return s;
 }
@@ -180,8 +180,6 @@ bool alpaca_device::send_supportedactions( AsyncWebServerRequest *request, etl::
 	else
 		snprintf( message_str.data(), message_str.capacity(), R"json({"ErrorNumber":1031,"ErrorMessage":"Device is not connected",%s})json", transaction_details.data() );
 
-	Serial.printf("ACTIONS: [%s] [%s]\n", message_str.data(), supportedactions.data() );
-	
 	request->send( 200, "application/json", static_cast<const char*>( message_str.data() ));
 	return true;
 }
