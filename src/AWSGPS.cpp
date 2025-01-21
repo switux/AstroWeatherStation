@@ -85,14 +85,11 @@ void AWSGPS::get_ublox_model( void )
 		gps_serial->write( b );
 
 	delay( 1000 );
-		for( const auto &b : ubx_nav_svinfo )
-		gps_serial->write( b );
-		delay( 1000 );
 
 	for( int i = 0; i < 10; i++)
 		while( gps_serial->available() ) {
 			char c = gps_serial->read();
-			Serial.printf( "%c(%02x)", c, c );
+//			Serial.printf( "%c(%02x)", c, c );
 		}
 	return;
 }
@@ -182,8 +179,11 @@ bool AWSGPS::start( void )
 		[](void *param) {	// NOSONAR
             std::function<void(void*)>* feed_proxy = static_cast<std::function<void(void*)>*>( param );
             (*feed_proxy)( NULL );
-		}, "GPS Feed Task", 2000, &_feed, 4, &gps_task_handle, 1 ) != pdPASS )
+		}, "GPS Feed Task", 2000, &_feed, 4, &gps_task_handle, 1 ) != pdPASS ) {
+
 		Serial.printf( "[GPS       ] [ERROR] Could not start task [GPSFeed]\n" );
+		return false;
+	}
 
 	return true;
 }

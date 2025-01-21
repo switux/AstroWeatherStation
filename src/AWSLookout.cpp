@@ -307,10 +307,13 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 	std::function<void(void *)> _loop = std::bind( &AWSLookout::loop, this, std::placeholders::_1 );
 	if ( xTaskCreatePinnedToCore(
 		[](void *param) {	// NOSONAR
-			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
-			(*periodic_tasks_proxy)( NULL );
-		}, "AWSLookout Task", 10000, &_loop, 5, &watcher_task_handle, 1 ) != pdPASS )
+			std::function<void(void*)>* lookout_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
+			(*lookout_task_proxy)( NULL );
+		}, "AWSLookout Task", 10000, &_loop, 5, &lookout_task_handle, 1 ) != pdPASS ) {
+
 		Serial.printf( "[LOOKOUT   ] [ERROR] Could not start task [LookoutTask]\n" );
+		return;
+	}
 
 	initialised = true;
 	active = true;
@@ -394,7 +397,7 @@ bool AWSLookout::issafe( void )
 bool AWSLookout::resume( void )
 {
 	if ( initialised ) {
-		vTaskResume( watcher_task_handle );
+		vTaskResume( lookout_task_handle );
 		active = true;
 		return true;
 	}
@@ -410,7 +413,7 @@ bool AWSLookout::suspend( void )
 {
 	active = false;
 	if ( initialised ) {
-		vTaskSuspend( watcher_task_handle );
+		vTaskSuspend( lookout_task_handle );
 		return true;
 	}
 	return false;
