@@ -35,7 +35,7 @@ class AWSLookout
 {
 	private:
 
-		TaskHandle_t			watcher_task_handle;
+		TaskHandle_t			lookout_task_handle;
 		bool					active					= false;
 		bool 					debug_mode				= false;
 		Dome					*dome					= nullptr;

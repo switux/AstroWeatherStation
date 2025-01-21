@@ -92,7 +92,7 @@ void AWSGPS::get_ublox_model( void )
 	for( int i = 0; i < 10; i++)
 		while( gps_serial->available() ) {
 			char c = gps_serial->read();
-			Serial.printf( "%c(%02x)", c, c );
+//			Serial.printf( "%c(%02x)", c, c );
 		}
 	return;
 }

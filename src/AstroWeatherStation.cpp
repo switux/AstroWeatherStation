@@ -686,7 +686,6 @@ bool AstroWeatherStation::initialise( void )
 		}, "AWSCoreTask", 6000, &_periodic_tasks, 1, &aws_periodic_task_handle, 1 ) != pdPASS )
 		Serial.printf( "[STATION   ] [ERROR] Could not start task [CoreTask]\n" );
 
-
 	operation_info |= aws_operation_info_t::READY;
 	set_led_status( station_status_t::READY );
 	return true;

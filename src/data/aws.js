@@ -156,7 +156,7 @@ function fill_lookout_value( parameter, from_list, sensor_available, values )
 
 function fill_lookout_values( values )
 {
-	document.getElementById("lookout_enabled").checked = ( values['lookout_enabled'] ==  '1' )? 'true' : 'false';
+	document.getElementById("lookout_enabled").checked = values['lookout_enabled'];
 
 	document.getElementById("cloud_coverage_formula_aag").checked = ( values['cloud_coverage_formula'] ==  '1' )? 'true' : 'false';
 	document.getElementById("cloud_coverage_formula_aws").checked = ( values['cloud_coverage_formula'] ==  '0' )? 'true' : 'false';
@@ -204,7 +204,7 @@ function fill_network_values( values )
 	else
 		document.getElementById("iface_option").style.display = "none";
 
-	if ( values['pref_iface'] == "1" ) {
+	if ( values['pref_iface'] == "2" ) {
 
 		hide_wifi();
 		document.getElementById("show_alpaca_interface").style.display = "none";
@@ -358,7 +358,9 @@ function retrieve_data()
 			document.getElementById("data_push").checked = values['data_push'];
 			document.getElementById("ota_url").value = values['ota_url'];
 			document.getElementById("discord_wh").value = values['discord_wh'];
-
+			document.getElementById("lookout_dash").style.display = values['lookout_enabled'] ? "flex":"none" ;
+			document.getElementById("dome_dash").style.display = ( values['has_dome'] == 1 ) ? "flex":"none" ;
+			document.getElementById("gps_dash").style.display = ( values['has_gps'] == 1 ) ? "flex":"none" ;
 			fill_network_values( values );
 			fill_sensor_values( values );
 			fill_device_values( values );
