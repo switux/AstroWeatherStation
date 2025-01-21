@@ -540,7 +540,7 @@ bool AstroWeatherStation::initialise( void )
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* led_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*led_task_proxy)( NULL );
-		}, "AWSLedTask", 2000, &_led_task, 1, &aws_led_task_handle, 1 ) != pdPASS ) {
+		}, "AWSLedTask", 2000, &_led_task, 10, &aws_led_task_handle, 1 ) != pdPASS ) {
 
 		Serial.printf( "[STATION   ] [ERROR] Could not start background task [LEDTask]\n" );
 	}
@@ -683,7 +683,7 @@ bool AstroWeatherStation::initialise( void )
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* periodic_tasks_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*periodic_tasks_proxy)( NULL );
-		}, "AWSCoreTask", 6000, &_periodic_tasks, 1, &aws_periodic_task_handle, 1 ) != pdPASS )
+		}, "AWSCoreTask", 6000, &_periodic_tasks, 5, &aws_periodic_task_handle, 1 ) != pdPASS )
 		Serial.printf( "[STATION   ] [ERROR] Could not start task [CoreTask]\n" );
 
 	operation_info |= aws_operation_info_t::READY;

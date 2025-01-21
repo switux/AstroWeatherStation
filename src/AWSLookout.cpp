@@ -286,7 +286,7 @@ etl::string_view AWSLookout::get_rules_state( void )
 void AWSLookout::loop( void * )	// NOSONAR
 {
 	while( true ) {
-Serial.printf("LOOKOUT LOOP\n");
+
 		if ( initialised )
 			check_rules();
 		delay( 1000 );
@@ -309,7 +309,7 @@ void AWSLookout::initialise( AWSConfig *_config, AWSSensorManager *_mngr, Dome *
 		[](void *param) {	// NOSONAR
 			std::function<void(void*)>* lookout_task_proxy = static_cast<std::function<void(void*)>*>( param );	// NOSONAR
 			(*lookout_task_proxy)( NULL );
-		}, "AWSLookout Task", 10000, &_loop, 1, &lookout_task_handle, 1 ) != pdPASS ) {
+		}, "AWSLookout Task", 10000, &_loop, 5, &lookout_task_handle, 1 ) != pdPASS ) {
 
 		Serial.printf( "[LOOKOUT   ] [ERROR] Could not start task [LookoutTask]\n" );
 		return;
